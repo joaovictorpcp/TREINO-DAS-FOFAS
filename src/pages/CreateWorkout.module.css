@@ -1,0 +1,226 @@
+.header {
+    margin-bottom: var(--space-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+    color: var(--text-primary);
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.tableContainer {
+    /* overflow: hidden; Removed to allow tooltips */
+    border-radius: var(--radius-lg);
+    /* Move radius here if it relied on overflow */
+    margin-bottom: var(--space-xl);
+    background: #FFF;
+}
+
+.gridRow {
+    display: grid;
+    grid-template-columns: 3fr 1fr 1fr 1fr 1fr 1fr 1.2fr 40px;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    align-items: center;
+    border-bottom: 1px solid var(--border-subtle);
+    transition: background-color 0.3s ease;
+}
+
+.highStressRow {
+    background-color: var(--alert-high-stress) !important;
+}
+
+/* Intelligence Styles */
+.suggestedLoad {
+    border: 2px solid #98FF98 !important;
+    box-shadow: 0 0 5px rgba(152, 255, 152, 0.4);
+}
+
+/* Column Wrappers */
+.colName {}
+
+.colNum {}
+
+.colVtt {
+    text-align: right;
+    font-family: monospace;
+    font-weight: 600;
+    color: var(--text-primary);
+    padding-right: var(--space-sm);
+}
+
+.colAction {
+    display: flex;
+    justify-content: center;
+}
+
+/* Header with Help Icon */
+.headerWithHelp {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: help;
+}
+
+.helpIcon {
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+
+.helpIcon:hover {
+    opacity: 1;
+    color: var(--accent-primary);
+}
+
+.iconBtn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    position: relative;
+    z-index: 10;
+}
+
+.iconBtn:hover {
+    background: #fee2e2;
+    color: #ef4444;
+}
+
+.footerActions {
+    padding: var(--space-md);
+    background: #FAFAFA;
+}
+
+.addBtn {
+    width: 100%;
+    border: 1px dashed var(--border-subtle);
+    background: transparent;
+}
+
+.addBtn:hover {
+    background: #fff;
+    border-color: var(--accent-primary);
+}
+
+.pageActions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Legend Bar */
+.legendBar {
+    margin-top: var(--space-xl);
+    padding: var(--space-md);
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    justify-content: center;
+    gap: var(--space-xl);
+    flex-wrap: wrap;
+}
+
+.legendItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.colorBox {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Toast Notification */
+.toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background-color: var(--alert-high-stress);
+    color: #7f1d1d;
+    padding: 1rem 1.5rem;
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    z-index: 100;
+    animation: slideInUp 0.3s ease-out;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    font-weight: 600;
+}
+
+@keyframes slideInUp {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@media (max-width: 900px) {
+    .header {
+        flex-direction: column;
+        gap: var(--space-md);
+    }
+
+    .gridRow {
+        grid-template-columns: 1fr 1fr;
+        /* Stack on mobile */
+        gap: var(--space-sm);
+        padding: var(--space-md);
+        border-bottom: 4px solid var(--bg-primary);
+    }
+
+    .colName {
+        grid-column: 1 / -1;
+    }
+
+    .colVtt {
+        grid-column: 1 / -1;
+        text-align: center;
+        background: rgba(0, 0, 0, 0.03);
+        padding: 8px;
+        margin-top: 8px;
+        border-radius: 4px;
+    }
+
+    .colAction {
+        grid-column: 2;
+        justify-content: flex-end;
+    }
+
+    /* Headers are hidden on mobile, shown as placeholders */
+    .gridRow:first-child {
+        display: none;
+    }
+
+    .toast {
+        left: 1rem;
+        right: 1rem;
+        bottom: 1rem;
+    }
+
+    .legendBar {
+        flex-direction: column;
+        gap: var(--space-sm);
+        align-items: flex-start;
+    }
+}

@@ -1,0 +1,105 @@
+.title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+    color: var(--text-primary);
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.mesoSection {
+    margin-bottom: 2.5rem;
+}
+
+.mesoTitle {
+    font-size: 1.2rem;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    border-bottom: 2px solid var(--accent-header);
+    padding-bottom: 0.5rem;
+    display: inline-block;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.card {
+    background: #FFF;
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    border: 1px solid var(--border-subtle);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-color: var(--accent-primary);
+}
+
+.completed {
+    border-left: 4px solid #10b981;
+}
+
+.planned {
+    background: #F8FAFC;
+    border: 1px dashed #CBD5E1;
+    border-left: 4px solid #94a3b8;
+}
+
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.weekBadge {
+    background: var(--accent-header);
+    color: var(--text-primary);
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.cardContent {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.date {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.fillBtn {
+    margin-top: 1rem;
+    width: 100%;
+    padding: 8px;
+    border: none;
+    background: var(--accent-primary);
+    color: #fff;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.fillBtn:hover {
+    filter: brightness(0.95);
+}
