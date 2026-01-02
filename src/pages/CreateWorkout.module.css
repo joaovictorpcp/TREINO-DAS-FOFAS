@@ -212,7 +212,8 @@
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
         /* Soft shadow for mobile cards */
         border: 1px solid #E2E8F0;
-        gap: 1rem;
+        gap: 1.25rem;
+        /* Increased gap between rows */
     }
 
     .colName,
@@ -222,6 +223,8 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        gap: 1rem;
+        /* Prevent collision */
     }
 
     .mobileLabel {
@@ -229,19 +232,30 @@
         font-weight: 600;
         color: var(--slate-text-light);
         font-size: 0.9rem;
+        min-width: 120px;
+        /* Fixed width for alignment */
+        text-align: left;
     }
 
     .gridRow input {
-        width: 60%;
-        /* Smaller width on mobile rows */
+        width: 100%;
+        /* Full width available */
+        max-width: 200px;
+        /* Cap width */
+        text-align: right;
+        /* Align numbers to right */
     }
 
     .colName input {
         width: 100%;
+        max-width: none;
+        /* Full width for name */
         text-align: center;
         font-size: 1.1rem;
         background: #F8FAFC;
         border-color: transparent;
+        margin-bottom: 0.5rem;
+        /* Separate title */
     }
 
     .colAction {
@@ -250,6 +264,8 @@
         margin-top: 1rem;
         justify-content: flex-end;
         width: 100%;
+        border-top: 1px solid var(--border-subtle);
+        padding-top: 1rem;
     }
 }
 

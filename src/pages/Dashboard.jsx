@@ -11,7 +11,7 @@ import BiometricCard from '../components/Student/BiometricCard';
 import AttendanceCalendar from '../components/Student/AttendanceCalendar';
 
 
-import { Copy } from 'lucide-react';
+import { Copy, Repeat } from 'lucide-react';
 
 const Dashboard = () => {
     const context = useWorkout();
@@ -219,12 +219,37 @@ const Dashboard = () => {
                                     color: 'var(--accent-primary)',
                                     fontWeight: 600,
                                     cursor: 'pointer',
-                                    height: '100%'
+                                    height: '100%',
+                                    whiteSpace: 'nowrap'
                                 }}
                             >
-                                <Copy size={16} /> Espelhar Mês
+                                <Copy size={16} /> Preencher Mês
                             </button>
                         )}
+
+                        <button
+                            onClick={() => {
+                                if (window.confirm("Deseja criar um NOVO mesociclo baseado no atual? (Copia estrutura para +4 semanas)")) {
+                                    context.duplicateMesocycleToNext(selectedStudentId, latestMeso);
+                                }
+                            }}
+                            className="btn-primary"
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '6px 16px',
+                                borderRadius: '6px',
+                                border: 'none',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                height: '100%',
+                                whiteSpace: 'nowrap',
+                                fontSize: '0.9rem'
+                            }}
+                        >
+                            <Repeat size={16} /> Novo Ciclo
+                        </button>
 
                         <div style={{ display: 'flex', background: '#e2e8f0', borderRadius: '8px', padding: '4px' }}>
                             <button

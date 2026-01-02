@@ -11,95 +11,213 @@
 }
 
 .mesoSection {
-    margin-bottom: 2.5rem;
+    margin-bottom: 4rem;
+    /* Significant breathing room */
+    position: relative;
+    /* Animation for smooth appearance */
+    animation: fadeIn 0.5s ease-out;
 }
 
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Visual Divider */
+.mesoDivider {
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--border-subtle), transparent);
+    margin-bottom: 2rem;
+    width: 60%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Enhanced Section Header */
 .mesoTitle {
-    font-size: 1.2rem;
-    color: var(--text-primary);
-    margin-bottom: 1rem;
-    border-bottom: 2px solid var(--accent-header);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 1.5rem;
     padding-bottom: 0.5rem;
-    display: inline-block;
+    /* Removed border-bottom from here to use the divider above instead, or keep clean */
 }
 
+.mesoNumber {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.5px;
+}
+
+.mesoMonth {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    padding: 2px 10px;
+    border-radius: 20px;
+    text-transform: capitalize;
+}
+
+/* Responsive Grid */
 .grid {
     display: grid;
+    /* Default (Desktop): Auto-fill with min 280px */
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 1.5rem;
 }
 
+/* Card Styles */
 .card {
     background: #FFF;
-    border-radius: var(--radius-md);
-    padding: 1.25rem;
+    border-radius: var(--radius-lg);
+    /* Larger radius for soft UI */
+    padding: 1.5rem;
     border: 1px solid var(--border-subtle);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     position: relative;
     overflow: hidden;
+    /* Soft Shadow */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
 .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+    /* Elevated feel */
     border-color: var(--accent-primary);
 }
 
 .completed {
-    border-left: 4px solid #10b981;
+    border-left: 5px solid #10b981;
 }
 
 .planned {
     background: #F8FAFC;
     border: 1px dashed #CBD5E1;
-    border-left: 4px solid #94a3b8;
+    border-left: 5px solid #94a3b8;
 }
 
 .cardHeader {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
 }
 
 .weekBadge {
     background: var(--accent-header);
     color: var(--text-primary);
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 999px;
+    /* Pill */
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
 .cardContent {
     color: var(--text-secondary);
-    font-size: 0.9rem;
+    font-size: 0.95rem;
 }
 
 .date {
     display: flex;
     align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+
+.exercises {
+    display: flex;
+    align-items: center;
     gap: 6px;
-    margin-bottom: 4px;
+    color: var(--text-tertiary);
+    font-size: 0.9rem;
 }
 
 .fillBtn {
-    margin-top: 1rem;
+    margin-top: 1.5rem;
     width: 100%;
-    padding: 8px;
+    padding: 10px;
     border: none;
     background: var(--accent-primary);
     color: #fff;
-    border-radius: 6px;
-    font-weight: 500;
+    border-radius: var(--radius-md);
+    font-weight: 600;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 8px;
+    transition: filter 0.2s;
 }
 
 .fillBtn:hover {
-    filter: brightness(0.95);
+    filter: brightness(1.1);
+    /* Slightly brighter on hover */
+}
+
+/* --- MOBILE OPTIMIZATION --- */
+
+@media (max-width: 768px) {
+
+    /* Tablet & Mobile */
+    .title {
+        font-size: 1.5rem;
+    }
+
+    .mesoSection {
+        margin-bottom: 3rem;
+    }
+
+    .mesoNumber {
+        font-size: 1.25rem;
+    }
+
+    .mesoMonth {
+        font-size: 0.95rem;
+    }
+
+    /* Ensure 2 columns on tablet if space permits, but on small screens go 1 column */
+    .grid {
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 550px) {
+
+    /* Smartphone Portrait */
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    /* Force 1 column for clean stack on phone */
+    .grid {
+        grid-template-columns: 1fr;
+    }
+
+    .card {
+        padding: 1.25rem;
+    }
+
+    .fillBtn {
+        padding: 12px;
+        /* Larger touch target */
+        font-size: 1rem;
+    }
 }

@@ -83,13 +83,25 @@ const WorkoutsPage = () => {
                 </div>
             </header>
 
-            {sortedMesos.map(meso => {
+            {sortedMesos.map((meso, index) => {
                 // Sort weeks ascending within meso
                 const mesoWorkouts = groupedWorkouts[meso].sort((a, b) => (a.meta?.week || 0) - (b.meta?.week || 0));
 
+                // Get Month Name from the first workout (or planned date)
+                const firstWorkoutDate = mesoWorkouts[0]?.date ? new Date(mesoWorkouts[0].date) : new Date();
+                const monthName = firstWorkoutDate.toLocaleString('pt-BR', { month: 'long' });
+                const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+
                 return (
                     <div key={meso} className={styles.mesoSection}>
-                        <h2 className={styles.mesoTitle}>Mesociclo #{meso}</h2>
+                        {/* Visual Divider (except for the first one) */}
+                        {index > 0 && <div className={styles.mesoDivider}></div>}
+
+                        <h2 className={styles.mesoTitle}>
+                            <span className={styles.mesoNumber}>Mesociclo {meso}</span>
+                            <span className={styles.mesoMonth}>{capitalizedMonth}</span>
+                        </h2>
+
                         <div className={styles.grid}>
                             {mesoWorkouts.map(w => {
                                 const isPlanned = w.status === 'planned';

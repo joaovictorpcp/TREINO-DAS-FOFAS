@@ -297,6 +297,60 @@ export const WorkoutProvider = ({ children }) => {
     return newWorkouts.length;
   };
 
+  const duplicateMesocycleToNext = (studentId, sourceMeso) => {
+    // 1. Get Source Workouts
+    const sourceWorkouts = workouts.filter(w =>
+      w.studentId === studentId &&
+      (w.meta?.mesocycle || 1) === sourceMeso
+    );
+
+    if (sourceWorkouts.length === 0) {
+      alert("Nenhum treino encontrado neste mesociclo.");
+      return;
+    }
+
+    // 2. New Meso Number
+    const latestMeso = workouts.filter(w => w.studentId === studentId).length > 0
+      ? Math.max(...workouts.filter(w => w.studentId === studentId).map(w => w.meta?.mesocycle || 0))
+      : 0;
+    const newMesoNum = latestMeso + 1;
+
+    // 3. Clone Logic (Assuming 4 weeks duration for previous, simply add 4 weeks to date)
+    // Or simpler: Just create "Plan" for next meso, keeping relative days same but 4 weeks later.
+    const newWorkouts = sourceWorkouts.map(source => {
+      const sourceDate = new Date(source.date);
+      const newDate = new Date(sourceDate);
+      newDate.setDate(sourceDate.getDate() + 28); // +4 Weeks
+
+      // Clone Exercises (Reset data)
+      const clonedExercises = source.exercises.map(ex => ({
+        ...ex,
+        id: crypto.randomUUID(),
+        load: '',
+        rpe: '',
+        rir: '',
+        vtt: 0,
+        suggestProgression: false
+      }));
+
+      return {
+        ...source,
+        id: crypto.randomUUID(),
+        date: newDate.toISOString(),
+        status: 'planned',
+        meta: {
+          ...source.meta,
+          mesocycle: newMesoNum
+        },
+        exercises: clonedExercises
+      };
+    });
+
+    setWorkouts(prev => [...newWorkouts, ...prev]);
+    alert(`Mesociclo #${newMesoNum} criado com sucesso! (${newWorkouts.length} treinos duplicados).`);
+    return newMesoNum;
+  };
+
   return (
     <WorkoutContext.Provider value={{
       workouts,
@@ -310,7 +364,8 @@ export const WorkoutProvider = ({ children }) => {
       createMesocycle,
       getExerciseHistory,
       getRecentAverageVolume,
-      importMesocycle
+      importMesocycle,
+      duplicateMesocycleToNext
     }}>
       {children}
     </WorkoutContext.Provider>
