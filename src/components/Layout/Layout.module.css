@@ -5,8 +5,8 @@
 }
 
 .header {
-    height: 64px;
-    border-bottom: 1px solid var(--border-subtle);
+    height: 72px;
+    /* Slightly taller for breathing room */
     background: var(--bg-secondary);
     display: flex;
     align-items: center;
@@ -14,7 +14,9 @@
     position: sticky;
     top: 0;
     z-index: 50;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+    /* Soft shadow instead of border */
+    box-shadow: var(--shadow-float);
+    border-bottom: none;
 }
 
 .logoAndNav {
@@ -30,43 +32,53 @@
     display: flex;
     align-items: center;
     gap: var(--space-sm);
+    font-family: var(--font-display);
     font-weight: 700;
-    font-size: 1.25rem;
+    font-size: 1.4rem;
     color: var(--text-primary);
-    letter-spacing: -0.025em;
+    letter-spacing: -0.02em;
 }
 
 .logoIcon {
     color: var(--accent-primary);
+    stroke-width: 2.5px;
+    /* Thicker, bolder icon */
 }
 
 .nav {
     display: flex;
-    gap: var(--space-lg);
+    gap: var(--space-md);
+    background: var(--bg-primary);
+    /* Pill background container */
+    padding: 6px;
+    border-radius: var(--radius-pill);
 }
 
 .navLink {
     color: var(--text-secondary);
     text-decoration: none;
-    font-weight: 500;
-    transition: all 0.2s;
-    padding: 0.5rem 1rem;
-    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-family: var(--font-main);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 0.6rem 1.2rem;
+    border-radius: var(--radius-pill);
+    font-size: 0.9rem;
 }
 
 .navLink:hover {
-    background: var(--bg-primary);
-    color: var(--text-primary);
+    color: var(--accent-primary);
+    background: rgba(255, 111, 97, 0.05);
 }
 
 .navLink.active {
-    color: var(--accent-primary);
-    background: rgba(167, 199, 231, 0.1);
+    color: var(--text-on-primary);
+    background: var(--accent-primary);
+    box-shadow: 0 4px 12px rgba(255, 111, 97, 0.3);
 }
 
 .main {
     flex: 1;
-    padding-bottom: 80px;
+    padding-bottom: 90px;
 }
 
 .mobileNav {
@@ -75,32 +87,38 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: 70px;
+    height: 80px;
     background: var(--bg-secondary);
-    border-top: 1px solid var(--border-subtle);
+    /* Floating effect for mobile nav */
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.05);
+    border-top: none;
+    border-radius: 24px 24px 0 0;
     justify-content: space-around;
     align-items: center;
     z-index: 50;
-    padding-bottom: env(safe-area-inset-bottom);
-    box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.02);
+    padding-bottom: 10px;
+    /* Safe area handled by padding */
 }
 
 .mobileNavItem {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    color: var(--text-muted);
+    gap: 6px;
+    color: var(--text-light);
     text-decoration: none;
     font-size: 0.75rem;
     font-weight: 500;
     padding: 0.5rem;
-    border-radius: var(--radius-md);
+    border-radius: 16px;
+    width: 64px;
+    transition: all 0.2s;
 }
 
 .mobileNavItem.active {
     color: var(--accent-primary);
-    background: rgba(167, 199, 231, 0.1);
+    background: rgba(255, 111, 97, 0.1);
+    transform: translateY(-4px);
 }
 
 @media (max-width: 768px) {
