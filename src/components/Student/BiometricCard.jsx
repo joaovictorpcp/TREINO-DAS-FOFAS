@@ -26,8 +26,10 @@ const BiometricCard = () => {
     useEffect(() => {
         if (student) {
             setHeight(student.height || '');
-            setBirthDate(student.birth_date || '');
-            calculateAge(student.birth_date);
+            // Handle both camelCase (new) and snake_case (legacy)
+            const dob = student.birthDate || student.birth_date || '';
+            setBirthDate(dob);
+            calculateAge(dob);
             // No need to set metrics state here anymore
         }
     }, [student]);
@@ -37,8 +39,8 @@ const BiometricCard = () => {
             setAge(null);
             return;
         }
-        const birthDate = new Date(dob);
-        const difference = Date.now() - birthDate.getTime();
+        const birthDateObj = new Date(dob);
+        const difference = Date.now() - birthDateObj.getTime();
         const ageDate = new Date(difference);
         setAge(Math.abs(ageDate.getUTCFullYear() - 1970));
     };
@@ -47,7 +49,7 @@ const BiometricCard = () => {
         if (!selectedStudentId) return;
         updateStudent(selectedStudentId, {
             height: parseFloat(height),
-            birth_date: birthDate
+            birthDate: birthDate // Save as camelCase
         });
         calculateAge(birthDate);
     };

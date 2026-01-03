@@ -65,14 +65,22 @@ export const StudentProvider = ({ children }) => {
         }
     }, [selectedStudentId]);
 
-    const addStudent = (name, goal) => {
+    const addStudent = (name, goal, profileData = {}) => {
         const newStudent = {
             id: crypto.randomUUID(),
             created_at: new Date().toISOString(),
             name,
-            goal
+            goal,
+            ...profileData // birthDate, height, weight
         };
+
         setStudents(prev => [...prev, newStudent]);
+
+        // If weight provided, log it as first metric
+        if (profileData.weight) {
+            addBodyMetric(newStudent.id, profileData.weight, new Date().toISOString().split('T')[0]);
+        }
+
         // Auto select if it's the first one
         if (students.length === 0) {
             setSelectedStudentId(newStudent.id);
@@ -136,6 +144,32 @@ export const StudentProvider = ({ children }) => {
         }
     };
 
+    const updateBodyMetric = (id, weight, date) => {
+        setBodyMetrics(prev => {
+            const updated = prev.map(m => {
+                if (m.id === id) {
+                    return { ...m, weight: parseFloat(weight), date };
+                }
+                return m;
+            });
+
+            // Update student cache if necessary
+            // We need to find the studentId to check if this update affects the 'latest' weight
+            const metric = prev.find(m => m.id === id);
+            if (metric) {
+                // Get all metrics for this student from the NEW updated list
+                const studentMetrics = updated
+                    .filter(m => m.studentId === metric.studentId)
+                    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                const latest = studentMetrics.length > 0 ? studentMetrics[studentMetrics.length - 1] : null;
+                updateStudent(metric.studentId, { weight: latest ? latest.weight : null });
+            }
+
+            return updated;
+        });
+    };
+
     return (
         <StudentContext.Provider value={{
             students,
@@ -147,7 +181,10 @@ export const StudentProvider = ({ children }) => {
             bodyMetrics,
             addBodyMetric,
             getBodyMetrics,
-            deleteBodyMetric
+            addBodyMetric,
+            getBodyMetrics,
+            deleteBodyMetric,
+            updateBodyMetric
         }}>
             {children}
         </StudentContext.Provider>

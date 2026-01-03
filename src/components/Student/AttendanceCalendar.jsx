@@ -4,7 +4,7 @@ import { useStudent } from '../../context/StudentContext';
 import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 
 const AttendanceCalendar = ({ viewMode = 'simple', onDayClick }) => {
-    const { workouts } = useWorkout();
+    const { workouts, updateWorkout } = useWorkout(); // Destructure updateWorkout
     const { selectedStudentId } = useStudent();
 
     // State for current month view
@@ -50,30 +50,17 @@ const AttendanceCalendar = ({ viewMode = 'simple', onDayClick }) => {
         // Add actual days
         for (let i = 1; i <= totalDays; i++) {
             const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), i);
-            // Find ALL workouts for this day (for heatmap)
-            const dayWorkouts = monthlyWorkouts.filter(w => new Date(w.date).getDate() === i && w.status === 'completed');
-
-            // For simple mode (legacy logic)
-            const workout = monthlyWorkouts.find(w => new Date(w.date).getDate() === i);
-            const isToday = new Date().toDateString() === date.toDateString();
-            const isPast = date < new Date() && !isToday;
-
-            let status = 'rest';
-            let summary = '';
-
-            if (workout) {
-                status = workout.status === 'completed' ? 'trained' : (isPast ? 'missed' : 'planned');
-                const exercises = workout.exercises?.slice(0, 3).map(e => e.name).join(', ') || 'Sem exercícios';
-                summary = `${exercises}${workout.exercises?.length > 3 ? '...' : ''}`;
-            }
+            // Find ALL workouts for this day
+            const dayWorkouts = monthlyWorkouts.filter(w => {
+                const wDate = new Date(w.date);
+                return wDate.getDate() === i;
+            });
 
             days.push({
                 type: 'day',
                 day: i,
-                status,
                 date,
-                summary,
-                workouts: dayWorkouts // Array of completed workouts for dots
+                workouts: dayWorkouts
             });
         }
 
@@ -137,69 +124,112 @@ const AttendanceCalendar = ({ viewMode = 'simple', onDayClick }) => {
                         ))}
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
-                        {monthData.map((day, idx) => (
-                            <div
-                                key={day.date ? day.date.toString() : `pad-${idx}`}
-                                title={day.summary || undefined}
-                                style={{
-                                    aspectRatio: '1',
-                                    borderRadius: '8px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '0.9rem',
-                                    color: day.status === 'rest' ? '#64748B' : '#064e3b',
-                                    background: getStatusColor(day.status),
-                                    border: `1px solid ${getStatusBorder(day.status)}`,
-                                    position: 'relative',
-                                    cursor: (day.workouts && day.workouts.length > 0) || day.status === 'trained' ? 'pointer' : 'default',
-                                    flexDirection: 'column',
-                                    gap: '2px'
-                                }}
-                                onClick={() => {
-                                    // Prefer query for completed workout first
-                                    const completed = day.workouts && day.workouts.length > 0 ? day.workouts[0] : null;
-                                    // Fallback to the single 'workout' found in loop (for simple mode compat)
-                                    // We need to pass the ID back up
-                                    if (completed) {
-                                        onDayClick && onDayClick(completed.id);
-                                    } else if (day.status === 'trained') {
-                                        // Try to find it from monthData closure if possible, or simpler:
-                                        // Re-find it or rely on what's passed.
-                                        // Actually `day` object in map doesn't have the single workout ID directly in `day.workouts` if logic differs.
-                                        // Let's ensure day.workouts is populated for 'trained' status in the useMemo above?
-                                        // Line 76: workouts: dayWorkouts. Yes it is.
-                                        if (day.workouts && day.workouts[0]) {
-                                            onDayClick && onDayClick(day.workouts[0].id);
-                                        }
-                                    }
-                                }}
-                            >
-                                {day.day}
+                        {monthData.map((day, idx) => {
+                            if (day.type === 'padding') {
+                                return <div key={`pad-${idx}`} style={{ minHeight: '80px' }} />;
+                            }
 
-                                {viewMode === 'heatmap' ? (
-                                    <div style={{ display: 'flex', gap: '2px', position: 'absolute', bottom: '4px' }}>
-                                        {day.workouts && day.workouts.map(w => (
-                                            <div
-                                                key={w.id}
-                                                style={{
-                                                    width: '6px',
-                                                    height: '6px',
-                                                    borderRadius: '50%',
-                                                    background: getCategoryColor(w.category || 'A')
-                                                }}
-                                            />
-                                        ))}
+                            const isToday = new Date().toDateString() === day.date.toDateString();
+
+                            return (
+                                <div
+                                    key={day.date.toString()}
+                                    onDragOver={(e) => {
+                                        e.preventDefault();
+                                        e.dataTransfer.dropEffect = 'move';
+                                    }}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        const workoutId = e.dataTransfer.getData('text/plain');
+                                        if (workoutId && updateWorkout) {
+                                            const newDate = new Date(day.date);
+                                            newDate.setHours(12, 0, 0, 0); // Noon to conform to simple date
+                                            updateWorkout(workoutId, { date: newDate.toISOString() });
+                                        }
+                                    }}
+                                    style={{
+                                        minHeight: '100px',
+                                        background: isToday ? '#fffbeb' : '#f8fafc', // Highlight today
+                                        border: isToday ? '2px solid #fcd34d' : '1px solid #e2e8f0',
+                                        borderRadius: '8px',
+                                        padding: '4px',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '4px',
+                                        position: 'relative'
+                                    }}
+                                >
+                                    <span style={{
+                                        fontSize: '0.8rem',
+                                        fontWeight: 700,
+                                        color: isToday ? '#b45309' : '#64748B',
+                                        marginBottom: '2px',
+                                        display: 'block',
+                                        textAlign: 'right'
+                                    }}>
+                                        {day.day}
+                                    </span>
+
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                                        {day.workouts.map(w => {
+                                            const isDone = w.status === 'completed';
+                                            const wDate = new Date(w.date);
+                                            const isPast = wDate < new Date() && !isToday && !isDone;
+
+                                            // Dynamic Styles
+                                            let bg = '#e0f2fe'; // Blue-100 (Planned)
+                                            let color = '#1e40af'; // Blue-800
+                                            let border = '1px solid #bfdbfe';
+
+                                            if (isDone) {
+                                                bg = '#dcfce7'; // Green-100
+                                                color = '#166534'; // Green-800
+                                                border = '1px solid #bbf7d0';
+                                            } else if (isPast) {
+                                                bg = '#fef2f2'; // Red-50
+                                                color = '#991b1b'; // Red-800
+                                                border = '1px solid #fecaca';
+                                            }
+
+                                            return (
+                                                <div
+                                                    key={w.id}
+                                                    draggable={true}
+                                                    onDragStart={(e) => {
+                                                        e.dataTransfer.setData('text/plain', w.id);
+                                                        e.dataTransfer.effectAllowed = 'move';
+                                                    }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onDayClick && onDayClick(w.id);
+                                                    }}
+                                                    title={w.category ? `Treino ${w.category}` : 'Treino Personalizado'}
+                                                    style={{
+                                                        background: bg,
+                                                        color: color,
+                                                        border: border,
+                                                        borderRadius: '4px',
+                                                        padding: '2px 4px',
+                                                        fontSize: '0.7rem',
+                                                        fontWeight: 600,
+                                                        cursor: 'grab',
+                                                        whiteSpace: 'nowrap',
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '4px'
+                                                    }}
+                                                >
+                                                    {isDone && <Check size={10} strokeWidth={3} />}
+                                                    {w.category ? `Treino ${w.category}` : (w.name || 'Treino')}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
-                                ) : (
-                                    day.status === 'trained' && (
-                                        <div style={{ position: 'absolute', bottom: '2px', right: '2px' }}>
-                                            <Check size={10} color="#15803d" strokeWidth={3} />
-                                        </div>
-                                    )
-                                )}
-                            </div>
-                        ))}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
 

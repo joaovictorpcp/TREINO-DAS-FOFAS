@@ -1,0 +1,88 @@
+.container {
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.header {
+    margin-bottom: 2rem;
+}
+
+.title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.subtitle {
+    color: #64748B;
+}
+
+/* Glass Panel Reuse or re-implement */
+.glassPanel {
+    background: #fff;
+    border-radius: 24px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+/* CONFIG STEP GRIDS */
+.configGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+/* ADD EXERCISE FORM GRID */
+.addExerciseForm {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr auto;
+    gap: 10px;
+    align-items: end;
+}
+
+/* MOBILE ADJUSTMENTS */
+@media (max-width: 600px) {
+    .container {
+        padding: 1rem;
+    }
+
+    .configGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .addExerciseForm {
+        grid-template-columns: 1fr 1fr;
+        /* Name full width, others split? No, let's do explicit areas */
+        grid-template-areas:
+            "name name"
+            "sets reps"
+            "btn btn";
+    }
+
+}
+
+/* Helper classes to map to grid areas if needed, 
+   but simplistic approach: 
+   On mobile, let's just stack them differently using nth-child if we can, 
+   or just use flex wrap. 
+   Actually, grid-template-columns: 1fr 1fr is okay if we span the Name row.
+*/
+
+@media (max-width: 600px) {
+    .addExerciseForm {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    /* Target the inputs wrapper divs based on order */
+    .addExerciseForm>div:nth-child(1) {
+        /* Name */
+        grid-column: 1 / -1;
+    }
+
+    .addExerciseForm>button {
+        /* Add Button */
+        grid-column: 1 / -1;
+        width: 100% !important;
+    }
+}

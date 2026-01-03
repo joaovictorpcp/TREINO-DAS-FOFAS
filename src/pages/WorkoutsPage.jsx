@@ -42,9 +42,8 @@ const WorkoutsPage = () => {
         : workouts;
 
     const handleClearAll = () => {
-        if (window.confirm("Tem certeza que deseja apagar TODOS os treinos?")) {
-            localStorage.removeItem('workouts');
-            window.location.reload();
+        if (window.confirm("Tem certeza que deseja apagar TODOS os treinos exibidos?")) {
+            clearWorkouts(selectedStudentId);
         }
     };
 
@@ -163,7 +162,7 @@ const WorkoutsPage = () => {
             {workouts.length === 0 && (
                 <div style={{ textAlign: 'center', marginTop: '4rem', color: '#94a3b8' }}>
                     <p>Nenhum treino registrado.</p>
-                    <button onClick={() => navigate('/new-program')} className="btn btn-primary" style={{ marginTop: '1rem' }}>
+                    <button onClick={() => navigate('/mesocycle-builder')} className="btn btn-primary" style={{ marginTop: '1rem' }}>
                         Começar Novo Ciclo
                     </button>
                 </div>

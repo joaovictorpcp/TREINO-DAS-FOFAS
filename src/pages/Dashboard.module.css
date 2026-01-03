@@ -1,107 +1,72 @@
+.container {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
 .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: var(--space-md);
-    margin-bottom: var(--space-xl);
+    margin-bottom: 2rem;
 }
 
 .title {
+    font-size: 2rem;
+    font-weight: 800;
     color: var(--text-primary);
     margin: 0;
-    font-size: 1.75rem;
+    letter-spacing: -0.03em;
 }
 
 .subtitle {
     color: var(--text-secondary);
-    margin-top: 4px;
+    font-size: 0.95rem;
 }
 
-.alertBanner {
-    background-color: #FFF5F5;
-    color: var(--danger);
-    padding: 0.75rem 1rem;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--alert-high-stress);
+/* HERO CARD RESPONSIVE */
+.heroCard {
+    background: #fff;
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    border: 1px solid #f1f5f9;
     display: flex;
+    flex-direction: row;
     align-items: center;
-    gap: var(--space-sm);
-    font-weight: 500;
-    font-size: 0.9rem;
-    max-width: 400px;
+    justify-content: space-between;
+    gap: 24px;
+    position: relative;
+    overflow: hidden;
 }
 
-.statsGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: var(--space-md);
-    margin-bottom: var(--space-xl);
+.heroContent {
+    flex: 1;
+    z-index: 2;
 }
 
-.statCard {
-    padding: var(--space-lg);
-    display: flex;
-    align-items: center;
-    gap: var(--space-md);
-}
-
-.statIcon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.statLabel {
-    margin: 0;
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.statValue {
-    margin: 4px 0 0 0;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--text-primary);
-}
-
-/* Charts */
-.chartsGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: var(--space-lg);
-    margin-bottom: var(--space-xl);
-}
-
-.chartContainer {
-    padding: var(--space-lg);
-    display: flex;
-    flex-direction: column;
-}
-
-.chartHeader {
-    margin-bottom: var(--space-lg);
-}
-
-.chartHeader h3 {
-    margin: 0;
-    font-size: 1.1rem;
-    color: var(--text-primary);
-}
-
-.chartHeader p {
-    margin: 4px 0 0 0;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
+.heroActions {
+    z-index: 2;
 }
 
 @media (max-width: 768px) {
-    .chartsGrid {
-        grid-template-columns: 1fr;
+    .container {
+        padding: 1rem;
+    }
+
+    .title {
+        font-size: 1.5rem;
+    }
+
+    .heroCard {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .heroActions {
+        width: 100%;
+    }
+
+    .heroActions button {
+        width: 100%;
+        justify-content: center;
     }
 }

@@ -6,10 +6,10 @@ import { Plus, UserCircle, Trash2, Dumbbell } from 'lucide-react';
 
 const StudentGateway = () => {
     const { students, setSelectedStudentId, addStudent, deleteStudent } = useStudent();
-    const { workouts } = useWorkout();
+    const { workouts, clearWorkouts } = useWorkout();
     const navigate = useNavigate();
     const [isCreating, setIsCreating] = useState(false);
-    const [newName, setNewName] = useState('');
+    const [data, setData] = useState({ name: '', birthDate: '', height: '', weight: '' });
 
     // Clear selection on mount (when returning to Home)
     React.useEffect(() => {
@@ -25,14 +25,24 @@ const StudentGateway = () => {
         e.stopPropagation();
         if (window.confirm(`Tem certeza que deseja remover ${name}? Todo o histórico será perdido.`)) {
             deleteStudent(id);
+            clearWorkouts(id);
         }
     };
 
     const handleCreate = (e) => {
         e.preventDefault();
-        if (!newName.trim()) return;
-        addStudent(newName, "Aluna");
-        setNewName('');
+        if (!data.name.trim()) return;
+
+        // Clean up empty numbers
+        const profile = {
+            birthDate: data.birthDate || null,
+            height: data.height ? parseFloat(data.height) : null,
+            weight: data.weight ? parseFloat(data.weight) : null
+        };
+
+        addStudent(data.name, "Aluna", profile);
+
+        setData({ name: '', birthDate: '', height: '', weight: '' });
         setIsCreating(false);
     };
 
@@ -218,20 +228,64 @@ const StudentGateway = () => {
                     zIndex: 100
                 }} onClick={() => setIsCreating(false)}>
                     <div style={{
-                        background: '#fff', padding: '2rem', borderRadius: '16px', width: '320px',
+                        background: '#fff', padding: '2rem', borderRadius: '16px', width: '360px', /* Slightly wider */
                         boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
                     }} onClick={e => e.stopPropagation()}>
                         <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1.5rem' }}>Adicionar Aluna</h2>
                         <form onSubmit={handleCreate}>
-                            <input
-                                autoFocus
-                                type="text"
-                                placeholder="Nome da aluna"
-                                className="input"
-                                style={{ width: '100%', marginBottom: '1rem' }}
-                                value={newName}
-                                onChange={e => setNewName(e.target.value)}
-                            />
+                            {/* Name */}
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748B', marginBottom: '4px' }}>Nome</label>
+                                <input
+                                    autoFocus
+                                    type="text"
+                                    placeholder="Nome da aluna"
+                                    className="input"
+                                    style={{ width: '100%' }}
+                                    value={data.name}
+                                    onChange={e => setData(prev => ({ ...prev, name: e.target.value }))}
+                                />
+                            </div>
+
+                            {/* DOB */}
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748B', marginBottom: '4px' }}>Data de Nascimento</label>
+                                <input
+                                    type="date"
+                                    className="input"
+                                    style={{ width: '100%' }}
+                                    value={data.birthDate}
+                                    onChange={e => setData(prev => ({ ...prev, birthDate: e.target.value }))}
+                                />
+                            </div>
+
+                            {/* Height & Weight Row */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '1.5rem' }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748B', marginBottom: '4px' }}>Altura (cm)</label>
+                                    <input
+                                        type="number"
+                                        placeholder="165"
+                                        className="input"
+                                        style={{ width: '100%' }}
+                                        value={data.height}
+                                        onChange={e => setData(prev => ({ ...prev, height: e.target.value }))}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748B', marginBottom: '4px' }}>Peso (kg)</label>
+                                    <input
+                                        type="number"
+                                        placeholder="60.5"
+                                        step="0.1"
+                                        className="input"
+                                        style={{ width: '100%' }}
+                                        value={data.weight}
+                                        onChange={e => setData(prev => ({ ...prev, weight: e.target.value }))}
+                                    />
+                                </div>
+                            </div>
+
                             <div style={{ display: 'flex', gap: '8px' }}>
                                 <button type="button" onClick={() => setIsCreating(false)} className="btn" style={{ flex: 1, color: '#64748B' }}>
                                     Cancelar

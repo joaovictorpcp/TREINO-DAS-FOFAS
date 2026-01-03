@@ -278,3 +278,95 @@
         display: block;
     }
 }
+
+/* Header Controls Alignment */
+.headerControls {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.controlGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.controlGroup label {
+    font-size: 0.8rem;
+    color: var(--slate-text-light);
+    font-weight: 500;
+}
+
+.typeSelector {
+    display: flex;
+    gap: 4px;
+    background: #f1f5f9;
+    padding: 2px;
+    border-radius: 8px;
+    height: 42px;
+    /* Match input height roughly */
+    align-items: center;
+}
+
+.typeBtn {
+    border: none;
+    padding: 6px 16px;
+    /* Wider click area */
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    background: transparent;
+    color: #94a3b8;
+    transition: all 0.2s;
+    height: 100%;
+}
+
+.activeType {
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Color logic for Types */
+.activeType:nth-child(1) {
+    color: #3b82f6;
+}
+
+/* A */
+.activeType:nth-child(2) {
+    color: #22c55e;
+}
+
+/* B */
+.activeType:nth-child(3) {
+    color: #f97316;
+}
+
+/* C */
+
+@media (max-width: 600px) {
+    .headerControls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        width: 100%;
+        gap: 1rem;
+    }
+
+    .controlGroup input,
+    .controlGroup select {
+        width: 100% !important;
+        /* Override inline styles if any */
+    }
+
+    /* Type selector spans full width */
+    .controlGroup:nth-child(2) {
+        grid-column: span 2;
+    }
+
+    .typeSelector {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+}

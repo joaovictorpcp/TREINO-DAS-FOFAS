@@ -3,7 +3,7 @@ import { useWorkout } from '../context/WorkoutContext';
 import { useStudent } from '../context/StudentContext';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, Save, ArrowRight, ArrowLeft } from 'lucide-react';
-import styles from './CreateWorkout.module.css'; // Reusing styles or create new
+import styles from './MesocycleBuilder.module.css';
 
 const MesocycleBuilder = () => {
     const { createMesocycle } = useWorkout();
@@ -25,6 +25,7 @@ const MesocycleBuilder = () => {
 
     // Exercise Input State
     const [newExercise, setNewExercise] = useState({ name: '', sets: '3', reps: '8-12' });
+    const [isIdentifying, setIsIdentifying] = useState(false);
 
     if (!selectedStudentId) {
         return <div className="p-8 text-center">Selecione um aluno primeiro.</div>;
@@ -58,19 +59,34 @@ const MesocycleBuilder = () => {
     };
 
     const handleGenerate = () => {
+        console.log("handleGenerate: Started");
+        console.log("Config:", config);
+        console.log("Base Workouts:", baseWorkouts);
+
         if (!config.name || baseWorkouts.some(w => w.exercises.length === 0)) {
+            console.warn("Validation failed: Missing name or empty workouts");
             alert('Preencha o nome do programa e adicione exercícios em todos os treinos.');
             return;
         }
 
-        if (window.confirm(`Gerar ${config.weeks} semanas de treino para ${students.find(s => s.id === selectedStudentId)?.name}?`)) {
+        const student = students.find(s => s.id === selectedStudentId);
+        const studentName = student?.name || "Aluno Desconhecido";
+        console.log("Student found:", studentName);
+
+        // Confirm is often annoying and blocks automation. Proceeding directly.
+        try {
             const resultMeso = createMesocycle({
                 ...config,
                 studentId: selectedStudentId,
                 baseWorkouts
             });
+            console.log("createMesocycle returned:", resultMeso);
             alert(`Programa criado com sucesso! Mesociclo #${resultMeso}`);
-            navigate('/dashboard');
+            alert(`Programa criado com sucesso! Mesociclo #${resultMeso}`);
+            navigate('/workouts');
+        } catch (error) {
+            console.error("Error creating mesocycle:", error);
+            alert("Erro ao criar programa. Verifique o console.");
         }
     };
 
@@ -120,10 +136,10 @@ const MesocycleBuilder = () => {
     };
 
     return (
-        <div className="page-container animate-fade-in" style={{ maxWidth: '800px', margin: '0 auto' }}>
-            <header style={{ marginBottom: '2rem' }}>
-                <h1 style={{ fontSize: '1.8rem', fontWeight: 700, color: '#1e293b' }}>Novo Programa</h1>
-                <p style={{ color: '#64748B' }}>Construtor de Mesociclo</p>
+        <div className={`page-container animate-fade-in ${styles.container}`}>
+            <header className={styles.header}>
+                <h1 className={styles.title}>Novo Programa</h1>
+                <p className={styles.subtitle}>Construtor de Mesociclo</p>
 
                 {/* Progress Steps */}
                 <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}>
@@ -155,7 +171,7 @@ const MesocycleBuilder = () => {
                                 />
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div className={styles.configGrid}>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Tempo (Semanas)</label>
                                     <input
@@ -192,6 +208,7 @@ const MesocycleBuilder = () => {
 
                             <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
                                 <button
+                                    type="button"
                                     onClick={() => setStep(2)}
                                     className="btn-primary"
                                     style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
@@ -207,7 +224,7 @@ const MesocycleBuilder = () => {
                     <div className="animate-fade-in">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                             <h2 style={{ fontSize: '1.2rem', fontWeight: 600 }}>Etapa 2: Semana Base</h2>
-                            <button onClick={() => setStep(1)} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <button type="button" onClick={() => setStep(1)} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 <ArrowLeft size={16} /> Voltar
                             </button>
                         </div>
@@ -247,9 +264,59 @@ const MesocycleBuilder = () => {
                             </button>
                         </div>
 
+                        {/* Weekday Selector for Active Tab */}
+                        <div style={{ marginBottom: '1rem', background: '#fff', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                            <label style={{ marginRight: '10px', fontWeight: 600, color: '#334155' }}>Agendar para:</label>
+                            <select
+                                value={baseWorkouts.find(w => w.id === activeTab)?.scheduledDay || ''}
+                                onChange={(e) => {
+                                    setBaseWorkouts(prev => prev.map(w => {
+                                        if (w.id === activeTab) {
+                                            return { ...w, scheduledDay: parseInt(e.target.value) };
+                                        }
+                                        return w;
+                                    }));
+                                }}
+                                style={{ padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                            >
+                                <option value="">Sem dia fixo (Manual)</option>
+                                <option value="1">Segunda-feira</option>
+                                <option value="2">Terça-feira</option>
+                                <option value="3">Quarta-feira</option>
+                                <option value="4">Quinta-feira</option>
+                                <option value="5">Sexta-feira</option>
+                                <option value="6">Sábado</option>
+                                <option value="0">Domingo</option>
+                            </select>
+                            <span style={{ fontSize: '0.8rem', color: '#64748B', marginLeft: '10px' }}>
+                                (Opcional: Define o dia da semana recorrente)
+                            </span>
+                        </div>
+
                         {/* Active Tab Content */}
                         <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '1.5rem', marginBottom: '1.5rem' }}>
-                            <h3 style={{ marginBottom: '1rem', color: '#334155' }}>Exercícios do {baseWorkouts.find(w => w.id === activeTab)?.name}</h3>
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#475569' }}>Nome do Treino (Opcional)</label>
+                                <input
+                                    type="text"
+                                    value={baseWorkouts.find(w => w.id === activeTab)?.name || ''}
+                                    onChange={(e) => {
+                                        setBaseWorkouts(prev => prev.map(w => {
+                                            if (w.id === activeTab) {
+                                                return { ...w, name: e.target.value };
+                                            }
+                                            return w;
+                                        }));
+                                    }}
+                                    placeholder={`Ex: Treino ${activeTab}, Perna, Superiores...`}
+                                    style={{
+                                        width: '100%', padding: '10px', borderRadius: '6px',
+                                        border: '1px solid #cbd5e1', fontSize: '1rem'
+                                    }}
+                                />
+                            </div>
+
+                            <h3 style={{ marginBottom: '1rem', color: '#334155' }}>Exercícios</h3>
 
                             {/* Exercise List */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
@@ -354,16 +421,52 @@ const MesocycleBuilder = () => {
                             </div>
 
                             {/* Add Exercise Form */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: '10px', alignItems: 'end' }}>
+                            <div className={styles.addExerciseForm}>
                                 <div>
                                     <label style={{ fontSize: '0.8rem', color: '#64748B' }}>Exercício</label>
-                                    <input
-                                        type="text"
-                                        value={newExercise.name}
-                                        onChange={e => setNewExercise({ ...newExercise, name: e.target.value })}
-                                        placeholder="Nome"
-                                        style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                                    />
+                                    <div style={{ position: 'relative' }}>
+                                        <input
+                                            type="text"
+                                            value={newExercise.name}
+                                            onChange={e => {
+                                                const val = e.target.value;
+                                                setNewExercise({ ...newExercise, name: val });
+
+                                                // Simple Debounce for AI
+                                                if (window.aiTimeout) clearTimeout(window.aiTimeout);
+                                                window.aiTimeout = setTimeout(async () => {
+                                                    if (val.length > 3) {
+                                                        setIsIdentifying(true); // Need state
+                                                        try {
+                                                            const { classifyExercise } = await import('../services/aiClassifier');
+                                                            const result = await classifyExercise(val);
+                                                            if (result) {
+                                                                setNewExercise(prev => ({
+                                                                    ...prev,
+                                                                    muscleGroup: result.muscleGroup,
+                                                                    category: result.category
+                                                                }));
+                                                            }
+                                                        } catch (err) {
+                                                            console.error(err);
+                                                        } finally {
+                                                            setIsIdentifying(false);
+                                                        }
+                                                    }
+                                                }, 1500);
+                                            }}
+                                            placeholder="Nome do exercício"
+                                            style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', paddingRight: '30px' }}
+                                        />
+                                        {isIdentifying && (
+                                            <div style={{
+                                                position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
+                                                width: '12px', height: '12px', borderRadius: '50%',
+                                                border: '2px solid #cbd5e1', borderTopColor: 'var(--accent-primary)',
+                                                animation: 'spin 1s linear infinite'
+                                            }} title="Identificando via IA..." />
+                                        )}
+                                    </div>
                                 </div>
                                 <div>
                                     <label style={{ fontSize: '0.8rem', color: '#64748B' }}>Séries</label>
@@ -388,7 +491,7 @@ const MesocycleBuilder = () => {
                                     style={{
                                         background: '#3b82f6', color: '#fff', border: 'none',
                                         padding: '8px', borderRadius: '6px', cursor: 'pointer',
-                                        height: '38px', width: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                        height: '38px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center'
                                     }}
                                 >
                                     <Plus size={20} />
@@ -399,6 +502,7 @@ const MesocycleBuilder = () => {
                         {/* Action Buttons */}
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
                             <button
+                                type="button"
                                 onClick={handleGenerate}
                                 className="btn-primary"
                                 style={{

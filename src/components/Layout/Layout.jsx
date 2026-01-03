@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, PlusCircle, Activity, Users, RefreshCw } from 'lucide-react';
+import { Home, PlusCircle, Activity, Users, RefreshCw, TrendingUp, Scale } from 'lucide-react';
 import clsx from 'clsx';
 import { useStudent } from '../../context/StudentContext';
 import styles from './Layout.module.css';
@@ -47,11 +47,25 @@ const Layout = ({ children }) => {
                             Treinos
                         </NavLink>
                         <NavLink
-                            to="/new-program"
+                            to="/mesocycle-builder"
                             onClick={handleNavClick}
                             className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)}
                         >
                             + Treinos
+                        </NavLink>
+                        <NavLink
+                            to="/performance"
+                            onClick={handleNavClick}
+                            className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)}
+                        >
+                            Performance
+                        </NavLink>
+                        <NavLink
+                            to="/weight"
+                            onClick={handleNavClick}
+                            className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)}
+                        >
+                            Peso
                         </NavLink>
                     </nav>
 
@@ -107,6 +121,22 @@ const Layout = ({ children }) => {
                     <span>Início</span>
                 </NavLink>
                 <NavLink
+                    to="/workouts"
+                    onClick={handleNavClick}
+                    className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}
+                >
+                    <Activity size={24} />
+                    <span>Treinos</span>
+                </NavLink>
+                <NavLink
+                    to="/mesocycle-builder"
+                    onClick={handleNavClick}
+                    className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}
+                >
+                    <PlusCircle size={24} />
+                    <span>Criar</span>
+                </NavLink>
+                <NavLink
                     to="/students"
                     onClick={handleNavClick}
                     className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}
@@ -115,12 +145,20 @@ const Layout = ({ children }) => {
                     <span>Alunos</span>
                 </NavLink>
                 <NavLink
-                    to="/new-program"
+                    to="/performance"
                     onClick={handleNavClick}
                     className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}
                 >
-                    <PlusCircle size={24} />
-                    <span>Treinos</span>
+                    <TrendingUp size={24} />
+                    <span>Perf.</span>
+                </NavLink>
+                <NavLink
+                    to="/weight"
+                    onClick={handleNavClick}
+                    className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}
+                >
+                    <Scale size={24} />
+                    <span>Peso</span>
                 </NavLink>
             </nav>
         </div>

@@ -36,11 +36,14 @@ const TrainingLog = () => {
     // Load Data if Editing
     useEffect(() => {
         if (id) {
+            console.log('CreateWorkout - Loading ID:', id);
             const workoutToEdit = getWorkoutById(id);
+            console.log('CreateWorkout - Found:', workoutToEdit);
             if (workoutToEdit) {
                 setIsEditing(true);
                 setMesocycle(workoutToEdit.meta?.mesocycle || 1);
                 setWeek(workoutToEdit.meta?.week || 1);
+                console.log('CreateWorkout - Setting Exercises:', workoutToEdit.exercises);
                 setExercises(workoutToEdit.exercises || []);
                 if (workoutToEdit.date) {
                     setWorkoutDate(new Date(workoutToEdit.date).toISOString().split('T')[0]);
@@ -51,102 +54,76 @@ const TrainingLog = () => {
         }
     }, [id, getWorkoutById]);
 
-    // Check for progression suggestion when name changes
-    const checkProgression = (name) => {
-        if (!name) return false;
-        const history = getExerciseHistory(name);
-        if (history.length >= 2) {
-            const last1 = parseFloat(history[0].rpe);
-            const last2 = parseFloat(history[1].rpe);
-            return (last1 <= 7 && last2 <= 7);
-        }
-        return false;
-    };
-
-    const updateExercise = (id, field, value) => {
-        setExercises(prev => prev.map(ex => {
-            if (ex.id === id) {
-                const updated = { ...ex, [field]: value };
-                // If name changes, re-check progression
-                if (field === 'name') {
-                    updated.suggestProgression = checkProgression(value);
-                }
-                return updated;
-            }
-            return ex;
-        }));
-    };
-
-    // Safety Check Effect
-    useEffect(() => {
-        const currentTotalVTT = exercises.reduce((acc, ex) => {
-            return acc + calculateVTT(ex.sets, ex.reps, ex.load);
-        }, 0);
-
-        const avgVol = getRecentAverageVolume(3);
-
-        // Only trigger if avgVol exists (not first workout) and spike is > 20%
-        if (avgVol > 0 && currentTotalVTT > avgVol * 1.2) {
-            setShowSafetyToast(true);
-        } else {
-            setShowSafetyToast(false);
-        }
-    }, [exercises]);
-
-    const addRow = () => {
-        setExercises([...exercises, { id: Date.now(), name: '', sets: '', reps: '', load: '', rpe: '', rir: '' }]);
-    };
-
-    const addSuperset = (index) => {
-        const parent = exercises[index];
-        // Generate a new superset ID if one doesn't exist
-        const ssid = parent.supersetId || crypto.randomUUID();
-
-        // Update parent if it didn't have one
-        const updatedParent = { ...parent, supersetId: ssid };
-
-        const newExercise = {
-            id: Date.now() + Math.random(),
-            name: '',
-            sets: parent.sets, // Copy sets usually
-            reps: '',
-            load: '',
-            rpe: '',
-            rir: '',
-            supersetId: ssid // Link it
-        };
-
-        const newExercises = [...exercises];
-        newExercises[index] = updatedParent;
-        newExercises.splice(index + 1, 0, newExercise); // Insert after
-        setExercises(newExercises);
-    };
-
-    const removeRow = (id) => {
-        setExercises(prev => {
-            const newList = prev.filter(ex => ex.id !== id);
-            // Cleanup: check if any superset groups are now orphans (only 1 item left)
-            // Optional: Remove supersetId if only 1 remains?
-            // Actually, keep it simple. If 1 remains, it's just a normal exercise to the user.
-            // But we might want to clean up the ID for visual reasons if we treat single supersetId items purely as normal.
-            return newList;
-        });
-    };
-
+    // --- Helpers & Handlers ---
     const calculateVTT = (sets, reps, load) => {
-        const s = parseFloat(sets) || 0;
-        const r = parseFloat(reps) || 0;
+        const s = parseInt(sets) || 0;
+        const r = parseInt(reps) || 0;
         const l = parseFloat(load) || 0;
         return s * r * l;
     };
 
     const isHighStress = (rpe, rir) => {
-        return parseFloat(rpe) === 10 && parseFloat(rir) === 0;
+        const rpeVal = parseFloat(rpe) || 0;
+        // If rir is empty string, treat as "safe"/high. If '0', it's high stress.
+        const rirVal = rir === '' || rir === null ? 5 : parseFloat(rir);
+        return rpeVal >= 9 || rirVal <= 1;
+    };
+
+    const updateExercise = (id, field, value) => {
+        setExercises(prev => prev.map(ex => {
+            if (ex.id === id) {
+                return { ...ex, [field]: value };
+            }
+            return ex;
+        }));
+    };
+
+    const addRow = () => {
+        setExercises(prev => [
+            ...prev,
+            { id: Date.now(), name: '', sets: '', reps: '', load: '', rpe: '', rir: '', suggestProgression: false }
+        ]);
+    };
+
+    const removeRow = (id) => {
+        setExercises(prev => {
+            if (prev.length <= 1) return prev; // Keep at least one maybe? Or allow empty. Let's allow empty but usually UI keeps one.
+            return prev.filter(ex => ex.id !== id);
+        });
+    };
+
+    const addSuperset = (index) => {
+        setExercises(prev => {
+            const newArr = [...prev];
+            const parent = newArr[index];
+            const ssid = parent.supersetId || crypto.randomUUID();
+
+            // Link Parent
+            newArr[index] = { ...parent, supersetId: ssid };
+
+            // Create Child
+            const child = {
+                id: Date.now() + Math.random(),
+                name: '',
+                sets: parent.sets,
+                reps: parent.reps,
+                load: '',
+                rpe: '',
+                rir: '',
+                suggestProgression: false,
+                supersetId: ssid
+            };
+
+            newArr.splice(index + 1, 0, child);
+            return newArr;
+        });
     };
 
     const handleSubmit = () => {
         const validExercises = exercises.filter(ex => ex.name.trim() !== '');
         if (validExercises.length === 0) return;
+
+        console.log('CreateWorkout - Submitting Exercises:', validExercises);
 
         const workoutData = {
             type: 'log',
@@ -164,7 +141,7 @@ const TrainingLog = () => {
 
         if (isEditing && id) {
             updateWorkout(id, workoutData);
-            navigate('/workouts'); // Go back to list
+            navigate('/dashboard'); // Go back to calendar
         } else {
             addWorkout(workoutData);
 
@@ -175,7 +152,7 @@ const TrainingLog = () => {
                 // We can pass the workoutData directly to generate.
                 generateFullMesocycle(workoutData);
             }
-            navigate('/workouts');
+            navigate('/dashboard');
         }
     };
 
@@ -190,44 +167,28 @@ const TrainingLog = () => {
                     </p>
                 </div>
 
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <div className={styles.headerControls}>
                     {/* Date Picker */}
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Data</label>
+                    <div className={styles.controlGroup}>
+                        <label>Data</label>
                         <input
                             type="date"
                             className="input"
                             value={workoutDate}
                             onChange={(e) => setWorkoutDate(e.target.value)}
-                            style={{ width: '130px' }}
                         />
                     </div>
 
-
-
                     {/* Category Selector */}
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Tipo</label>
-                        <div style={{ display: 'flex', gap: '4px', background: '#f1f5f9', padding: '2px', borderRadius: '8px' }}>
+                    <div className={styles.controlGroup}>
+                        <label>Tipo</label>
+                        <div className={styles.typeSelector}>
                             {['A', 'B', 'C'].map((cat) => (
                                 <button
                                     key={cat}
                                     type="button"
                                     onClick={() => setCategory(cat)}
-                                    style={{
-                                        border: 'none',
-                                        padding: '6px 12px',
-                                        borderRadius: '6px',
-                                        fontSize: '0.8rem',
-                                        fontWeight: 700,
-                                        cursor: 'pointer',
-                                        background: category === cat ? '#fff' : 'transparent',
-                                        boxShadow: category === cat ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
-                                        color: category === cat
-                                            ? (cat === 'A' ? '#3b82f6' : cat === 'B' ? '#22c55e' : '#f97316')
-                                            : '#94a3b8',
-                                        transition: 'all 0.2s'
-                                    }}
+                                    className={clsx(styles.typeBtn, category === cat && styles.activeType)}
                                 >
                                     {cat}
                                 </button>
@@ -236,26 +197,24 @@ const TrainingLog = () => {
                     </div>
 
                     {/* Cycle Selectors - Read Only if Editing */}
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Mesociclo</label>
+                    <div className={styles.controlGroup}>
+                        <label>Meso</label>
                         <select
                             className="input"
                             value={mesocycle}
                             onChange={(e) => setMesocycle(Number(e.target.value))}
-                            style={{ width: '80px' }}
                             disabled={isEditing}
                         >
                             {[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n}</option>)}
                         </select>
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Semana</label>
+                    <div className={styles.controlGroup}>
+                        <label>Semana</label>
                         <select
                             className="input"
                             value={week}
                             onChange={(e) => setWeek(Number(e.target.value))}
-                            style={{ width: '80px' }}
                             disabled={isEditing}
                         >
                             {[1, 2, 3, 4].map(n => <option key={n} value={n}>{n}</option>)}
@@ -264,8 +223,9 @@ const TrainingLog = () => {
 
                     <button
                         className="btn btn-secondary"
-                        style={{ background: '#fff', border: '1px solid var(--border-subtle)', height: '42px', marginTop: 'auto' }}
                         onClick={() => setIsGuideOpen(true)}
+                        title="Guia"
+                        style={{ height: '42px', marginTop: 'auto', padding: '0 12px' }}
                     >
                         <BookOpen size={18} />
                     </button>
@@ -420,7 +380,10 @@ const TrainingLog = () => {
                                 <div className={styles.colNum}>
                                     <span className={styles.mobileLabel}>Reps</span>
                                     <input
-                                        type="number" className="input" placeholder="0"
+                                        type="text"
+                                        inputMode="numeric"
+                                        className="input"
+                                        placeholder="ex: 8-12"
                                         value={ex.reps} onChange={(e) => updateExercise(ex.id, 'reps', e.target.value)}
                                     />
                                 </div>
