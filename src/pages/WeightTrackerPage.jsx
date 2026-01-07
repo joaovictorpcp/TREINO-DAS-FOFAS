@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useStudent } from '../context/StudentContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Scale, TrendingUp, TrendingDown, Minus, Calendar, PlusCircle, Trash2, Edit2, X } from 'lucide-react';
+import { Scale, TrendingUp, TrendingDown, Minus, Calendar, PlusCircle, Trash2, Edit2, X, Activity, Ruler } from 'lucide-react';
 
 import styles from './WeightTrackerPage.module.css';
 
@@ -9,7 +9,36 @@ const WeightTrackerPage = () => {
     const { selectedStudentId, students, bodyMetrics, addBodyMetric, deleteBodyMetric, updateBodyMetric } = useStudent();
     const [weightInput, setWeightInput] = useState('');
     const [dateInput, setDateInput] = useState(new Date().toISOString().split('T')[0]);
+
+    // Pollock 7 Skinfolds State
+    const [skinfolds, setSkinfolds] = useState({
+        chest: '',           // Peitoral
+        axilla: '',          // Axilar Média
+        triceps: '',         // Tríceps
+        subscapular: '',     // Subescapular
+        abdomen: '',         // Abdominal
+        suprailiac: '',      // Supra-ilíaca
+        thigh: ''            // Coxa
+    });
+
+    // Perimetry (Circumferences) State
+    const [circumferences, setCircumferences] = useState({
+        neck: '',
+        shoulder: '',
+        chest: '',
+        arm: '',
+        forearm: '',
+        waist: '',
+        abdomen: '',
+        hips: '',
+        thigh: '',
+        calf: ''
+    });
+
     const [editingId, setEditingId] = useState(null);
+
+    const [activeChart, setActiveChart] = useState('weight'); // 'weight', 'bodyFat', 'perimetry'
+    const [selectedPerimetry, setSelectedPerimetry] = useState('waist'); // Default metric for perimetry chart
 
     const currentStudent = students.find(s => s.id === selectedStudentId);
 
@@ -29,31 +58,116 @@ const WeightTrackerPage = () => {
         ? (latestMetric.weight - startMetric.weight).toFixed(1)
         : '0.0';
 
+    // --- POLLOCK 7 CALCULATION ---
+    const calculateBodyDensityAndFat = (folds, age, gender) => {
+        // Sum of 7 folds
+        const sum7 =
+            (parseFloat(folds.chest) || 0) +
+            (parseFloat(folds.axilla) || 0) +
+            (parseFloat(folds.triceps) || 0) +
+            (parseFloat(folds.subscapular) || 0) +
+            (parseFloat(folds.abdomen) || 0) +
+            (parseFloat(folds.suprailiac) || 0) +
+            (parseFloat(folds.thigh) || 0);
+
+        if (sum7 === 0) return { density: 0, fat: 0 };
+
+        let density = 0;
+
+        if (gender === 'female') {
+            // Jackson & Pollock (Women)
+            density = 1.0970 - (0.00046971 * sum7) + (0.00000056 * (sum7 ** 2)) - (0.00012828 * age);
+        } else {
+            // Jackson & Pollock (Men)
+            density = 1.11200000 - (0.00043499 * sum7) + (0.00000055 * (sum7 ** 2)) - (0.00028826 * age);
+        }
+
+        // Siri Equation
+        const fatPercentage = (495 / density) - 450;
+
+        return {
+            density: density,
+            fat: parseFloat(fatPercentage.toFixed(2))
+        };
+    };
+
+    // Calculate age helper
+    const getAge = (birthDateString) => {
+        if (!birthDateString) return 25; // Default fallback
+        const today = new Date();
+        const birthDate = new Date(birthDateString);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        return age;
+    };
+
+
     const handleAddWeight = (e) => {
         e.preventDefault();
         if (!weightInput || !selectedStudentId) return;
 
-        if (editingId) {
-            updateBodyMetric(editingId, weightInput, dateInput);
-            setEditingId(null);
-            setWeightInput('');
-            setDateInput(new Date().toISOString().split('T')[0]); // Reset date
-        } else {
-            addBodyMetric(selectedStudentId, weightInput, dateInput);
-            setWeightInput('');
+        // Auto Calculate Body Fat if skinfolds are present
+        const hasSkinfolds = Object.values(skinfolds).some(v => v !== '');
+        let calculatedFat = null;
+
+        if (hasSkinfolds) {
+            const age = getAge(currentStudent?.birthDate);
+            const gender = currentStudent?.gender || 'male';
+            const { fat } = calculateBodyDensityAndFat(skinfolds, age, gender);
+            if (!isNaN(fat) && fat > 0 && fat < 100) {
+                calculatedFat = fat;
+            }
         }
+
+        if (editingId) {
+            updateBodyMetric(editingId, weightInput, dateInput, skinfolds, calculatedFat, circumferences);
+            setEditingId(null);
+        } else {
+            addBodyMetric(selectedStudentId, weightInput, dateInput, skinfolds, calculatedFat, circumferences);
+        }
+
+        // Reset Form
+        setWeightInput('');
+        setDateInput(new Date().toISOString().split('T')[0]);
+        setSkinfolds({ chest: '', axilla: '', triceps: '', subscapular: '', abdomen: '', suprailiac: '', thigh: '' });
+        setCircumferences({ neck: '', shoulder: '', chest: '', arm: '', forearm: '', waist: '', abdomen: '', hips: '', thigh: '', calf: '' });
     };
 
     const startEdit = (metric) => {
         setEditingId(metric.id);
         setWeightInput(metric.weight);
         setDateInput(metric.date);
+
+        if (metric.skinfolds) {
+            setSkinfolds(metric.skinfolds);
+        } else {
+            setSkinfolds({ chest: '', axilla: '', triceps: '', subscapular: '', abdomen: '', suprailiac: '', thigh: '' });
+        }
+
+        if (metric.circumferences) {
+            setCircumferences(metric.circumferences);
+        } else {
+            setCircumferences({ neck: '', shoulder: '', chest: '', arm: '', forearm: '', waist: '', abdomen: '', hips: '', thigh: '', calf: '' });
+        }
     };
 
     const cancelEdit = () => {
         setEditingId(null);
         setWeightInput('');
         setDateInput(new Date().toISOString().split('T')[0]);
+        setSkinfolds({ chest: '', axilla: '', triceps: '', subscapular: '', abdomen: '', suprailiac: '', thigh: '' });
+        setCircumferences({ neck: '', shoulder: '', chest: '', arm: '', forearm: '', waist: '', abdomen: '', hips: '', thigh: '', calf: '' });
+    };
+
+    const updateSkinfold = (field, value) => {
+        setSkinfolds(prev => ({ ...prev, [field]: value }));
+    };
+
+    const updateCircumference = (field, value) => {
+        setCircumferences(prev => ({ ...prev, [field]: value }));
     };
 
     if (!selectedStudentId) {
@@ -64,13 +178,36 @@ const WeightTrackerPage = () => {
         );
     }
 
+    // Dynamic Chart Data
+    const chartData = studentMetrics.map(m => {
+        let displayValue = 0;
+        if (activeChart === 'weight') displayValue = m.weight;
+        else if (activeChart === 'bodyFat') displayValue = m.bodyFat || 0;
+        else if (activeChart === 'perimetry' && m.circumferences) {
+            displayValue = parseFloat(m.circumferences[selectedPerimetry]) || 0;
+        }
+        return {
+            ...m,
+            displayValue
+        };
+    });
+
+    const perimetryLabels = {
+        neck: 'Pescoço', shoulder: 'Ombro', chest: 'Tórax', arm: 'Braço', forearm: 'Antebraço',
+        waist: 'Cintura', abdomen: 'Abdômen', hips: 'Quadril', thigh: 'Coxa', calf: 'Panturrilha'
+    };
+
     return (
         <div className={`page-container animate-fade-in ${styles.container}`}>
             <header style={{ marginBottom: '2rem' }}>
-                <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Scale color="var(--accent-primary)" /> Controle de Peso
+                <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Scale color="var(--accent-primary)" /> Medidas Corporais
                 </h1>
-                <p style={{ color: '#64748B' }}>Acompanhe a evolução corporal de {currentStudent?.name}</p>
+                <p style={{ color: 'var(--text-secondary)' }}>
+                    Atleta: <strong>{currentStudent?.name}</strong> •
+                    Idade: {getAge(currentStudent?.birthDate)} •
+                    Sexo: {currentStudent?.gender === 'female' ? 'Feminino' : 'Masculino'}
+                </p>
             </header>
 
             {/* Stats Cards */}
@@ -80,17 +217,15 @@ const WeightTrackerPage = () => {
                     <div className="stat-value">{latestMetric ? `${latestMetric.weight} kg` : '-'}</div>
                 </div>
                 <div className="stat-card">
-                    <div className="stat-label">Peso Inicial</div>
-                    <div className="stat-value" style={{ color: '#64748B' }}>{startMetric ? `${startMetric.weight} kg` : '-'}</div>
+                    <div className="stat-label">% Gordura (Atual)</div>
+                    <div className="stat-value" style={{ color: 'var(--accent-primary)' }}>
+                        {latestMetric?.bodyFat ? `${latestMetric.bodyFat}%` : '-'}
+                    </div>
                 </div>
                 <div className="stat-card">
-                    <div className="stat-label">Evolução Total</div>
-                    <div className="stat-value" style={{
-                        color: parseFloat(totalChange) > 0 ? '#10B981' : (parseFloat(totalChange) < 0 ? '#EF4444' : '#64748B'),
-                        display: 'flex', alignItems: 'center', gap: '8px'
-                    }}>
-                        {parseFloat(totalChange) > 0 ? <TrendingUp size={24} /> : (parseFloat(totalChange) < 0 ? <TrendingDown size={24} /> : <Minus size={24} />)}
-                        {totalChange > 0 ? `+${totalChange}` : totalChange} kg
+                    <div className="stat-label">Cintura (Atual)</div>
+                    <div className="stat-value" style={{ color: 'var(--text-muted)' }}>
+                        {latestMetric?.circumferences?.waist ? `${latestMetric.circumferences.waist} cm` : '-'}
                     </div>
                 </div>
             </div>
@@ -101,32 +236,56 @@ const WeightTrackerPage = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
                     {/* Chart */}
-                    <div className="glass-panel" style={{ height: '300px', padding: '1rem' }}>
-                        <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#334155', marginBottom: '1rem' }}>Evolução</h3>
+                    <div className="glass-panel" style={{ height: '380px', padding: '1rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '1rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>Analise Gráfica</h3>
+                                <div style={{ display: 'flex', gap: '8px', background: 'var(--bg-secondary)', padding: '4px', borderRadius: '8px' }}>
+                                    <button onClick={() => setActiveChart('weight')} className={activeChart === 'weight' ? 'btn btn-sm btn-primary' : 'btn btn-sm'} style={activeChart !== 'weight' ? { background: 'transparent', color: 'var(--text-secondary)', boxShadow: 'none' } : {}}>Peso</button>
+                                    <button onClick={() => setActiveChart('bodyFat')} className={activeChart === 'bodyFat' ? 'btn btn-sm btn-primary' : 'btn btn-sm'} style={activeChart !== 'bodyFat' ? { background: 'transparent', color: 'var(--text-secondary)', boxShadow: 'none' } : {}}>Gordura %</button>
+                                    <button onClick={() => setActiveChart('perimetry')} className={activeChart === 'perimetry' ? 'btn btn-sm btn-primary' : 'btn btn-sm'} style={activeChart !== 'perimetry' ? { background: 'transparent', color: 'var(--text-secondary)', boxShadow: 'none' } : {}}>Perimetria</button>
+                                </div>
+                            </div>
+
+                            {activeChart === 'perimetry' && (
+                                <select
+                                    value={selectedPerimetry}
+                                    onChange={(e) => setSelectedPerimetry(e.target.value)}
+                                    className="input text-sm p-2 bg-transparent border-gray-700"
+                                    style={{ width: '200px', alignSelf: 'flex-end', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                                >
+                                    {Object.entries(perimetryLabels).map(([key, label]) => (
+                                        <option key={key} value={key}>{label}</option>
+                                    ))}
+                                </select>
+                            )}
+                        </div>
+
                         {studentMetrics.length > 1 ? (
-                            <ResponsiveContainer width="100%" height="90%">
-                                <LineChart data={studentMetrics}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                            <ResponsiveContainer width="100%" height="75%">
+                                <LineChart data={chartData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" />
                                     <XAxis
                                         dataKey="date"
                                         tickFormatter={(str) => new Date(str).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-                                        tick={{ fontSize: 12, fill: '#64748B' }}
+                                        tick={{ fontSize: 12, fill: 'var(--text-muted)' }}
                                         stroke="none"
                                     />
                                     <YAxis
-                                        domain={['dataMin - 2', 'dataMax + 2']}
+                                        domain={['auto', 'auto']}
                                         hide={false}
-                                        tick={{ fontSize: 12, fill: '#64748B' }}
+                                        tick={{ fontSize: 12, fill: 'var(--text-muted)' }}
                                         stroke="none"
                                         width={30}
                                     />
                                     <Tooltip
-                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
+                                        contentStyle={{ borderRadius: '8px', border: '1px solid var(--border-subtle)', background: '#09090b', color: '#fff' }}
                                         labelFormatter={(label) => new Date(label).toLocaleDateString('pt-BR')}
                                     />
                                     <Line
                                         type="monotone"
-                                        dataKey="weight"
+                                        dataKey="displayValue"
+                                        name={activeChart === 'perimetry' ? perimetryLabels[selectedPerimetry] : (activeChart === 'weight' ? "Peso" : "% Gordura")}
                                         stroke="var(--accent-primary)"
                                         strokeWidth={3}
                                         dot={{ fill: 'var(--accent-primary)', strokeWidth: 2, r: 4, stroke: '#fff' }}
@@ -135,149 +294,151 @@ const WeightTrackerPage = () => {
                                 </LineChart>
                             </ResponsiveContainer>
                         ) : (
-                            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
-                                É necessário pelo menos 2 registros para gerar o gráfico.
+                            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                                Adicione mais registros para visualizar a evolução.
                             </div>
                         )}
                     </div>
 
                     {/* History List */}
                     <div className="glass-panel">
-                        <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#334155', padding: '1.5rem', borderBottom: '1px solid #f1f5f9' }}>Histórico</h3>
-                        <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', padding: '1.5rem', borderBottom: '1px solid var(--border-subtle)' }}>Histórico Detalhado</h3>
+                        <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
                             {studentMetrics.length === 0 && (
-                                <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>Nenhum registro ainda.</div>
+                                <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Nenhum registro ainda.</div>
                             )}
-                            {[...studentMetrics].reverse().map((metric, index) => {
-                                // Calculate diff with NEXT item (since we reversed, next is actually previous in time)
-                                const prevMetric = studentMetrics[studentMetrics.length - 1 - index - 1]; // logic: total length - 1 - index give original index. then -1 for prev.
-                                // Actually simpler:
-                                // reversed array index i. Original index was (len - 1 - i). Previous was (len - 1 - i - 1).
-                                // Let's just lookup by date logic or keep it simple.
-
-                                let diff = 0;
-                                if (index < studentMetrics.length - 1) {
-                                    // There is a 'previous' record (next in this reversed list)
-                                    // Wait, 'next' in reversed list is older.
-                                    // So current metric - older metric = diff.
-                                    const olderMetric = [...studentMetrics].reverse()[index + 1];
-                                    diff = (metric.weight - olderMetric.weight).toFixed(1);
-                                }
-
-                                return (
-                                    <div key={metric.id} style={{
-                                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                        padding: '1rem 1.5rem', borderBottom: '1px solid #f8fafc'
-                                    }}>
+                            {[...studentMetrics].reverse().map((metric) => (
+                                <div key={metric.id} style={{
+                                    padding: '1rem 1.5rem', borderBottom: '1px solid var(--border-subtle)',
+                                    display: 'flex', flexDirection: 'column', gap: '8px'
+                                }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                             <div style={{
                                                 width: '32px', height: '32px', borderRadius: '8px',
-                                                background: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                color: '#64748B'
+                                                background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                color: 'var(--text-secondary)'
                                             }}>
                                                 <Calendar size={16} />
                                             </div>
                                             <div>
-                                                <div style={{ fontWeight: 600, color: '#334155' }}>
+                                                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
                                                     {new Date(metric.date).toLocaleDateString('pt-BR')}
                                                 </div>
-                                                <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
-                                                    {new Date(metric.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                    {metric.bodyFat ? `Gordura: ${metric.bodyFat}%` : 'Sem dobras'}
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-                                            <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#1e293b' }}>
+                                            <div style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-primary)' }}>
                                                 {metric.weight} kg
                                             </div>
-
-                                            {index < studentMetrics.length - 1 && (
-                                                <div style={{
-                                                    width: '60px', textAlign: 'right', fontSize: '0.9rem', fontWeight: 600,
-                                                    color: diff > 0 ? '#10B981' : (diff < 0 ? '#EF4444' : '#94a3b8')
-                                                }}>
-                                                    {diff > 0 ? `+${diff}` : diff}
-                                                </div>
-                                            )}
-
                                             <div style={{ display: 'flex', gap: '8px' }}>
-                                                <button
-                                                    onClick={() => startEdit(metric)}
-                                                    style={{ color: '#cbd5e1', cursor: 'pointer', background: 'none', border: 'none' }}
-                                                    title="Editar medição"
-                                                    onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-primary)'}
-                                                    onMouseLeave={e => e.currentTarget.style.color = '#cbd5e1'}
-                                                >
-                                                    <Edit2 size={16} />
-                                                </button>
-                                                <button
-                                                    onClick={() => deleteBodyMetric(metric.id)}
-                                                    style={{ color: '#cbd5e1', cursor: 'pointer', background: 'none', border: 'none' }}
-                                                    title="Excluir medição"
-                                                    onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
-                                                    onMouseLeave={e => e.currentTarget.style.color = '#cbd5e1'}
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
+                                                <button onClick={() => startEdit(metric)} style={{ color: 'var(--text-muted)', cursor: 'pointer', background: 'none', border: 'none' }}><Edit2 size={16} /></button>
+                                                <button onClick={() => deleteBodyMetric(metric.id)} style={{ color: 'var(--text-muted)', cursor: 'pointer', background: 'none', border: 'none' }}><Trash2 size={16} /></button>
                                             </div>
                                         </div>
                                     </div>
-                                );
-                            })}
+
+                                    {/* Skinfolds Summary (Mini) */}
+                                    {metric.skinfolds && Object.values(metric.skinfolds).some(v => v) && (
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: '48px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                            <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Dobras:</span>
+                                            {metric.skinfolds.chest && <span className="bg-zinc-800 px-2 py-1 rounded text-zinc-300">Peito: {metric.skinfolds.chest}</span>}
+                                            {metric.skinfolds.abdomen && <span className="bg-zinc-800 px-2 py-1 rounded text-zinc-300">Abd: {metric.skinfolds.abdomen}</span>}
+                                            {metric.skinfolds.thigh && <span className="bg-zinc-800 px-2 py-1 rounded text-zinc-300">Coxa: {metric.skinfolds.thigh}</span>}
+                                        </div>
+                                    )}
+
+                                    {/* Perimetry Summary (Mini) */}
+                                    {metric.circumferences && Object.values(metric.circumferences).some(v => v) && (
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: '48px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                            <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Perimetria:</span>
+                                            {metric.circumferences.arm && <span className="bg-zinc-800 px-2 py-1 rounded text-zinc-300">Braço: {metric.circumferences.arm}</span>}
+                                            {metric.circumferences.waist && <span className="bg-zinc-800 px-2 py-1 rounded text-zinc-300">Cintura: {metric.circumferences.waist}</span>}
+                                            {metric.circumferences.hips && <span className="bg-zinc-800 px-2 py-1 rounded text-zinc-300">Quadril: {metric.circumferences.hips}</span>}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
                         </div>
                     </div>
 
                 </div>
 
-                <div className="glass-panel" style={{ padding: '2rem', position: 'sticky', top: '2rem' }}>
+                {/* RIGHT COLUMN: FORM */}
+                <div className="glass-panel" style={{ padding: '2rem', position: 'sticky', top: '2rem', height: 'fit-content' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>
-                            {editingId ? 'Editar Pesagem' : 'Novo Registro'}
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                            {editingId ? 'Editar Medidas' : 'Novo Registro'}
                         </h3>
                         {editingId && (
-                            <button onClick={cancelEdit} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem' }}>
+                            <button onClick={cancelEdit} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem' }}>
                                 <X size={16} /> Cancelar
                             </button>
                         )}
                     </div>
                     <form onSubmit={handleAddWeight}>
-                        <div style={{ marginBottom: '1.5rem' }}>
+                        <div style={{ marginBottom: '1rem' }}>
                             <label className="label">Data</label>
-                            <input
-                                type="date"
-                                className="input"
-                                style={{ width: '100%' }}
-                                value={dateInput}
-                                onChange={e => setDateInput(e.target.value)}
-                                required
-                            />
+                            <input type="date" className="input" style={{ width: '100%' }} value={dateInput} onChange={e => setDateInput(e.target.value)} required />
                         </div>
 
                         <div style={{ marginBottom: '1.5rem' }}>
                             <label className="label">Peso (kg)</label>
-                            <input
-                                type="number"
-                                step="0.1"
-                                placeholder="0.00"
-                                className="input"
-                                style={{ width: '100%', fontSize: '1.2rem', fontWeight: 600 }}
-                                value={weightInput}
-                                onChange={e => setWeightInput(e.target.value)}
-                                required
-                                autoFocus
-                            />
+                            <input type="number" step="0.1" placeholder="0.00" className="input" style={{ width: '100%', fontSize: '1.2rem', fontWeight: 600 }} value={weightInput} onChange={e => setWeightInput(e.target.value)} required />
+                        </div>
+
+                        {/* SKINFOLDS SECTION - UNIFIED */}
+                        <div style={{ margin: '1.5rem 0 1rem 0' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                                <Activity size={16} /> Dobras Cutâneas (Pollock 7)
+                            </div>
+
+                            <div className="animate-fade-in" style={{
+                                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px',
+                            }}>
+                                {['chest', 'axilla', 'triceps', 'subscapular', 'abdomen', 'suprailiac', 'thigh'].map(field => (
+                                    <div key={field} style={field === 'thigh' ? { gridColumn: 'span 2' } : {}}>
+                                        <label className="text-xs text-gray-400 font-medium capitalize">{field === 'chest' ? 'Peitoral' : field === 'axilla' ? 'Axilar Média' : field === 'subscapular' ? 'Subescapular' : field === 'suprailiac' ? 'Supra-ilíaca' : field === 'thigh' ? 'Coxa' : field === 'abdomen' ? 'Abdominal' : 'Tríceps'}</label>
+                                        <input type="number" step="0.1" className="input w-full p-2 text-sm" value={skinfolds[field]} onChange={(e) => updateSkinfold(field, e.target.value)} placeholder="mm" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* PERIMETRY SECTION - UNIFIED */}
+                        <div style={{ margin: '1.5rem 0 1rem 0', borderTop: '1px solid var(--border-subtle)', paddingTop: '1.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                                <Ruler size={16} /> Perimetria (cm)
+                            </div>
+
+                            <div className="animate-fade-in" style={{
+                                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px',
+                            }}>
+                                {Object.entries(perimetryLabels).map(([key, label]) => (
+                                    <div key={key}>
+                                        <label className="text-xs text-gray-400 font-medium">{label}</label>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            className="input w-full p-2 text-sm"
+                                            value={circumferences[key]}
+                                            onChange={(e) => updateCircumference(key, e.target.value)}
+                                            placeholder="cm"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
                         </div>
 
                         <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
                             {editingId ? <Edit2 size={20} /> : <PlusCircle size={20} />}
-                            {editingId ? 'Atualizar' : 'Registrar'}
+                            {editingId ? 'Atualizar Dados' : 'Salvar Registro'}
                         </button>
                     </form>
-
-                    <div style={{ marginTop: '2rem', padding: '1rem', background: '#F8FAFC', borderRadius: '12px', fontSize: '0.9rem', color: '#64748B', lineHeight: 1.5 }}>
-                        <p><strong>Dica:</strong> Para maior precisão, pese-se sempre no mesmo horário, preferencialmente pela manhã em jejum.</p>
-                    </div>
                 </div>
 
             </div>

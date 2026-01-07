@@ -79,44 +79,63 @@ const PerformancePage = () => {
         // Added 'px-4 md:px-8' for responsive padding using Tailwind utility classes mixed with user's preferred styles
         <div style={{ maxWidth: '1200px', margin: '0 auto', paddingBottom: '100px' }} className="p-4 md:p-8">
             <header style={{ marginBottom: '2rem' }}>
-                <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem', lineHeight: '1.2' }}>
+                <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem', lineHeight: '1.2' }}>
                     Performance de {currentStudent?.name || 'Aluno'}
                 </h1>
-                <p style={{ color: '#64748B' }}>Análise de Carga Crônica (Fitness) vs Aguda (Fadiga)</p>
+                <p style={{ color: 'var(--text-secondary)' }}>Análise de Carga Crônica (Fitness) vs Aguda (Fadiga)</p>
             </header>
 
             {/* STATS GRID - Responsive via flex/grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
-                <StatCard
-                    title="Fitness (CTL)"
-                    value={latest.fitness}
-                    label="Condicionamento"
-                    color="#3b82f6"
-                    icon={Activity}
-                />
-                <StatCard
-                    title="Fadiga (ATL)"
-                    value={latest.fatigue}
-                    label="Carga Recente"
-                    color="#f43f5e"
-                    icon={TrendingUp}
-                />
-                <StatCard
-                    title="Forma (TSB)"
-                    value={latest.form}
-                    label={formStatus}
-                    color={formColor}
-                    icon={Battery}
-                />
+                <div className="glass-panel" style={{
+                    padding: '20px',
+                    display: 'flex', flexDirection: 'column', gap: '8px'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>
+                        <Activity size={16} color="#3b82f6" />
+                        Fitness (CTL)
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                        <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)' }}>{latest.fitness}</span>
+                        <span style={{ fontSize: '0.85rem', color: '#3b82f6', fontWeight: 700 }}>Condicionamento</span>
+                    </div>
+                </div>
+
+                <div className="glass-panel" style={{
+                    padding: '20px',
+                    display: 'flex', flexDirection: 'column', gap: '8px'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>
+                        <TrendingUp size={16} color="#f43f5e" />
+                        Fadiga (ATL)
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                        <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)' }}>{latest.fatigue}</span>
+                        <span style={{ fontSize: '0.85rem', color: '#f43f5e', fontWeight: 700 }}>Carga Recente</span>
+                    </div>
+                </div>
+
+                <div className="glass-panel" style={{
+                    padding: '20px',
+                    display: 'flex', flexDirection: 'column', gap: '8px'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>
+                        <Battery size={16} color={formColor} />
+                        Forma (TSB)
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                        <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)' }}>{latest.form}</span>
+                        <span style={{ fontSize: '0.85rem', color: formColor, fontWeight: 700 }}>{formStatus}</span>
+                    </div>
+                </div>
             </div>
 
             {/* MAIN PMC CHART SECTION */}
-            <div style={{
-                background: '#fff', borderRadius: '24px', padding: '24px',
-                boxShadow: '0 4px 30px rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.04)',
-                minHeight: 'auto', marginBottom: '1rem' // Adjusted padding for mobile
-            }} className="p-4 md:p-8">
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#0f172a', marginBottom: '1.5rem' }}>
+            <div className="glass-panel" style={{
+                padding: '24px',
+                minHeight: 'auto', marginBottom: '1rem'
+            }}>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1.5rem' }}>
                     Gráfico de Gerenciamento de Performance
                 </h3>
 
@@ -131,17 +150,22 @@ const PerformancePage = () => {
                                         <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" />
                                 <XAxis
                                     dataKey="date"
                                     tickFormatter={(str) => new Date(str).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-                                    stroke="#94a3b8"
+                                    stroke="var(--text-muted)"
                                     fontSize={12}
                                     tickMargin={10}
                                 />
-                                <YAxis stroke="#94a3b8" fontSize={12} />
+                                <YAxis stroke="var(--text-muted)" fontSize={12} />
                                 <Tooltip
-                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
+                                    contentStyle={{
+                                        borderRadius: '12px',
+                                        border: '1px solid var(--border-subtle)',
+                                        background: '#09090b',
+                                        color: '#fff'
+                                    }}
                                     labelFormatter={(label) => new Date(label).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })}
                                 />
                                 <Area
@@ -152,6 +176,7 @@ const PerformancePage = () => {
                                     strokeWidth={2}
                                     fillOpacity={1}
                                     fill="url(#colorFitness)"
+                                    activeDot={{ r: 6, strokeWidth: 0 }}
                                 />
                                 <Line
                                     type="monotone"
@@ -160,6 +185,7 @@ const PerformancePage = () => {
                                     stroke="#f43f5e"
                                     strokeWidth={2}
                                     dot={false}
+                                    activeDot={{ r: 6, strokeWidth: 0 }}
                                 />
                                 <Line
                                     type="monotone"
@@ -169,11 +195,12 @@ const PerformancePage = () => {
                                     strokeWidth={2}
                                     strokeDasharray="5 5"
                                     dot={false}
+                                    activeDot={{ r: 6, strokeWidth: 0 }}
                                 />
                             </ComposedChart>
                         </ResponsiveContainer>
                     ) : (
-                        <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
+                        <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
                             <p>Dados insuficientes para gerar o gráfico. Complete alguns treinos!</p>
                         </div>
                     )}
@@ -184,10 +211,10 @@ const PerformancePage = () => {
             <div style={{
                 marginTop: '1rem',
                 padding: '1.5rem',
-                background: '#f8fafc',
+                background: 'rgba(255, 255, 255, 0.02)',
                 borderRadius: '16px',
                 marginBottom: '3rem',
-                border: '1px solid #e2e8f0'
+                border: '1px solid var(--border-subtle)'
             }}>
                 {/* Changed minmax from 280px to 250px to fit smaller screens better, and gap adjustment */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
@@ -196,8 +223,8 @@ const PerformancePage = () => {
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                         <div style={{ minWidth: '12px', height: '12px', background: '#3b82f6', opacity: 0.2, border: '2px solid #3b82f6', marginTop: '4px', borderRadius: '2px' }}></div>
                         <div>
-                            <span style={{ color: '#0f172a', fontWeight: 700, display: 'block', marginBottom: '4px' }}>Fitness (CTL)</span>
-                            <span style={{ fontSize: '0.85rem', color: '#64748B', lineHeight: '1.4' }}>Quanto você treinou nos últimos 42 dias. O objetivo é subir gradualmente.</span>
+                            <span style={{ color: 'var(--text-primary)', fontWeight: 700, display: 'block', marginBottom: '4px' }}>Fitness (CTL)</span>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>Quanto você treinou nos últimos 42 dias. O objetivo é subir gradualmente.</span>
                         </div>
                     </div>
 
@@ -205,8 +232,8 @@ const PerformancePage = () => {
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                         <div style={{ minWidth: '12px', height: '2px', background: '#f43f5e', marginTop: '9px' }}></div>
                         <div>
-                            <span style={{ color: '#0f172a', fontWeight: 700, display: 'block', marginBottom: '4px' }}>Fadiga (ATL)</span>
-                            <span style={{ fontSize: '0.85rem', color: '#64748B', lineHeight: '1.4' }}>Cansaço atual (média de 7 dias). Sobe rápido após treinos intensos.</span>
+                            <span style={{ color: 'var(--text-primary)', fontWeight: 700, display: 'block', marginBottom: '4px' }}>Fadiga (ATL)</span>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>Cansaço atual (média de 7 dias). Sobe rápido após treinos intensos.</span>
                         </div>
                     </div>
 
@@ -214,8 +241,8 @@ const PerformancePage = () => {
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                         <div style={{ minWidth: '12px', height: '2px', background: '#10b981', borderTop: '2px dashed #10b981', marginTop: '9px' }}></div>
                         <div>
-                            <span style={{ color: '#0f172a', fontWeight: 700, display: 'block', marginBottom: '4px' }}>Forma (TSB)</span>
-                            <span style={{ fontSize: '0.85rem', color: '#64748B', lineHeight: '1.4' }}>Saldo (Fitness - Fadiga). Evite manter muito negativo (-30) por muito tempo.</span>
+                            <span style={{ color: 'var(--text-primary)', fontWeight: 700, display: 'block', marginBottom: '4px' }}>Forma (TSB)</span>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>Saldo (Fitness - Fadiga). Evite manter muito negativo (-30) por muito tempo.</span>
                         </div>
                     </div>
 
@@ -224,16 +251,12 @@ const PerformancePage = () => {
 
             {/* 3. DAYS GRAPH */}
             <div style={{ marginTop: '0' }}>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0f172a', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <Calendar size={20} className="text-accent-primary" /> Frequência Mensal  <span style={{ opacity: 0.5, fontWeight: 400, fontSize: '1rem' }}>• {new Date().toLocaleString('default', { month: 'long' })}</span>
                 </h2>
 
-                <div style={{
-                    background: '#fff',
-                    borderRadius: '24px',
+                <div className="glass-panel" style={{
                     padding: '24px', // Reduced padding for mobile
-                    boxShadow: '0 4px 30px rgba(0,0,0,0.03)',
-                    border: '1px solid rgba(0,0,0,0.04)',
                 }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '3rem', alignItems: 'center' }}>
 
@@ -246,12 +269,17 @@ const PerformancePage = () => {
                                     barCategoryGap="20%"
                                     barGap={0}
                                 >
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="name" stroke="#94a3b8" tick={{ fill: '#64748b' }} axisLine={false} tickLine={false} />
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" />
+                                    <XAxis dataKey="name" stroke="var(--text-muted)" tick={{ fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
                                     <YAxis hide />
                                     <Tooltip
-                                        cursor={{ fill: '#f8fafc' }}
-                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
+                                        cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                                        contentStyle={{
+                                            borderRadius: '12px',
+                                            border: '1px solid var(--border-subtle)',
+                                            background: '#09090b',
+                                            color: '#fff'
+                                        }}
                                     />
                                     <Legend
                                         verticalAlign="top"
@@ -262,10 +290,10 @@ const PerformancePage = () => {
                                     <Bar
                                         dataKey="planned"
                                         name="Planejado"
-                                        fill="#94a3b8"
+                                        fill="#52525b"
                                         radius={[4, 4, 0, 0]}
                                         barSize={50}
-                                        label={{ position: 'top', fill: '#64748b', fontSize: 14, fontWeight: 700 }}
+                                        label={{ position: 'top', fill: '#71717a', fontSize: 14, fontWeight: 700 }}
                                     />
                                     <Bar
                                         dataKey="done"
@@ -279,21 +307,21 @@ const PerformancePage = () => {
                             </ResponsiveContainer>
                         </div>
 
-                        {/* 2. Big Numbers Stats (Light Theme) */}
+                        {/* 2. Big Numbers Stats (Dark Theme) */}
                         <div style={{ display: 'flex', gap: '2rem', justifyContent: 'space-around', alignItems: 'center', flexWrap: 'wrap' }}>
                             <div style={{ textAlign: 'center', minWidth: '80px' }}>
-                                <div style={{ fontSize: '3rem', fontWeight: 800, color: '#94a3b8', lineHeight: 1 }}>{monthlyStats.planned}</div>
-                                <div style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '8px' }}>Planejados</div>
+                                <div style={{ fontSize: '3rem', fontWeight: 800, color: 'var(--text-muted)', lineHeight: 1 }}>{monthlyStats.planned}</div>
+                                <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '8px' }}>Planejados</div>
                             </div>
-                            <div style={{ width: '1px', height: '60px', background: '#e2e8f0' }}></div>
+                            <div style={{ width: '1px', height: '60px', background: 'var(--border-subtle)' }}></div>
                             <div style={{ textAlign: 'center', minWidth: '80px' }}>
                                 <div style={{ fontSize: '3rem', fontWeight: 800, color: '#10b981', lineHeight: 1 }}>{monthlyStats.done}</div>
-                                <div style={{ color: '#166534', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '8px' }}>Concluídos</div>
+                                <div style={{ color: '#10b981', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '8px' }}>Concluídos</div>
                             </div>
-                            <div style={{ width: '1px', height: '60px', background: '#e2e8f0' }}></div>
+                            <div style={{ width: '1px', height: '60px', background: 'var(--border-subtle)' }}></div>
                             <div style={{ textAlign: 'center', minWidth: '80px' }}>
                                 <div style={{ fontSize: '3rem', fontWeight: 800, color: '#f59e0b', lineHeight: 1 }}>{monthlyStats.completionRate}%</div>
-                                <div style={{ color: '#b45309', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '8px' }}>Aderência</div>
+                                <div style={{ color: '#f59e0b', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '8px' }}>Aderência</div>
                             </div>
                         </div>
 

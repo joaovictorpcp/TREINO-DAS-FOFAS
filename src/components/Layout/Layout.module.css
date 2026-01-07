@@ -1,32 +1,292 @@
+/* Layout.module.css */
+
 .container {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    /* Mobile first: header top, content below */
 }
 
-.header {
-    height: 72px;
-    /* Slightly taller for breathing room */
-    background: var(--bg-secondary);
-    display: flex;
-    align-items: center;
-    padding: 0 var(--space-md);
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    /* Soft shadow instead of border */
-    box-shadow: var(--shadow-float);
-    border-bottom: none;
+/* --- Responsive Sidebar (Desktop) --- */
+@media (min-width: 769px) {
+    .container {
+        flex-direction: row;
+    }
+
+    .header {
+        /* Floating Sidebar Config */
+        width: 100px;
+        /* Minimized width */
+        height: calc(100vh - 2rem);
+        /* Floating height */
+        position: sticky;
+        top: 1rem;
+        left: 1rem;
+        /* Adjust margin if needed via container padding, but sticky needs coords */
+        margin: 1rem 0 1rem 1rem;
+        /* Physical floating margin */
+
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+
+        padding: 2rem 0.5rem;
+        background: rgba(10, 10, 10, 0.6);
+        /* Glassy dark */
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 24px;
+        /* Floating rounded corners */
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+
+        z-index: 50;
+        transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), background 0.3s;
+        overflow: hidden;
+        /* Hide content when narrow */
+        white-space: nowrap;
+        /* Prevent text wrapping */
+    }
+
+    /* Hover State: Expand */
+    .header:hover {
+        width: 280px;
+        /* Expanded width */
+        background: rgba(10, 10, 10, 0.85);
+        /* Slightly more opaque on hover */
+        align-items: flex-start;
+        /* Align expanding content left */
+        padding-left: 1.5rem;
+        /* Add left padding for text alignment */
+        padding-right: 1.5rem;
+    }
+
+    .header:hover .logoAndNav {
+        align-items: flex-start;
+        /* Left align internal items on hover */
+    }
+
+    .header:hover .logo {
+        justify-content: flex-start;
+        /* Left align logo on hover */
+        width: 100%;
+    }
+
+    .logoAndNav {
+        flex-direction: column;
+        align-items: center;
+        /* Default Center */
+        width: 100%;
+        gap: 3rem;
+        transition: align-items 0.3s;
+    }
+
+    .logo {
+        margin-bottom: 0;
+        padding-left: 0;
+        justify-content: center;
+        text-align: left;
+        width: 100%;
+        transition: all 0.3s;
+    }
+
+    /* Toggle Text Visibility */
+    .logoText {
+        display: flex;
+        opacity: 0;
+        transform: translateX(-10px);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        visibility: hidden;
+        /* accessibility */
+        width: 0;
+        /* prevent layout spacing when hidden */
+    }
+
+    .header:hover .logoText {
+        opacity: 1;
+        transform: translateX(0);
+        visibility: visible;
+        width: auto;
+        margin-left: 10px;
+    }
+
+    /* Nav Links */
+    .nav {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        align-items: center;
+        /* Default center icons */
+        gap: 1rem;
+        transition: align-items 0.3s;
+    }
+
+    .header:hover .nav {
+        align-items: flex-start;
+        /* Left align on hover */
+    }
+
+    .navLink {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        /* Default center icon */
+        width: 50px;
+        /* Icon Button Width */
+        height: 50px;
+        border-radius: 14px;
+        color: var(--text-secondary);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .header:hover .navLink {
+        width: 100%;
+        /* Full width on hover */
+        justify-content: flex-start;
+        padding-left: 14px;
+        /* Space for icon */
+        border-radius: 12px;
+    }
+
+    .navLink span {
+        display: inline-block;
+        opacity: 0;
+        visibility: hidden;
+        margin-left: 12px;
+        white-space: nowrap;
+        transform: translateX(-10px);
+        transition: opacity 0.2s 0.1s, transform 0.2s 0.1s;
+        /* Slight delay for text reveal */
+        font-weight: 500;
+        font-size: 0.95rem;
+    }
+
+    .header:hover .navLink span {
+        display: inline-block;
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(0);
+    }
+
+    .navLink:hover {
+        color: var(--text-primary);
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .navLink.active {
+        background: var(--accent-primary);
+        color: #000;
+        box-shadow: 0 0 20px rgba(0, 230, 118, 0.4);
+    }
+
+    /* Keep active text black on hover */
+    .header:hover .navLink.active {
+        color: #000;
+    }
+
+    /* Student Profile */
+    .studentProfile {
+        margin-top: auto;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        transition: justify-content 0.3s;
+    }
+
+    .header:hover .studentProfile {
+        justify-content: flex-start;
+    }
+
+    .studentBadge {
+        padding: 0;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        /* Circle by default */
+        justify-content: center;
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        transition: all 0.3s;
+    }
+
+    .header:hover .studentBadge {
+        width: 100%;
+        border-radius: 12px;
+        /* Pill/Rect on hover */
+        justify-content: flex-start;
+        padding: 0 12px;
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .studentBadge span,
+    .studentBadge svg {
+        display: none;
+        opacity: 0;
+    }
+
+    .header:hover .studentBadge span {
+        display: block;
+        opacity: 1;
+        margin-left: 12px;
+    }
+
+    .header:hover .studentBadge svg {
+        display: block;
+        opacity: 0.5;
+        margin-left: auto;
+    }
+
+    .main {
+        flex: 1;
+        /* Main content width = 100% - (minimized width + margins) */
+        width: calc(100% - 120px);
+        padding-bottom: 0;
+        transition: width 0.4s;
+    }
 }
 
-.logoAndNav {
-    max-width: 1200px;
-    width: 100%;
-    margin: 0 auto;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+/* --- Mobile Styles --- */
+@media (max-width: 768px) {
+    .header {
+        height: 64px;
+        background: var(--bg-secondary);
+        display: flex;
+        align-items: center;
+        padding: 0 var(--space-md);
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .logoAndNav {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .logo {
+        /* Compact logo for mobile */
+        font-size: 1.2rem;
+    }
+
+    .nav {
+        display: none;
+        /* Hide desktop nav items on mobile header */
+    }
+
+    .main {
+        flex: 1;
+        padding-bottom: 90px;
+    }
 }
+
+
+/* --- Shared Styles --- */
 
 .logo {
     display: flex;
@@ -37,50 +297,53 @@
     font-size: 1.4rem;
     color: var(--text-primary);
     letter-spacing: -0.02em;
+    text-decoration: none;
 }
 
 .logoIcon {
     color: var(--accent-primary);
     stroke-width: 2.5px;
-    /* Thicker, bolder icon */
 }
 
-.nav {
+/* User Profile Section (Sidebar bottom or Header right) */
+.studentProfile {
     display: flex;
-    gap: var(--space-md);
-    background: var(--bg-primary);
-    /* Pill background container */
-    padding: 6px;
-    border-radius: var(--radius-pill);
-}
-
-.navLink {
-    color: var(--text-secondary);
+    align-items: center;
+    gap: 12px;
     text-decoration: none;
-    font-weight: 600;
-    font-family: var(--font-main);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    padding: 0.6rem 1.2rem;
+    cursor: pointer;
+}
+
+.studentBadge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #18181B;
+    /* Zinc 900 */
+    padding: 8px 16px;
     border-radius: var(--radius-pill);
+    border: 1px solid var(--border-subtle);
+    transition: all 0.2s;
+    width: 100%;
+    /* Full width on sidebar */
+}
+
+.studentBadge:hover {
+    border-color: var(--accent-primary);
+    background: #27272A;
+}
+
+.studentName {
     font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.navLink:hover {
-    color: var(--accent-primary);
-    background: rgba(255, 111, 97, 0.05);
-}
 
-.navLink.active {
-    color: var(--text-on-primary);
-    background: var(--accent-primary);
-    box-shadow: 0 4px 12px rgba(255, 111, 97, 0.3);
-}
-
-.main {
-    flex: 1;
-    padding-bottom: 90px;
-}
-
+/* Mobile Bottom Nav */
 .mobileNav {
     display: none;
     position: fixed;
@@ -89,15 +352,12 @@
     right: 0;
     height: 80px;
     background: var(--bg-secondary);
+    border-top: 1px solid var(--border-subtle);
     /* Floating effect for mobile nav */
-    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.05);
-    border-top: none;
-    border-radius: 24px 24px 0 0;
     justify-content: space-around;
     align-items: center;
     z-index: 50;
     padding-bottom: 10px;
-    /* Safe area handled by padding */
 }
 
 .mobileNavItem {
@@ -105,27 +365,22 @@
     flex-direction: column;
     align-items: center;
     gap: 6px;
-    color: var(--text-light);
+    color: var(--text-secondary);
     text-decoration: none;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 500;
     padding: 0.5rem;
-    border-radius: 16px;
+    border-radius: 12px;
     width: 64px;
     transition: all 0.2s;
 }
 
 .mobileNavItem.active {
     color: var(--accent-primary);
-    background: rgba(255, 111, 97, 0.1);
-    transform: translateY(-4px);
+    background: rgba(0, 230, 118, 0.1);
 }
 
 @media (max-width: 768px) {
-    .nav {
-        display: none;
-    }
-
     .mobileNav {
         display: flex;
     }

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useWorkout } from '../context/WorkoutContext';
 import { useStudent } from '../context/StudentContext';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2, Save, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, Save, ArrowRight, ArrowLeft, Dumbbell, Footprints, Bike, Waves, Clock, Activity, MapPin, AlignLeft } from 'lucide-react';
 import styles from './MesocycleBuilder.module.css';
 
 const MesocycleBuilder = () => {
@@ -11,21 +11,25 @@ const MesocycleBuilder = () => {
     const navigate = useNavigate();
 
     const [step, setStep] = useState(1); // 1: Config, 2: Base Week
+
+
+
     const [config, setConfig] = useState({
         name: '',
         weeks: 4,
-        startDate: new Date().toISOString().split('T')[0]
+        startDate: new Date().toISOString().split('T')[0],
+        activityType: 'weightlifting' // Default
     });
 
     const [baseWorkouts, setBaseWorkouts] = useState([
-        { id: 'A', name: 'Treino A', exercises: [] }
+        { id: 'A', name: 'Treino A', exercises: [], duration: '', distance: '', rpe: '', drills: '', mainSet: '' }
     ]);
 
     const [activeTab, setActiveTab] = useState('A');
 
     // Exercise Input State
     const [newExercise, setNewExercise] = useState({ name: '', sets: '3', reps: '8-12' });
-    const [isIdentifying, setIsIdentifying] = useState(false);
+
 
     if (!selectedStudentId) {
         return <div className="p-8 text-center">Selecione um aluno primeiro.</div>;
@@ -34,8 +38,26 @@ const MesocycleBuilder = () => {
     const handleAddWorkoutTab = () => {
         const nextLetter = String.fromCharCode(65 + baseWorkouts.length); // A, B, C...
         const newTabId = nextLetter;
-        setBaseWorkouts([...baseWorkouts, { id: newTabId, name: `Treino ${nextLetter}`, exercises: [] }]);
+        setBaseWorkouts([...baseWorkouts, {
+            id: newTabId,
+            name: `Treino ${nextLetter}`,
+            exercises: [],
+            duration: '',
+            distance: '',
+            rpe: '',
+            drills: '',
+            mainSet: ''
+        }]);
         setActiveTab(newTabId);
+    };
+
+    const handleBaseWorkoutChange = (workoutId, field, value) => {
+        setBaseWorkouts(prev => prev.map(w => {
+            if (w.id === workoutId) {
+                return { ...w, [field]: value };
+            }
+            return w;
+        }));
     };
 
     const handleAddExercise = () => {
@@ -61,27 +83,49 @@ const MesocycleBuilder = () => {
     const handleGenerate = () => {
         console.log("handleGenerate: Started");
         console.log("Config:", config);
-        console.log("Base Workouts:", baseWorkouts);
 
-        if (!config.name || baseWorkouts.some(w => w.exercises.length === 0)) {
-            console.warn("Validation failed: Missing name or empty workouts");
-            alert('Preencha o nome do programa e adicione exercícios em todos os treinos.');
+        // Basic Validation
+        if (!config.name) {
+            alert('Preencha o nome do programa.');
             return;
         }
 
-        const student = students.find(s => s.id === selectedStudentId);
-        const studentName = student?.name || "Aluno Desconhecido";
-        console.log("Student found:", studentName);
+        if (!config.startDate) {
+            alert('Selecione uma data de início.');
+            return;
+        }
 
-        // Confirm is often annoying and blocks automation. Proceeding directly.
+        // Specific Validation
+        if (config.activityType === 'weightlifting') {
+            if (baseWorkouts.some(w => w.exercises.length === 0)) {
+                alert('Adicione exercícios em todos os treinos de musculação.');
+                return;
+            }
+        } else {
+            // For cardio, maybe warn if empty but allow? Or check duration?
+            // Let's at least check if duration is provided for all
+            if (baseWorkouts.some(w => !w.duration && !w.distance)) {
+                // Converting to confirm since it might be intentional
+                if (!confirm('Alguns treinos estão sem Duração ou Distância. Continuar mesmo assim?')) return;
+            }
+        }
+
         try {
+            const formattedBaseWorkouts = baseWorkouts.map(w => ({
+                ...w,
+                duration_minutes: w.duration,
+                distance_km: w.distance,
+                session_rpe: w.rpe,
+                drills_description: w.drills,
+                main_set_description: w.mainSet
+            }));
+
             const resultMeso = createMesocycle({
                 ...config,
                 studentId: selectedStudentId,
-                baseWorkouts
+                baseWorkouts: formattedBaseWorkouts
             });
             console.log("createMesocycle returned:", resultMeso);
-            alert(`Programa criado com sucesso! Mesociclo #${resultMeso}`);
             alert(`Programa criado com sucesso! Mesociclo #${resultMeso}`);
             navigate('/workouts');
         } catch (error) {
@@ -135,21 +179,23 @@ const MesocycleBuilder = () => {
         }));
     };
 
+    const currentWorkout = baseWorkouts.find(w => w.id === activeTab) || baseWorkouts[0];
+
     return (
         <div className={`page-container animate-fade-in ${styles.container}`}>
             <header className={styles.header}>
-                <h1 className={styles.title}>Novo Programa</h1>
-                <p className={styles.subtitle}>Construtor de Mesociclo</p>
+                <h1 className={styles.title} style={{ color: 'var(--text-primary)' }}>Novo Programa</h1>
+                <p className={styles.subtitle} style={{ color: 'var(--text-secondary)' }}>Construtor de Mesociclo</p>
 
                 {/* Progress Steps */}
                 <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}>
                     <div style={{
                         flex: 1, height: '4px', borderRadius: '2px',
-                        background: step >= 1 ? 'var(--accent-primary)' : '#e2e8f0'
+                        background: step >= 1 ? 'var(--accent-primary)' : 'var(--bg-secondary)'
                     }} />
                     <div style={{
                         flex: 1, height: '4px', borderRadius: '2px',
-                        background: step >= 2 ? 'var(--accent-primary)' : '#e2e8f0'
+                        background: step >= 2 ? 'var(--accent-primary)' : 'var(--bg-secondary)'
                     }} />
                 </div>
             </header>
@@ -157,50 +203,83 @@ const MesocycleBuilder = () => {
             <div className="glass-panel" style={{ padding: '2rem' }}>
                 {step === 1 && (
                     <div className="animate-fade-in">
-                        <h2 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '1.5rem' }}>Etapa 1: Criar</h2>
+                        <h2 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Etapa 1: Criar</h2>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
+                            {/* ACTIVITY SELECTOR */}
                             <div>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Nome do Mesociclo</label>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+                                    <label style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Modalidade Principal</label>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '12px' }}>
+                                    {[
+                                        { id: 'weightlifting', label: 'Musculação', icon: <Dumbbell size={24} /> },
+                                        { id: 'running', label: 'Corrida', icon: <Footprints size={24} /> },
+                                        { id: 'cycling', label: 'Ciclismo', icon: <Bike size={24} /> },
+                                        { id: 'swimming', label: 'Natação', icon: <Waves size={24} /> }
+
+                                    ].map(type => (
+                                        <button
+                                            key={type.id}
+                                            type="button"
+                                            onClick={() => setConfig({ ...config, activityType: type.id })}
+                                            style={{
+                                                padding: '16px', borderRadius: '12px',
+                                                border: config.activityType === type.id ? '2px solid var(--accent-primary)' : '1px solid var(--border-subtle)',
+                                                background: config.activityType === type.id ? 'rgba(74, 222, 128, 0.1)' : 'var(--bg-secondary)',
+                                                color: config.activityType === type.id ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                                                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
+                                                cursor: 'pointer', transition: 'all 0.2s',
+                                                fontWeight: 600, fontSize: '0.9rem'
+                                            }}
+                                        >
+                                            {type.icon}
+                                            {type.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Nome do Mesociclo</label>
                                 <input
                                     type="text"
                                     value={config.name}
                                     onChange={e => setConfig({ ...config, name: e.target.value })}
                                     placeholder="Ex: Força Pura, Hipertrofia Fase 1"
-                                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                                    className="input"
+                                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
                                 />
                             </div>
 
                             <div className={styles.configGrid}>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Tempo (Semanas)</label>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Tempo (Semanas)</label>
                                     <input
                                         type="number"
                                         value={config.weeks}
                                         onChange={e => setConfig({ ...config, weeks: parseInt(e.target.value) })}
                                         min="1" max="12"
-                                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                                        className="input"
+                                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
                                     />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Data</label>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Data de Início</label>
                                     <input
                                         type="date"
                                         value={config.startDate}
                                         onChange={e => setConfig({ ...config, startDate: e.target.value })}
-                                        onClick={(e) => {
-                                            try {
-                                                if (e.target.showPicker) e.target.showPicker();
-                                            } catch (error) {
-                                                // ignore - browser might not support it or blocking it
-                                            }
-                                        }}
+                                        className="input"
                                         style={{
                                             width: '100%',
                                             padding: '12px',
                                             borderRadius: '8px',
-                                            border: '1px solid #cbd5e1',
-                                            cursor: 'pointer'
+                                            border: '1px solid var(--border-subtle)',
+                                            cursor: 'pointer',
+                                            background: 'var(--bg-secondary)',
+                                            color: 'var(--text-primary)'
                                         }}
                                     />
                                 </div>
@@ -221,10 +300,13 @@ const MesocycleBuilder = () => {
                 )}
 
                 {step === 2 && (
-                    <div className="animate-fade-in">
+                    <div className="animate-slide-in">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                            <h2 style={{ fontSize: '1.2rem', fontWeight: 600 }}>Etapa 2: Semana Base</h2>
-                            <button type="button" onClick={() => setStep(1)} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <div className="flex items-center gap-4">
+                                <h2 style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-primary)' }}>Etapa 2: Planejar Base Semanal</h2>
+                            </div>
+
+                            <button type="button" onClick={() => setStep(1)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 <ArrowLeft size={16} /> Voltar
                             </button>
                         </div>
@@ -239,14 +321,14 @@ const MesocycleBuilder = () => {
                                         padding: '8px 16px',
                                         borderRadius: '20px',
                                         border: 'none',
-                                        background: activeTab === w.id ? 'var(--accent-primary)' : '#e2e8f0',
-                                        color: activeTab === w.id ? '#fff' : '#64748B',
+                                        background: activeTab === w.id ? 'var(--accent-primary)' : 'var(--bg-secondary)',
+                                        color: activeTab === w.id ? '#000' : 'var(--text-secondary)',
                                         fontWeight: 600,
                                         cursor: 'pointer',
                                         whiteSpace: 'nowrap'
                                     }}
                                 >
-                                    {w.name} ({w.exercises.length})
+                                    {w.name} ({config.activityType === 'weightlifting' ? w.exercises.length : (w.duration ? w.duration + 'm' : '-')})
                                 </button>
                             ))}
                             <button
@@ -254,9 +336,9 @@ const MesocycleBuilder = () => {
                                 style={{
                                     padding: '8px 12px',
                                     borderRadius: '20px',
-                                    border: '1px dashed #94a3b8',
+                                    border: '1px dashed var(--border-subtle)',
                                     background: 'transparent',
-                                    color: '#64748B',
+                                    color: 'var(--text-secondary)',
                                     cursor: 'pointer'
                                 }}
                             >
@@ -265,8 +347,8 @@ const MesocycleBuilder = () => {
                         </div>
 
                         {/* Weekday Selector for Active Tab */}
-                        <div style={{ marginBottom: '1rem', background: '#fff', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                            <label style={{ marginRight: '10px', fontWeight: 600, color: '#334155' }}>Agendar para:</label>
+                        <div style={{ marginBottom: '1rem', background: 'var(--bg-secondary)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                            <label style={{ marginRight: '10px', fontWeight: 600, color: 'var(--text-primary)' }}>Agendar para:</label>
                             <select
                                 value={baseWorkouts.find(w => w.id === activeTab)?.scheduledDay || ''}
                                 onChange={(e) => {
@@ -277,7 +359,8 @@ const MesocycleBuilder = () => {
                                         return w;
                                     }));
                                 }}
-                                style={{ padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                                className="input"
+                                style={{ padding: '6px', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
                             >
                                 <option value="">Sem dia fixo (Manual)</option>
                                 <option value="1">Segunda-feira</option>
@@ -288,15 +371,15 @@ const MesocycleBuilder = () => {
                                 <option value="6">Sábado</option>
                                 <option value="0">Domingo</option>
                             </select>
-                            <span style={{ fontSize: '0.8rem', color: '#64748B', marginLeft: '10px' }}>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '10px' }}>
                                 (Opcional: Define o dia da semana recorrente)
                             </span>
                         </div>
 
                         {/* Active Tab Content */}
-                        <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '1.5rem', marginBottom: '1.5rem' }}>
+                        <div style={{ background: 'rgba(20, 20, 20, 0.4)', borderRadius: '12px', padding: '1.5rem', marginBottom: '1.5rem', border: '1px solid var(--border-subtle)' }}>
                             <div style={{ marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#475569' }}>Nome do Treino (Opcional)</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Nome do Treino (Opcional)</label>
                                 <input
                                     type="text"
                                     value={baseWorkouts.find(w => w.id === activeTab)?.name || ''}
@@ -309,223 +392,288 @@ const MesocycleBuilder = () => {
                                         }));
                                     }}
                                     placeholder={`Ex: Treino ${activeTab}, Perna, Superiores...`}
+                                    className="input"
                                     style={{
                                         width: '100%', padding: '10px', borderRadius: '6px',
-                                        border: '1px solid #cbd5e1', fontSize: '1rem'
+                                        border: '1px solid var(--border-subtle)', fontSize: '1rem',
+                                        background: 'var(--bg-secondary)', color: 'var(--text-primary)'
                                     }}
                                 />
                             </div>
 
-                            <h3 style={{ marginBottom: '1rem', color: '#334155' }}>Exercícios</h3>
+                            {/* CONDITIONAL CONTENT */}
+                            {config.activityType === 'weightlifting' ? (
+                                <>
+                                    <h3 style={{ marginBottom: '1rem', color: 'var(--text-primary)' }}>Exercícios</h3>
 
-                            {/* Exercise List */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                                {baseWorkouts.find(w => w.id === activeTab)?.exercises.length === 0 && (
-                                    <p style={{ color: '#94a3b8', fontStyle: 'italic' }}>Nenhum exercício adicionado ainda.</p>
-                                )}
-                                {baseWorkouts.find(w => w.id === activeTab)?.exercises.map((ex, index, arr) => {
-                                    // Superset Grouping Logic
-                                    const isSuperset = !!ex.supersetId;
-                                    const prevIsSame = index > 0 && arr[index - 1].supersetId === ex.supersetId;
-                                    const nextIsSame = index < arr.length - 1 && arr[index + 1].supersetId === ex.supersetId;
-                                    const isLinked = isSuperset && (prevIsSame || nextIsSame);
-                                    const isStart = isSuperset && !prevIsSame;
-                                    const isEnd = isSuperset && !nextIsSame;
+                                    {/* Exercise List */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                                        {currentWorkout.exercises.length === 0 && (
+                                            <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Nenhum exercício adicionado ainda.</p>
+                                        )}
+                                        {currentWorkout.exercises.map((ex, index, arr) => {
+                                            // Superset Grouping Logic
+                                            const isSuperset = !!ex.supersetId;
+                                            const prevIsSame = index > 0 && arr[index - 1].supersetId === ex.supersetId;
+                                            const nextIsSame = index < arr.length - 1 && arr[index + 1].supersetId === ex.supersetId;
+                                            const isLinked = isSuperset && (prevIsSame || nextIsSame);
+                                            const isStart = isSuperset && !prevIsSame;
+                                            const isEnd = isSuperset && !nextIsSame;
 
-                                    return (
-                                        <div
-                                            key={ex.id}
-                                            style={{
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                alignItems: 'center',
-                                                background: '#fff',
-                                                padding: '10px',
-                                                borderRadius: isLinked ? (isStart ? '8px 8px 0 0' : (isEnd ? '0 0 8px 8px' : '0')) : '8px',
-                                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                                                marginLeft: isLinked ? '12px' : '0',
-                                                borderLeft: isLinked ? '4px solid var(--accent-primary)' : 'none',
-                                                marginBottom: isLinked && !isEnd ? '0' : '8px'
-                                            }}
-                                        >
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                {/* Left-side Add Button for Superset */}
-                                                <button
-                                                    onClick={() => handleAddSupersetExercise(activeTab, index)}
-                                                    title="Adicionar exercício conjugado (Bi-set/Tri-set)"
+                                            return (
+                                                <div
+                                                    key={ex.id}
                                                     style={{
-                                                        width: '24px', height: '24px',
-                                                        borderRadius: '4px', border: '1px dashed var(--accent-primary)',
-                                                        background: '#f0f9ff', color: 'var(--accent-primary)',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        cursor: 'pointer',
-                                                        flexShrink: 0
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center',
+                                                        background: 'var(--bg-secondary)',
+                                                        padding: '10px',
+                                                        borderRadius: isLinked ? (isStart ? '8px 8px 0 0' : (isEnd ? '0 0 8px 8px' : '0')) : '8px',
+                                                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                                        marginLeft: isLinked ? '12px' : '0',
+                                                        borderLeft: isLinked ? '4px solid var(--accent-primary)' : 'none',
+                                                        marginBottom: isLinked && !isEnd ? '0' : '8px'
                                                     }}
                                                 >
-                                                    <Plus size={14} />
-                                                </button>
-
-                                                <div style={{ flex: 1 }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                                        <input
-                                                            type="text"
-                                                            value={ex.name}
-                                                            onChange={(e) => handleExerciseChange(activeTab, ex.id, 'name', e.target.value)}
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                        {/* Left-side Add Button for Superset */}
+                                                        <button
+                                                            onClick={() => handleAddSupersetExercise(activeTab, index)}
+                                                            title="Adicionar exercício conjugado (Bi-set/Tri-set)"
                                                             style={{
-                                                                fontWeight: 600,
-                                                                color: '#1e293b',
-                                                                border: '1px solid transparent',
-                                                                background: 'transparent',
-                                                                padding: '4px',
-                                                                borderRadius: '4px',
-                                                                fontSize: '1rem',
-                                                                width: '100%',
-                                                                transition: 'all 0.2s'
+                                                                width: '24px', height: '24px',
+                                                                borderRadius: '4px', border: '1px dashed var(--accent-primary)',
+                                                                background: 'rgba(74, 222, 128, 0.1)', color: 'var(--accent-primary)',
+                                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                cursor: 'pointer',
+                                                                flexShrink: 0
                                                             }}
-                                                            className="hover:border-slate-300 focus:border-blue-500 focus:bg-white"
-                                                            placeholder="Nome do exercício"
-                                                        />
-                                                        {isLinked && <span style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', border: '1px solid var(--accent-primary)', padding: '0 4px', borderRadius: '4px', whiteSpace: 'nowrap' }}>Conjugado</span>}
-                                                    </div>
-                                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                            <span style={{ fontSize: '0.85rem', color: '#64748B' }}>Séries:</span>
-                                                            <input
-                                                                type="text"
-                                                                value={ex.sets}
-                                                                onChange={(e) => handleExerciseChange(activeTab, ex.id, 'sets', e.target.value)}
-                                                                style={{ width: '40px', padding: '2px 4px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-                                                            />
+                                                        >
+                                                            <Plus size={14} />
+                                                        </button>
+
+                                                        <div style={{ flex: 1 }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                                                <input
+                                                                    type="text"
+                                                                    value={ex.name}
+                                                                    onChange={(e) => handleExerciseChange(activeTab, ex.id, 'name', e.target.value)}
+                                                                    style={{
+                                                                        fontWeight: 600,
+                                                                        color: 'var(--text-primary)',
+                                                                        border: '1px solid transparent',
+                                                                        background: 'transparent',
+                                                                        padding: '4px',
+                                                                        borderRadius: '4px',
+                                                                        fontSize: '1rem',
+                                                                        width: '100%',
+                                                                        transition: 'all 0.2s'
+                                                                    }}
+                                                                    className="hover:border-zinc-700 focus:border-green-500 focus:bg-zinc-800"
+                                                                    placeholder="Nome do exercício"
+                                                                />
+                                                                {isLinked && <span style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', border: '1px solid var(--accent-primary)', padding: '0 4px', borderRadius: '4px', whiteSpace: 'nowrap' }}>Conjugado</span>}
+                                                            </div>
+                                                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Séries:</span>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={ex.sets}
+                                                                        onChange={(e) => handleExerciseChange(activeTab, ex.id, 'sets', e.target.value)}
+                                                                        style={{ width: '40px', padding: '2px 4px', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: '0.85rem' }}
+                                                                    />
+                                                                </div>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Reps:</span>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={ex.reps}
+                                                                        onChange={(e) => handleExerciseChange(activeTab, ex.id, 'reps', e.target.value)}
+                                                                        style={{ width: '60px', padding: '2px 4px', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: '0.85rem' }}
+                                                                    />
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                            <span style={{ fontSize: '0.85rem', color: '#64748B' }}>Reps:</span>
-                                                            <input
-                                                                type="text"
-                                                                value={ex.reps}
-                                                                onChange={(e) => handleExerciseChange(activeTab, ex.id, 'reps', e.target.value)}
-                                                                style={{ width: '60px', padding: '2px 4px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-                                                            />
-                                                        </div>
+                                                        <button
+                                                            onClick={() => handleRemoveExercise(activeTab, ex.id)}
+                                                            style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
                                                     </div>
                                                 </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Add Exercise Form */}
+                                    <div className={styles.addExerciseForm} style={{ opacity: 1, pointerEvents: 'auto' }}>
+                                        <div>
+                                            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Exercício</label>
+                                            <div style={{ position: 'relative' }}>
+                                                <input
+                                                    type="text"
+                                                    value={newExercise.name}
+                                                    onChange={e => {
+                                                        const val = e.target.value;
+                                                        setNewExercise({ ...newExercise, name: val });
+                                                    }}
+                                                    placeholder="Nome do exercício"
+                                                    className="input"
+                                                    style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                                                />
                                             </div>
-                                            <button
-                                                onClick={() => handleRemoveExercise(activeTab, ex.id)}
-                                                style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
                                         </div>
-                                    );
-                                })}
-                            </div>
+                                        <div>
+                                            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Séries</label>
+                                            <input
+                                                type="text"
+                                                value={newExercise.sets}
+                                                onChange={e => setNewExercise({ ...newExercise, sets: e.target.value })}
+                                                className="input"
+                                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Reps</label>
+                                            <input
+                                                type="text"
+                                                value={newExercise.reps}
+                                                onChange={e => setNewExercise({ ...newExercise, reps: e.target.value })}
+                                                className="input"
+                                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={handleAddExercise}
+                                            className="btn-primary"
+                                            style={{ display: 'flex', alignItems: 'center', gap: '8px', height: '100%', justifyContent: 'center', marginTop: 'auto' }}
+                                        >
+                                            <Plus size={18} />
+                                        </button>
+                                    </div>
+                                </>
+                            ) : (
+                                /* CARDIO FORM (Running, Cycling, Swimming) */
+                                <div className="cardio-base-form animate-fade-in">
+                                    <div style={{
+                                        display: 'flex', alignItems: 'center', gap: '10px', padding: '10px',
+                                        background: 'rgba(2, 132, 199, 0.1)', borderRadius: '8px', marginBottom: '1.5rem',
+                                        border: '1px solid rgba(2, 132, 199, 0.2)'
+                                    }}>
+                                        <Activity size={20} color="var(--accent-primary)" />
+                                        <span style={{ fontSize: '0.9rem', color: 'var(--accent-primary)' }}>
+                                            Defina os parâmetros principais do treino de {
+                                                config.activityType === 'running' ? 'Corrida' :
+                                                    config.activityType === 'cycling' ? 'Ciclismo' : 'Natação'
+                                            }.
+                                        </span>
+                                    </div>
 
-                            {/* Add Exercise Form */}
-                            <div className={styles.addExerciseForm}>
-                                <div>
-                                    <label style={{ fontSize: '0.8rem', color: '#64748B' }}>Exercício</label>
-                                    <div style={{ position: 'relative' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                                        <div>
+                                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, color: 'var(--text-secondary)' }}>
+                                                <Clock size={16} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'text-bottom' }} />
+                                                Duração Plan. (min)
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={baseWorkouts.find(w => w.id === activeTab)?.duration || ''}
+                                                onChange={(e) => handleBaseWorkoutChange(activeTab, 'duration', e.target.value)}
+                                                placeholder="Ex: 45"
+                                                className="input"
+                                                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, color: 'var(--text-secondary)' }}>
+                                                <MapPin size={16} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'text-bottom' }} />
+                                                Distância ({config.activityType === 'swimming' ? 'm' : 'km'})
+                                            </label>
+                                            <input
+                                                type="number"
+                                                step="0.1"
+                                                value={baseWorkouts.find(w => w.id === activeTab)?.distance || ''}
+                                                onChange={(e) => handleBaseWorkoutChange(activeTab, 'distance', e.target.value)}
+                                                placeholder={config.activityType === 'swimming' ? "Ex: 1500" : "Ex: 5.5"}
+                                                className="input"
+                                                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, color: 'var(--text-secondary)' }}>
+                                            RPE / Intensidade Alvo (0-10)
+                                        </label>
                                         <input
-                                            type="text"
-                                            value={newExercise.name}
-                                            onChange={e => {
-                                                const val = e.target.value;
-                                                setNewExercise({ ...newExercise, name: val });
-
-                                                // Simple Debounce for AI
-                                                if (window.aiTimeout) clearTimeout(window.aiTimeout);
-                                                window.aiTimeout = setTimeout(async () => {
-                                                    if (val.length > 3) {
-                                                        setIsIdentifying(true); // Need state
-                                                        try {
-                                                            const { classifyExercise } = await import('../services/aiClassifier');
-                                                            const result = await classifyExercise(val);
-                                                            if (result) {
-                                                                setNewExercise(prev => ({
-                                                                    ...prev,
-                                                                    muscleGroup: result.muscleGroup,
-                                                                    category: result.category
-                                                                }));
-                                                            }
-                                                        } catch (err) {
-                                                            console.error(err);
-                                                        } finally {
-                                                            setIsIdentifying(false);
-                                                        }
-                                                    }
-                                                }, 1500);
-                                            }}
-                                            placeholder="Nome do exercício"
-                                            style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', paddingRight: '30px' }}
+                                            type="number"
+                                            min="1" max="10"
+                                            value={baseWorkouts.find(w => w.id === activeTab)?.rpe || ''}
+                                            onChange={(e) => handleBaseWorkoutChange(activeTab, 'rpe', e.target.value)}
+                                            placeholder="Ex: 7"
+                                            className="input"
+                                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
                                         />
-                                        {isIdentifying && (
-                                            <div style={{
-                                                position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
-                                                width: '12px', height: '12px', borderRadius: '50%',
-                                                border: '2px solid #cbd5e1', borderTopColor: 'var(--accent-primary)',
-                                                animation: 'spin 1s linear infinite'
-                                            }} title="Identificando via IA..." />
-                                        )}
+                                    </div>
+
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, color: 'var(--text-secondary)' }}>
+                                            <AlignLeft size={16} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'text-bottom' }} />
+                                            Aquecimento / Educativos (Drills)
+                                        </label>
+                                        <textarea
+                                            value={baseWorkouts.find(w => w.id === activeTab)?.drills || ''}
+                                            onChange={(e) => handleBaseWorkoutChange(activeTab, 'drills', e.target.value)}
+                                            placeholder="Descreva o aquecimento e exercícios técnicos..."
+                                            rows={3}
+                                            className="input"
+                                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', resize: 'vertical', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                                        />
+                                    </div>
+
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, color: 'var(--text-secondary)' }}>
+                                            <Activity size={16} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'text-bottom' }} />
+                                            Parte Principal (Main Set)
+                                        </label>
+                                        <textarea
+                                            value={baseWorkouts.find(w => w.id === activeTab)?.mainSet || ''}
+                                            onChange={(e) => handleBaseWorkoutChange(activeTab, 'mainSet', e.target.value)}
+                                            placeholder="Descreva a parte principal do treino (ex: 4x 1km @ 4:30/km)..."
+                                            rows={5}
+                                            className="input"
+                                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', resize: 'vertical', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                                        />
                                     </div>
                                 </div>
-                                <div>
-                                    <label style={{ fontSize: '0.8rem', color: '#64748B' }}>Séries</label>
-                                    <input
-                                        type="text"
-                                        value={newExercise.sets}
-                                        onChange={e => setNewExercise({ ...newExercise, sets: e.target.value })}
-                                        style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                                    />
-                                </div>
-                                <div>
-                                    <label style={{ fontSize: '0.8rem', color: '#64748B' }}>Reps</label>
-                                    <input
-                                        type="text"
-                                        value={newExercise.reps}
-                                        onChange={e => setNewExercise({ ...newExercise, reps: e.target.value })}
-                                        style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                                    />
-                                </div>
-                                <button
-                                    onClick={handleAddExercise}
-                                    style={{
-                                        background: '#3b82f6', color: '#fff', border: 'none',
-                                        padding: '8px', borderRadius: '6px', cursor: 'pointer',
-                                        height: '38px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                    }}
-                                >
-                                    <Plus size={20} />
-                                </button>
-                            </div>
+                            )}
+
                         </div>
 
-                        {/* Action Buttons */}
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2rem' }}>
                             <button
                                 type="button"
                                 onClick={handleGenerate}
                                 className="btn-primary"
                                 style={{
-                                    background: 'var(--success)',
-                                    color: '#052e16', // Dark green text for contrast
-                                    filter: 'none',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    fontSize: '1.1rem',
                                     padding: '12px 24px',
-                                    fontWeight: 'bold',
-                                    boxShadow: '0 4px 6px -1px rgba(34, 197, 94, 0.4)',
-                                    border: '2px solid #22c55e',
-                                    transform: 'scale(1.05)'
+                                    borderRadius: '8px',
+                                    fontSize: '1rem',
+                                    display: 'flex', alignItems: 'center', gap: '8px',
+                                    border: '2px solid var(--accent-primary)'
                                 }}
                             >
-                                <Save size={20} /> FINALIZAR PROGRAMA
+                                <Save size={20} />
+                                FINALIZAR PROGRAMA
                             </button>
                         </div>
                     </div>
                 )}
             </div>
+
         </div>
     );
 };

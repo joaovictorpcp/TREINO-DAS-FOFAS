@@ -71,7 +71,10 @@ export const StudentProvider = ({ children }) => {
             created_at: new Date().toISOString(),
             name,
             goal,
-            ...profileData // birthDate, height, weight
+            birthDate: profileData.birthDate || null,
+            gender: profileData.gender || 'male', // 'male' or 'female'
+            height: profileData.height || '',
+            ...profileData
         };
 
         setStudents(prev => [...prev, newStudent]);
@@ -103,12 +106,15 @@ export const StudentProvider = ({ children }) => {
         }));
     };
 
-    const addBodyMetric = (studentId, weight, date) => {
+    const addBodyMetric = (studentId, weight, date, skinfolds = null, bodyFat = null, circumferences = null) => {
         const newMetric = {
             id: crypto.randomUUID(),
             studentId,
             weight: parseFloat(weight),
             date,
+            skinfolds, // { chest, axilla, triceps, subscapular, abdomen, suprailiac, thigh }
+            circumferences, // { arm, forearm, thigh, calf, hips, abdomen, waist, chest, shoulder, neck }
+            bodyFat: bodyFat ? parseFloat(bodyFat) : null,
             created_at: new Date().toISOString()
         };
         setBodyMetrics(prev => [...prev, newMetric]);
@@ -144,11 +150,18 @@ export const StudentProvider = ({ children }) => {
         }
     };
 
-    const updateBodyMetric = (id, weight, date) => {
+    const updateBodyMetric = (id, weight, date, skinfolds = null, bodyFat = null, circumferences = null) => {
         setBodyMetrics(prev => {
             const updated = prev.map(m => {
                 if (m.id === id) {
-                    return { ...m, weight: parseFloat(weight), date };
+                    return {
+                        ...m,
+                        weight: parseFloat(weight),
+                        date,
+                        skinfolds: skinfolds || m.skinfolds,
+                        circumferences: circumferences || m.circumferences,
+                        bodyFat: bodyFat !== undefined ? parseFloat(bodyFat) : m.bodyFat
+                    };
                 }
                 return m;
             });

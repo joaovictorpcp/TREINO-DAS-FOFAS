@@ -1,36 +1,39 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+
 :root {
-  /* --- Color Palette: Clean & Energetic --- */
+  /* --- Training OS Theme: Dark & Neon --- */
 
   /* Backgrounds */
-  --bg-primary: #F8F9FA;
-  /* Ultra subtle off-white for depth */
-  --bg-secondary: #FFFFFF;
-  /* Pure White for Layout/Cards */
-  --bg-card: #FFFFFF;
-  /* White Cards */
-  --bg-accent: #E6E6FA;
-  /* Digital Lavender for active states/bgs */
+  --bg-primary: #050505;
+  /* Deep Black */
+  --bg-secondary: #0A0A0A;
+  /* Sidebar/Surface */
+  --bg-card: rgba(20, 20, 20, 0.7);
+  /* Translucent Card */
+  --bg-input: #121212;
 
   /* Accents */
-  --accent-primary: #FF6F61;
-  /* Living Coral - Action/Highlight */
-  --accent-secondary: #D8BFD8;
-  /* Secondary Lavender */
-  --accent-chart: #87CEEB;
-  /* Sky Blue for charts/cooling */
-  --accent-success: #10B981;
-  /* Standard success green */
-  --accent-danger: #EF4444;
-  /* Standard danger red */
+  --accent-primary: #00E676;
+  /* Neon Green */
+  --accent-secondary: #00B0FF;
+  /* Electric Blue */
+  --accent-glow: rgba(0, 230, 118, 0.4);
+  /* Green Glow */
+
+  --accent-success: #00E676;
+  --accent-danger: #FF3D00;
+  /* Neon Red/Orange */
+  --accent-warning: #FFC400;
 
   /* Text */
-  --text-primary: #333333;
-  /* Soft Black */
-  --text-secondary: #64748B;
-  /* Muted Slate */
-  --text-light: #94A3B8;
-  /* Lighter Text */
-  --text-on-primary: #FFFFFF;
+  --text-primary: #FAFAFA;
+  /* White-ish */
+  --text-secondary: #A1A1AA;
+  /* Light Gray */
+  --text-muted: #52525B;
+  /* Darker Gray */
+  --text-on-accent: #000000;
+  /* Black text on neon buttons */
 
   /* Spacing */
   --space-xs: 0.25rem;
@@ -41,27 +44,22 @@
   --space-2xl: 3rem;
 
   /* Borders & Radius */
-  --border-subtle: #F1F5F9;
-  /* Very light border */
-  --radius-sm: 8px;
-  --radius-md: 16px;
-  /* Aggressive Rounding */
-  --radius-lg: 24px;
-  /* Balloon effect */
+  --border-subtle: #27272A;
+  /* Zinc 800 */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
   --radius-pill: 9999px;
-  /* Pill shapes */
 
-  /* Shadows (Soft & Diffuse) */
-  --shadow-card: 0 10px 40px -10px rgba(0, 0, 0, 0.05);
-  --shadow-hover: 0 20px 40px -10px rgba(0, 0, 0, 0.08);
-  /* Float effect */
-  --shadow-float: 0 8px 30px rgba(0, 0, 0, 0.08);
+  /* Shadows (Neon & Deep) */
+  --shadow-card: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
+  --shadow-neon: 0 0 10px var(--accent-glow), 0 0 20px rgba(0, 230, 118, 0.2);
+  --shadow-float: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
 
   /* Typography */
-  --font-main: 'Poppins', sans-serif;
-  /* Headings/Body */
-  --font-display: 'Montserrat', sans-serif;
-  /* Numbers/Titles */
+  --font-main: 'Inter', sans-serif;
+  /* Cleaning up main font to match import */
+  --font-display: 'Orbitron', sans-serif;
 }
 
 /* Reset & Base */
@@ -75,6 +73,10 @@ body {
   margin: 0;
   font-family: var(--font-main);
   background-color: var(--bg-primary);
+  background-image: linear-gradient(rgba(5, 5, 5, 0.85), rgba(5, 5, 5, 0.95)), url('/bg-tech.png');
+  background-size: cover;
+  background-attachment: fixed;
+  background-position: center;
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
 }
@@ -89,27 +91,39 @@ h6 {
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+}
+
+h2 {
+  font-size: clamp(1.25rem, 3vw, 2rem);
+}
+
+h3 {
+  font-size: clamp(1.1rem, 2.5vw, 1.75rem);
 }
 
 /* Utilities */
 .glass-panel {
   background: var(--bg-card);
-  border: 1px solid transparent;
-  /* Removed borders for cleaner look, rely on shadow */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s;
 }
 
 .glass-panel:hover {
-  /* box-shadow: var(--shadow-hover); */
-  /* transform: translateY(-2px); */
-  /* Optional hover effect */
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .input {
-  background: #FFFFFF;
-  border: 2px solid var(--border-subtle);
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
   color: var(--text-primary);
   padding: 0.75rem 1rem;
   border-radius: var(--radius-md);
@@ -122,7 +136,8 @@ h6 {
 .input:focus {
   outline: none;
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 4px rgba(255, 111, 97, 0.1);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+  background: #18181b;
 }
 
 /* Standard Pill Button Configuration */
@@ -138,6 +153,7 @@ h6 {
   font-family: var(--font-main);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   letter-spacing: 0.3px;
+  text-decoration: none;
 }
 
 .btn:active {
@@ -146,21 +162,44 @@ h6 {
 
 .btn-primary {
   background: var(--accent-primary);
-  color: var(--text-on-primary);
-  box-shadow: 0 4px 15px rgba(255, 111, 97, 0.3);
+  color: var(--text-on-accent);
+  box-shadow: var(--shadow-neon);
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
 }
 
 .btn-primary:hover {
-  filter: brightness(1.05);
-  box-shadow: 0 6px 20px rgba(255, 111, 97, 0.4);
+  filter: brightness(1.1);
+  box-shadow: 0 0 20px var(--accent-glow);
   transform: translateY(-1px);
 }
 
 .page-container {
-  max-width: 1200px;
+  max-width: 1400px;
+  /* Slightly wider for dashboard feeling */
   margin: 0 auto;
   padding: var(--space-md);
   min-height: 100vh;
+}
+
+/* Scrollbar Customization */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #444;
 }
 
 /* Animation utilities */

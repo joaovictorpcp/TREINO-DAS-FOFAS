@@ -1,88 +1,94 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
-import { Activity, TrendingUp, Calendar, Layers, Copy, Repeat, Trophy, Rocket } from 'lucide-react';
-import styles from './Dashboard.module.css';
-
 import { useStudent } from '../context/StudentContext';
-
-import AttendanceCalendar from '../components/Student/AttendanceCalendar';
+import { Trophy, Rocket, Dumbbell, Bike, Footprints, Waves } from 'lucide-react';
+import styles from './Dashboard.module.css';
 
 const Dashboard = () => {
     const context = useWorkout();
     const navigate = useNavigate();
     const workouts = Array.isArray(context.workouts) ? context.workouts : [];
-    const { mirrorWeekToMonth } = context;
     const { selectedStudentId, students } = useStudent();
 
-    console.log('Dashboard render - Workouts:', workouts);
-
-    if (!workouts) {
-        return <div className="p-4">Carregando dados...</div>;
-    }
-
+    // If no student selected, user should stick to "Select Student" or "Loading"
+    // Ideally redirect or show selector.
     const currentStudent = students.find(s => s.id === selectedStudentId);
 
-    // Filter workouts by student
-    const filteredWorkouts = useMemo(() => {
-        if (!selectedStudentId) return workouts;
-        return workouts.filter(w => w.studentId === selectedStudentId);
+    // --- WEEKLY STRIP LOGIC ---
+    const weeklyStatus = useMemo(() => {
+        if (!selectedStudentId) return [];
+        const today = new Date();
+        const dayOfWeek = today.getDay(); // 0 (Sun) - 6 (Sat)
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - dayOfWeek);
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        const days = [];
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(startOfWeek);
+            d.setDate(startOfWeek.getDate() + i);
+
+            const isToday = d.toDateString() === today.toDateString();
+            const dTime = d.getTime();
+            const todayTime = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+            const isPast = dTime < todayTime;
+
+            // Find workouts for this day
+            const dayWorkouts = workouts.filter(w =>
+                w.studentId === selectedStudentId &&
+                new Date(w.date).toDateString() === d.toDateString()
+            );
+
+            let status = 'neutral';
+            const hasCompleted = dayWorkouts.some(w => (w.status || '').toLowerCase() === 'completed');
+
+            if (hasCompleted) {
+                status = 'completed';
+            } else if (dayWorkouts.length > 0) {
+                if (isPast) status = 'missed';
+                else status = 'planned'; // Future or Today Pending
+            } else {
+                status = 'neutral'; // No workout scheduled
+            }
+
+            days.push({ date: d, status, isToday });
+        }
+        return days;
     }, [workouts, selectedStudentId]);
 
-    // 1. Group Data by Mesocycle & Week
-    const processedData = useMemo(() => {
-        // Find latest mesocycle to show "Current Cycle"
-        const latestMeso = filteredWorkouts.length > 0
-            ? Math.max(...filteredWorkouts.map(w => w.meta?.mesocycle || 1))
-            : 1;
-
-        // Has Week 1 Data?
-        const hasWeek1Data = filteredWorkouts.some(w =>
-            (w.meta?.mesocycle || 1) === latestMeso && (w.meta?.week || 1) === 1
-        );
-
-        return { latestMeso, hasWeek1Data };
-    }, [filteredWorkouts]);
-
-    const [viewMode, setViewMode] = React.useState('weekly'); // 'weekly' | 'monthly'
-
-    const { latestMeso, hasWeek1Data } = processedData;
-
-    const handleMirror = () => {
-        if (window.confirm(`Você está prestes a copiar os treinos da Semana 1 (Meso ${latestMeso}) para as semanas 2, 3 e 4. \n\nOs exercícios serão mantidos, mas cargas e RPE serão zerados para preenchimento futuro.\n\nDeseja continuar?`)) {
-            mirrorWeekToMonth(selectedStudentId, latestMeso);
-        }
-    };
-
-    // --- Next Workout Logic ---
-    const { nextWorkout, upcomingWorkouts } = useMemo(() => {
-        if (!selectedStudentId) return { nextWorkout: null, upcomingWorkouts: [] };
+    // --- HERO LOGIC ---
+    const heroContent = useMemo(() => {
+        if (!selectedStudentId) return { type: 'empty' };
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        // Filter: Future workouts for this student
-        const future = workouts
+        // Filter valid workouts: Today or Future
+        const validWorkouts = workouts
             .filter(w => w.studentId === selectedStudentId)
             .filter(w => {
-                const wDate = new Date(w.date);
-                wDate.setHours(0, 0, 0, 0);
-                return wDate >= today;
+                const d = new Date(w.date);
+                d.setHours(0, 0, 0, 0); // normalize
+                return d >= today;
             })
             .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-        return {
-            nextWorkout: future[0] || null,
-            upcomingWorkouts: future.slice(1, 6) // Show next 5
-        };
+        if (validWorkouts.length === 0) return { type: 'empty' };
+
+        // Check for TODAY's workouts
+        const todays = validWorkouts.filter(w => new Date(w.date).toDateString() === today.toDateString());
+
+        if (todays.length > 0) {
+            return { type: 'today', items: todays };
+        } else {
+            return { type: 'next', item: validWorkouts[0] };
+        }
     }, [workouts, selectedStudentId]);
 
-    // --- GAMIFICATION: RANKING SYSTEM ---
+    // --- GAMIFICATION: RANKING SYSTEM (Optional - keep minimal badge?) ---
     const rankingData = useMemo(() => {
-        if (!workouts || !students) return null;
-
-        // Count completed workouts per student
+        if (!workouts || !students || !selectedStudentId) return null;
         const scores = {};
         workouts.forEach(w => {
             const s = (w.status || '').toLowerCase();
@@ -90,291 +96,193 @@ const Dashboard = () => {
                 scores[w.studentId] = (scores[w.studentId] || 0) + 1;
             }
         });
-
-        // Convert to array and sort
         const rankedList = Object.entries(scores)
             .map(([sId, score]) => ({ studentId: sId, score }))
             .sort((a, b) => b.score - a.score);
 
-        // Find current student rank
         const myRankIndex = rankedList.findIndex(x => x.studentId === selectedStudentId);
         const myScore = scores[selectedStudentId] || 0;
 
         return {
             rank: myRankIndex !== -1 ? myRankIndex + 1 : '-',
-            totalStudents: students.length,
             score: myScore
         };
     }, [workouts, students, selectedStudentId]);
 
-    // --- ANALYTICS: MONTHLY PLANNED vs DONE ---
-    // (MOVED TO PERFORMANCE PAGE)
 
+    const renderHeroCard = (workout, label = "PRÓXIMO TREINO") => (
+        <div key={workout.id} className={`${styles.heroCard} glass-panel`} style={{ marginBottom: '1rem', position: 'relative', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
+            <div style={{ flex: 1, zIndex: 2 }}>
+                <div style={{
+                    fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px'
+                }}>
+                    {label}
+                </div>
+                <h2 style={{
+                    fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1, margin: 0, letterSpacing: '-0.02em'
+                }}>
+                    {workout.name || workout.category || 'Treino do Dia'}
+                </h2>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '12px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--bg-primary)', padding: '4px 10px', borderRadius: '8px' }}>
+                        {(!workout.activity_type || workout.activity_type === 'weightlifting') && <Trophy size={14} color="var(--accent-primary)" />}
+                        {workout.activity_type === 'running' && <Footprints size={14} color="var(--accent-primary)" />}
+                        {workout.activity_type === 'cycling' && <Bike size={14} color="var(--accent-primary)" />}
+                        {workout.activity_type === 'swimming' && <Waves size={14} color="var(--accent-primary)" />}
+
+                        <span style={{ fontWeight: 600 }}>
+                            {workout.activity_type && workout.activity_type !== 'weightlifting' ? (
+                                <>
+                                    {workout.activity_type === 'running' && 'Corrida'}
+                                    {workout.activity_type === 'cycling' && 'Ciclismo'}
+                                    {workout.activity_type === 'swimming' && 'Natação'}
+                                </>
+                            ) : (
+                                workout.exercises && workout.exercises.some(e => (e.muscleGroup || '').includes('Legs')) ? 'Inferiores' : (workout.exercises && workout.exercises.some(e => (e.muscleGroup || '').includes('Chest')) ? 'Peitoral' : 'Geral')
+                            )}
+                        </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--bg-primary)', padding: '4px 10px', borderRadius: '8px' }}>
+                        <span style={{ fontSize: '1em' }}>⏱</span>
+                        <span style={{ fontWeight: 600 }}>
+                            {workout.duration_minutes ? `~${workout.duration_minutes} min` : `~${Math.max(45, (workout.exercises?.length || 0) * 5)} min`}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div style={{ zIndex: 2 }}>
+                <button
+                    onClick={() => navigate(`/edit/${workout.id}`)}
+                    className="btn-primary"
+                    style={{
+                        padding: '16px 32px',
+                        borderRadius: '16px',
+                        fontSize: '0.95rem',
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
+                        transition: 'all 0.2s'
+                    }}
+                >
+                    <Rocket size={18} />
+                    {workout.status === 'completed' ? 'VER' : 'INICIAR'}
+                </button>
+            </div>
+
+            {/* Decorative BG */}
+            <div style={{
+                position: 'absolute', right: -20, top: -20,
+                width: '150px', height: '150px',
+                background: 'var(--neon-glow)',
+                opacity: 0.1,
+                borderRadius: '50%', pointerEvents: 'none',
+                filter: 'blur(40px)'
+            }} />
+        </div>
+    );
+
+    if (!selectedStudentId) {
+        return <div className="p-4" style={{ textAlign: 'center', marginTop: '2rem', color: 'var(--text-muted)' }}>Selecione um aluno para começar.</div>;
+    }
 
     return (
-        <div className="page-container animate-fade-in" style={{ paddingBottom: '80px' }}>
-            <header className={styles.header}>
-                <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}>
-                        <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <h1 className={styles.title}>
-                                    {currentStudent ? `Painel de ${currentStudent.name}` : 'Painel Geral'}
-                                </h1>
-                                {/* RANKING BADGE */}
-                                {rankingData && selectedStudentId && (
-                                    <div style={{
-                                        background: '#fef3c7', color: '#b45309',
-                                        padding: '4px 12px', borderRadius: '20px',
-                                        fontSize: '0.9rem', fontWeight: 700,
-                                        display: 'flex', alignItems: 'center', gap: '6px',
-                                        boxShadow: '0 2px 5px rgba(245, 158, 11, 0.2)'
-                                    }}>
-                                        <Trophy size={14} />
-                                        #{rankingData.rank} Geral ({rankingData.score} treinos)
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className={styles.subtitle} style={{ display: 'flex', gap: '16px', alignItems: 'center', marginTop: '8px' }}>
-                                {currentStudent ? (
-                                    <>
-                                        <span>Altura: {currentStudent.height || '-'} cm</span>
-                                        <span>•</span>
-                                        <span>Idade: {currentStudent.birthDate ? Math.floor((new Date() - new Date(currentStudent.birthDate)) / 31557600000) : '-'} anos</span>
-                                        <span>•</span>
-                                        <span>Peso: {currentStudent.weight || '-'} kg</span>
-                                    </>
-                                ) : (
-                                    <span>Selecione um aluno</span>
-                                )}
-                            </div>
+        <div className="page-container animate-fade-in" style={{ paddingBottom: '40px' }}>
+            {/* MINIMAL HEADER */}
+            <header className={styles.header} style={{ marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                    <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <h1 className={styles.title} style={{ color: 'var(--text-primary)' }}>
+                                {currentStudent ? `Olá, ${currentStudent.name}` : 'Bem-vindo'}
+                            </h1>
+                            {rankingData && (
+                                <div style={{
+                                    background: 'rgba(234, 179, 8, 0.2)', color: '#facc15',
+                                    padding: '4px 12px', borderRadius: '20px',
+                                    fontSize: '0.8rem', fontWeight: 700,
+                                    display: 'flex', alignItems: 'center', gap: '6px',
+                                    border: '1px solid rgba(234, 179, 8, 0.3)'
+                                }}>
+                                    <Trophy size={12} />
+                                    #{rankingData.rank}
+                                </div>
+                            )}
+                        </div>
+                        <div className={styles.subtitle} style={{ marginTop: '4px', color: 'var(--text-secondary)' }}>
+                            Foco na execução hoje.
                         </div>
                     </div>
+                </div>
+            </header>
 
-                    {/* Actions Bar */}
-                    {selectedStudentId && (
-                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap' }}>
-                            <button
-                                onClick={() => navigate('/mesocycle-builder')}
-                                className="btn-primary"
-                                style={{
-                                    display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 20px',
-                                    borderRadius: '8px', border: 'none', fontWeight: 600, cursor: 'pointer',
-                                    fontSize: '0.95rem', boxShadow: '0 4px 6px -1px rgba(var(--accent-primary-rgb), 0.3)'
-                                }}
-                            >
-                                <Repeat size={18} /> Novo Ciclo
-                            </button>
+            <section style={{ maxWidth: '800px', margin: '0 auto' }}>
 
-                            <button
-                                onClick={() => setViewMode(prev => prev === 'monthly' ? 'hero' : 'monthly')}
-                                style={{
-                                    display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 20px',
-                                    borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff',
-                                    color: '#64748B', fontWeight: 600, cursor: 'pointer', fontSize: '0.95rem'
-                                }}
-                            >
-                                <Calendar size={18} /> {viewMode === 'monthly' ? 'Ver Próximos' : 'Ver Calendário'}
+                {/* 1. WEEKLY STRIP context */}
+                <div style={{ marginBottom: '2rem' }}>
+                    <div style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        marginBottom: '0.75rem', padding: '0 4px'
+                    }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            Resumo da Semana
+                        </span>
+                    </div>
+                    <div className="glass-panel" style={{
+                        display: 'flex', justifyContent: 'space-between', gap: '8px',
+                        padding: '16px', borderRadius: '16px',
+                        border: '1px solid var(--border-subtle)'
+                    }}>
+                        {weeklyStatus.map((day, idx) => (
+                            <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flex: 1 }}>
+                                <div style={{
+                                    width: '32px', height: '32px', borderRadius: '50%',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    background: day.status === 'completed' ? 'rgba(74, 222, 128, 0.2)' : (day.status === 'missed' ? 'rgba(248, 113, 113, 0.2)' : (day.isToday ? 'var(--bg-secondary)' : 'transparent')),
+                                    border: day.isToday ? '2px solid var(--accent-primary)' : (day.status === 'neutral' ? '1px dashed var(--border-subtle)' : '1px solid var(--border-subtle)'),
+                                    color: day.status === 'completed' ? 'var(--accent-primary)' : (day.status === 'missed' ? '#f87171' : 'var(--text-muted)'),
+                                    fontWeight: 700, fontSize: '0.8rem'
+                                }}>
+                                    {day.status === 'completed' ? '✓' : (day.status === 'missed' ? '✕' : (day.date.getDate()))}
+                                </div>
+                                <span style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                                    {day.date.toLocaleDateString('pt-BR', { weekday: 'short' }).substring(0, 3)}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* 2. HERO SECTION */}
+                <div style={{ marginBottom: '2rem' }}>
+                    {heroContent.type === 'today' ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
+                                HOJE • {heroContent.items.length} SESSÕES
+                            </div>
+                            {heroContent.items.map(w => renderHeroCard(w, "TREINO DE HOJE"))}
+                        </div>
+                    ) : heroContent.type === 'next' ? (
+                        renderHeroCard(heroContent.item, "SUA PRÓXIMA MISSÃO")
+                    ) : (
+                        <div className="glass-panel" style={{ padding: '4rem', textAlign: 'center', borderRadius: '24px' }}>
+                            <div style={{ marginBottom: '1rem', background: 'var(--bg-secondary)', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+                                <Trophy size={32} color="var(--text-muted)" />
+                            </div>
+                            <h3 style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-primary)' }}>Tudo em dia!</h3>
+                            <p style={{ color: 'var(--text-secondary)', maxWidth: '300px', margin: '8px auto' }}>Aproveite o descanso ou registre uma atividade extra.</p>
+                            <button onClick={() => navigate('/create')} className="btn-primary" style={{ marginTop: '1rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                                <Rocket size={16} /> Registrar Treino
                             </button>
                         </div>
                     )}
                 </div>
-            </header>
 
-            {/* Dashboard Content */}
-            {selectedStudentId && (
-                <section style={{ marginBottom: '2rem' }}>
-                    {viewMode === 'monthly' ? (
-                        <AttendanceCalendar
-                            viewMode="heatmap"
-                            onDayClick={(workoutId) => navigate(`/edit/${workoutId}`)}
-                        />
-                    ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-
-                            {/* TOP ROW: HERO ONLY */}
-                            <div style={{ width: '100%' }}>
-
-                                {/* HERO CARD (Compact Horizontal) */}
-                                {nextWorkout ? (
-                                    <div className={styles.heroCard}>
-                                        <div style={{ flex: 1, zIndex: 2 }}>
-                                            <div style={{
-                                                fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '6px'
-                                            }}>
-                                                PRÓXIMO TREINO
-                                            </div>
-                                            <h2 style={{
-                                                fontSize: '2rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.1, margin: 0, letterSpacing: '-0.02em'
-                                            }}>
-                                                {nextWorkout.name || nextWorkout.category || 'Treino do Dia'}
-                                            </h2>
-
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '12px', color: '#64748B', fontSize: '0.9rem' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f8fafc', padding: '4px 10px', borderRadius: '8px' }}>
-                                                    <Trophy size={14} color="#64748b" />
-                                                    <span style={{ fontWeight: 600 }}>
-                                                        {nextWorkout.exercises && nextWorkout.exercises.some(e => (e.muscleGroup || '').includes('Legs')) ? 'Inferiores' : (nextWorkout.exercises && nextWorkout.exercises.some(e => (e.muscleGroup || '').includes('Chest')) ? 'Peitoral' : 'Geral')}
-                                                    </span>
-                                                </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#f8fafc', padding: '4px 10px', borderRadius: '8px' }}>
-                                                    <span style={{ fontSize: '1em' }}>⏱</span>
-                                                    <span style={{ fontWeight: 600 }}>~{Math.max(45, (nextWorkout.exercises?.length || 0) * 5)} min</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div style={{ zIndex: 2 }}>
-                                            <button
-                                                onClick={() => navigate(`/edit/${nextWorkout.id}`)}
-                                                style={{
-                                                    background: '#0f172a',
-                                                    color: '#fff',
-                                                    padding: '16px 32px',
-                                                    borderRadius: '16px',
-                                                    fontSize: '0.95rem',
-                                                    fontWeight: 600,
-                                                    border: 'none',
-                                                    cursor: 'pointer',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '10px',
-                                                    boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.3)',
-                                                    transition: 'all 0.2s'
-                                                }}
-                                                onMouseEnter={e => {
-                                                    e.currentTarget.style.transform = 'translateY(-2px)';
-                                                    e.currentTarget.style.boxShadow = '0 15px 30px -5px rgba(15, 23, 42, 0.4)';
-                                                }}
-                                                onMouseLeave={e => {
-                                                    e.currentTarget.style.transform = 'translateY(0)';
-                                                    e.currentTarget.style.boxShadow = '0 10px 25px -5px rgba(15, 23, 42, 0.3)';
-                                                }}
-                                            >
-                                                <Rocket size={18} />
-                                                INICIAR SESSÃO
-                                            </button>
-                                        </div>
-
-                                        {/* Decorative BG */}
-                                        <div style={{
-                                            position: 'absolute', right: -20, top: -20,
-                                            width: '150px', height: '150px',
-                                            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(59, 130, 246, 0) 70%)',
-                                            borderRadius: '50%', pointerEvents: 'none'
-                                        }} />
-                                    </div>
-                                ) : (
-                                    <div style={{ padding: '4rem', textAlign: 'center', background: '#fff', borderRadius: '24px', border: '1px solid #f1f5f9' }}>
-                                        <h3 style={{ fontSize: '1.2rem', fontWeight: 600, color: '#94a3b8' }}>Sem treinos futuros</h3>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* EXERCISES LIST - COMPACT ROWS (If Next Workout Exists) */}
-                            {nextWorkout && nextWorkout.exercises?.length > 0 && (
-                                <div style={{ marginBottom: '0rem' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#334155' }}>Exercícios ({nextWorkout.exercises.length})</h3>
-                                    </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
-                                        {nextWorkout.exercises.map((ex, idx) => (
-                                            <div key={idx} style={{
-                                                display: 'flex', alignItems: 'center', gap: '16px',
-                                                padding: '12px 16px',
-                                                borderRadius: '12px',
-                                                background: '#fff',
-                                                border: '1px solid #f1f5f9',
-                                                boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
-                                            }}>
-                                                <div style={{
-                                                    width: '28px', height: '28px', borderRadius: '8px',
-                                                    background: '#f8fafc', color: '#94a3b8',
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                    fontSize: '0.8rem', fontWeight: 700
-                                                }}>
-                                                    {idx + 1}
-                                                </div>
-                                                <div style={{ flex: 1 }}>
-                                                    <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>
-                                                        {ex.name}
-                                                    </div>
-                                                </div>
-                                                <div style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 500, background: '#f1f5f9', padding: '4px 8px', borderRadius: '6px' }}>
-                                                    {ex.sets}x{ex.reps}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* UPCOMING TIMELINE - Horizontal Grid */}
-                            {upcomingWorkouts.length > 0 && (
-                                <div style={{ marginBottom: '2rem' }}>
-                                    <div style={{
-                                        display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem',
-                                        paddingLeft: '0.25rem', opacity: 0.8
-                                    }}>
-                                        <Calendar size={14} color="#64748B" />
-                                        <span style={{ textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em', color: '#64748B' }}>
-                                            Próximos Dias
-                                        </span>
-                                    </div>
-
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '16px' }}>
-                                        {upcomingWorkouts.slice(0, 5).map((w, idx) => (
-                                            <div key={w.id}
-                                                onClick={() => navigate(`/edit/${w.id}`)}
-                                                style={{
-                                                    background: '#fff',
-                                                    borderRadius: '16px',
-                                                    padding: '16px',
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    textAlign: 'center',
-                                                    cursor: 'pointer',
-                                                    border: '1px solid #f1f5f9',
-                                                    transition: 'all 0.2s',
-                                                    minHeight: '110px',
-                                                    boxShadow: '0 2px 5px rgba(0,0,0,0.01)'
-                                                }}
-                                                onMouseEnter={e => {
-                                                    e.currentTarget.style.borderColor = '#cbd5e1';
-                                                    e.currentTarget.style.transform = 'translateY(-2px)';
-                                                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
-                                                }}
-                                                onMouseLeave={e => {
-                                                    e.currentTarget.style.borderColor = '#f1f5f9';
-                                                    e.currentTarget.style.transform = 'translateY(0)';
-                                                    e.currentTarget.style.boxShadow = '0 2px 5px rgba(0,0,0,0.01)';
-                                                }}
-                                            >
-                                                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '4px' }}>
-                                                    {new Date(w.date).toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}
-                                                </span>
-                                                <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#334155', lineHeight: 1 }}>
-                                                    {new Date(w.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-                                                </span>
-                                                <div style={{ width: '20px', height: '2px', background: '#e2e8f0', margin: '8px 0' }} />
-                                                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
-                                                    {w.category || 'Treino'}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                        </div>
-                    )}
-                </section>
-            )
-            }
-        </div >
+            </section>
+        </div>
     );
 };
 

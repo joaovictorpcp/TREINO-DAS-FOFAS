@@ -71,15 +71,52 @@ export const WorkoutProvider = ({ children }) => {
       // Weight: Handle 0/NaN (Bodyweight)
       let weight = parseFloat(ex.load) || 0;
       if (weight === 0) {
-        // Fallback logic: Use RPE or constant to ensure Volume > 0
-        // If we return 0, the chart is empty for calisthenics.
-        // Let's assume a baseline intensity of "20" arbitrary units (~empty bar)
+        // Fallback logic for volume load only
         weight = 20;
       }
 
       const exerciseLoad = sets * reps * weight;
       return total + exerciseLoad;
     }, 0);
+  };
+
+  /**
+   * Foster Method Calculation (RPE * Duration)
+   * This is the TRUTH for the PMC Chart.
+   */
+  const calculateNormalizedLoad = (workout) => {
+    // Scenario A: Explicit Data
+    if (workout.normalized_load) return workout.normalized_load;
+
+    // Check if we have fields to calc it on the fly
+    const rpe = parseFloat(workout.session_rpe);
+    const duration = parseFloat(workout.duration_minutes);
+
+    if (!isNaN(rpe) && !isNaN(duration) && rpe > 0 && duration > 0) {
+      return rpe * duration;
+    }
+
+    // Scenario B: Fallback / Estimation
+    if (!workout.exercises || workout.exercises.length === 0) return 0;
+
+    // 1. Estimate Duration: Sets * 3 mins
+    const totalSets = workout.exercises.reduce((acc, ex) => acc + (parseInt(ex.sets) || 0), 0);
+    const estimatedDuration = totalSets * 3;
+
+    // 2. Estimate RPE: Avg of exercises or 6
+    let rpeSum = 0;
+    let rpeCount = 0;
+    workout.exercises.forEach(ex => {
+      const val = parseFloat(ex.rpe);
+      if (!isNaN(val) && val > 0) {
+        rpeSum += val;
+        rpeCount++;
+      }
+    });
+
+    const estimatedRpe = rpeCount > 0 ? (rpeSum / rpeCount) : 6;
+
+    return Math.round(estimatedDuration * estimatedRpe);
   };
 
   // PMC Algorithm: ATL (7d), CTL (42d), TSB (CTL - ATL)
@@ -108,12 +145,13 @@ export const WorkoutProvider = ({ children }) => {
     const today = new Date();
     const timeline = [];
 
-    // Create map of date -> load
+    // Create map of date -> normalized load
     const loadMap = {};
     studentWorkouts.forEach(w => {
       const dKey = new Date(w.date).toISOString().split('T')[0];
-      const load = calculateVolumeLoad(w);
-      console.log(`PMC: Date ${dKey} Load: ${load}`);
+      const load = calculateNormalizedLoad(w);
+      // console.log(`PMC: Date ${dKey} Load: ${load}`);
+      // Sum load if multiple workouts in one day
       loadMap[dKey] = (loadMap[dKey] || 0) + load;
     });
 
@@ -135,7 +173,7 @@ export const WorkoutProvider = ({ children }) => {
 
     // Safety break
     let limit = 0;
-    while (iterDate <= endDate && limit < 1000) {
+    while (iterDate <= endDate && limit < 10000) {
       const dKey = iterDate.toISOString().split('T')[0];
       const dailyLoad = loadMap[dKey] || 0;
 
@@ -164,11 +202,21 @@ export const WorkoutProvider = ({ children }) => {
     }
 
     return timeline;
-
-    return timeline;
   };
 
   // --- PERFORMANCE LOGIC END ---
+
+  const bulkAddWorkouts = (newWorkouts) => {
+    setWorkouts(prev => {
+      const updated = [...prev, ...newWorkouts];
+      try {
+        localStorage.setItem('workouts', JSON.stringify(updated));
+      } catch (e) {
+        console.error("Failed to bulk save workouts", e);
+      }
+      return updated;
+    });
+  };
 
   const updateWorkout = (id, updatedData) => {
     setWorkouts(prev => prev.map(w => w.id == id ? { ...w, ...updatedData } : w));
@@ -327,6 +375,11 @@ export const WorkoutProvider = ({ children }) => {
     const [y, m, d] = startDate.split('-').map(Number);
     const startObj = new Date(y, m - 1, d); // Local Midnight
 
+    if (isNaN(startObj.getTime())) {
+      console.error("Invalid start date provided:", startDate);
+      throw new Error("Data de início inválida.");
+    }
+
     for (let w = 1; w <= weeks; w++) {
       // Calculate start of this week
       // Week 1 starts on startDate. Week 2 on startDate + 7 days, etc.
@@ -395,6 +448,14 @@ export const WorkoutProvider = ({ children }) => {
           status: 'planned',
           category: base.name, // 'Treino A', 'Treino B'
           scheduledDay: base.scheduledDay, // Persist intention
+
+          activity_type: programData.activityType || 'weightlifting',
+          duration_minutes: base.duration_minutes,
+          distance_km: base.distance_km,
+          session_rpe: base.session_rpe,
+          drills_description: base.drills_description,
+          main_set_description: base.main_set_description,
+
           meta: {
             mesocycle: nextMesoNum,
             week: w,
@@ -526,6 +587,7 @@ export const WorkoutProvider = ({ children }) => {
     <WorkoutContext.Provider value={{
       workouts,
       addWorkout,
+      bulkAddWorkouts,
       deleteWorkout,
       updateWorkout,
       getWorkoutById,

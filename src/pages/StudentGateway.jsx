@@ -59,7 +59,7 @@ const StudentGateway = () => {
     return (
         <div style={{
             minHeight: '100vh',
-            background: '#F8FAFC',
+            background: 'var(--bg-primary)',
             padding: '2rem',
             display: 'flex',
             flexDirection: 'column',
@@ -67,79 +67,92 @@ const StudentGateway = () => {
         }}>
             <header style={{ marginBottom: '3rem', textAlign: 'center' }}>
                 <h1 style={{
-                    fontSize: '2rem',
-                    color: '#1e293b',
+                    fontSize: '2.5rem',
+                    color: 'var(--text-primary)',
                     fontWeight: '800',
-                    letterSpacing: '-0.5px',
+                    letterSpacing: '-1px',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '12px',
-                    justifyContent: 'center'
+                    gap: '16px',
+                    justifyContent: 'center',
+                    marginBottom: '0.5rem'
                 }}>
-                    <div style={{ background: '#0f172a', color: '#fff', padding: '8px', borderRadius: '12px' }}>
-                        <Dumbbell size={24} />
+                    <div style={{
+                        background: 'rgba(0, 230, 118, 0.1)',
+                        color: 'var(--accent-primary)',
+                        padding: '10px',
+                        borderRadius: '16px',
+                        boxShadow: '0 0 20px rgba(0, 230, 118, 0.2)'
+                    }}>
+                        <Dumbbell size={32} />
                     </div>
-                    Treino das Fofas
+                    <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1', textAlign: 'left' }}>
+                        <span style={{ fontFamily: '"Orbitron", sans-serif', fontSize: '2.5rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.05em' }}>
+                            JOÃO VICTOR
+                        </span>
+                        <span style={{ fontFamily: '"Orbitron", sans-serif', fontSize: '1rem', fontWeight: 600, color: 'var(--accent-primary)', letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: '4px' }}>
+                            Personal Trainer
+                        </span>
+                    </div>
                 </h1>
-                <p style={{ color: '#64748B', marginTop: '8px' }}>Selecione uma aluna para acessar o painel</p>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>Módulo de Gerenciamento de Atletas</p>
             </header>
 
             <div style={{
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '1rem',
-                maxWidth: '800px',
+                maxWidth: '900px',
                 width: '100%'
             }}>
                 {/* Header Row */}
                 <div style={{
                     display: 'grid', gridTemplateColumns: '60px 2fr 1fr 1fr 40px', gap: '1rem',
-                    padding: '0 1.5rem', marginBottom: '0.5rem', color: '#94a3b8', fontSize: '0.85rem', fontWeight: 600
+                    padding: '0 1.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase'
                 }}>
                     <span></span>
-                    <span>ALUNA</span>
-                    <span style={{ textAlign: 'center' }}>TREINOS</span>
-                    <span style={{ textAlign: 'center' }}>ÚLTIMO</span>
+                    <span>Atleta</span>
+                    <span style={{ textAlign: 'center' }}>Sessões</span>
+                    <span style={{ textAlign: 'center' }}>Atividade</span>
                     <span></span>
                 </div>
 
                 {/* Add New Row */}
                 <div
                     onClick={() => setIsCreating(true)}
+                    className="glass-panel"
                     style={{
-                        background: '#fff',
-                        borderRadius: '12px',
-                        border: '2px dashed #cbd5e1',
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        borderRadius: '16px',
+                        border: '1px dashed var(--border-subtle)',
                         padding: '1rem 1.5rem',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: '12px',
                         cursor: 'pointer',
-                        color: '#64748B',
+                        color: 'var(--text-secondary)',
                         transition: 'all 0.2s',
                         height: '72px'
                     }}
                     onMouseEnter={e => {
                         e.currentTarget.style.borderColor = 'var(--accent-primary)';
-                        e.currentTarget.style.color = 'var(--accent-primary)';
-                        e.currentTarget.style.background = '#f0f9ff';
+                        e.currentTarget.style.color = 'var(--text-primary)';
+                        e.currentTarget.style.background = 'rgba(0, 230, 118, 0.05)';
                     }}
                     onMouseLeave={e => {
-                        e.currentTarget.style.borderColor = '#cbd5e1';
-                        e.currentTarget.style.color = '#64748B';
-                        e.currentTarget.style.background = '#fff';
+                        e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                        e.currentTarget.style.color = 'var(--text-secondary)';
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
                     }}
                 >
                     <Plus size={20} />
-                    <span style={{ fontWeight: 600 }}>Nova Aluna</span>
+                    <span style={{ fontWeight: 600 }}>Nova Atleta</span>
                 </div>
 
                 {/* Student Rows */}
                 {students.map(student => {
                     const count = studentStats[student.id] || 0;
-                    // Find last workout separately if needed, or re-enable that logic
-                    // For now, let's just use the count as the main stat requested
                     const studentWorkouts = workouts.filter(w => w.studentId === student.id);
                     let lastDate = '-';
                     if (studentWorkouts.length > 0) {
@@ -151,49 +164,56 @@ const StudentGateway = () => {
                         <div
                             key={student.id}
                             onClick={() => handleSelect(student.id)}
+                            className="glass-panel"
                             style={{
-                                background: '#fff',
-                                borderRadius: '16px',
                                 padding: '1rem 1.5rem',
                                 display: 'grid',
                                 gridTemplateColumns: '60px 2fr 1fr 1fr 40px',
                                 alignItems: 'center',
                                 gap: '1rem',
-                                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
                                 cursor: 'pointer',
-                                transition: 'transform 0.2s',
-                                border: '1px solid #f1f5f9'
+                                transition: 'all 0.2s',
+                                border: '1px solid transparent' // reset for glass panel hover override if needed
                             }}
-                            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.01)'}
-                            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                            onMouseEnter={e => {
+                                e.currentTarget.style.transform = 'scale(1.01)';
+                                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                                e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                            }}
+                            onMouseLeave={e => {
+                                e.currentTarget.style.transform = 'scale(1)';
+                                e.currentTarget.style.borderColor = 'transparent';
+                                e.currentTarget.style.background = 'var(--bg-card)';
+                            }}
                         >
                             {/* Avatar */}
                             <div style={{
                                 width: '40px', height: '40px',
-                                background: '#f1f5f9', borderRadius: '50%',
+                                background: '#18181B', borderRadius: '50%',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                color: '#64748B'
+                                color: 'var(--text-secondary)',
+                                border: '1px solid var(--border-subtle)'
                             }}>
                                 <UserCircle size={24} />
                             </div>
 
                             {/* Name */}
-                            <div style={{ fontWeight: 600, color: '#334155', fontSize: '1rem' }}>
+                            <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '1rem' }}>
                                 {student.name}
                             </div>
 
                             {/* Workouts Count */}
                             <div style={{ textAlign: 'center' }}>
                                 <span style={{
-                                    background: '#f1f5f9', padding: '4px 12px', borderRadius: '20px',
-                                    fontSize: '0.85rem', fontWeight: 700, color: '#475569'
+                                    background: '#18181B', padding: '4px 12px', borderRadius: '20px',
+                                    fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-light)', border: '1px solid var(--border-subtle)'
                                 }}>
                                     {count}
                                 </span>
                             </div>
 
                             {/* Last Active */}
-                            <div style={{ textAlign: 'center', fontSize: '0.85rem', color: '#94a3b8' }}>
+                            <div style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                                 {lastDate}
                             </div>
 
@@ -204,14 +224,14 @@ const StudentGateway = () => {
                                 style={{
                                     background: 'transparent',
                                     border: 'none',
-                                    color: '#cbd5e1',
+                                    color: 'var(--text-muted)',
                                     cursor: 'pointer',
                                     padding: '8px',
                                     display: 'flex',
                                     justifyContent: 'center'
                                 }}
-                                onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
-                                onMouseLeave={e => e.currentTarget.style.color = '#cbd5e1'}
+                                onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-danger)'}
+                                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
                             >
                                 <Trash2 size={18} />
                             </button>
@@ -223,25 +243,25 @@ const StudentGateway = () => {
             {/* Simple Modal */}
             {isCreating && (
                 <div style={{
-                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)',
+                    backdropFilter: 'blur(4px)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     zIndex: 100
                 }} onClick={() => setIsCreating(false)}>
-                    <div style={{
-                        background: '#fff', padding: '2rem', borderRadius: '16px', width: '360px', /* Slightly wider */
-                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+                    <div className="glass-panel" style={{
+                        background: '#121212', padding: '2rem', borderRadius: '24px', width: '400px',
+                        border: '1px solid var(--border-subtle)'
                     }} onClick={e => e.stopPropagation()}>
-                        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1.5rem' }}>Adicionar Aluna</h2>
+                        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Nova Atleta</h2>
                         <form onSubmit={handleCreate}>
                             {/* Name */}
                             <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748B', marginBottom: '4px' }}>Nome</label>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>Nome</label>
                                 <input
                                     autoFocus
                                     type="text"
-                                    placeholder="Nome da aluna"
+                                    placeholder="Nome da atleta"
                                     className="input"
-                                    style={{ width: '100%' }}
                                     value={data.name}
                                     onChange={e => setData(prev => ({ ...prev, name: e.target.value }))}
                                 />
@@ -249,49 +269,46 @@ const StudentGateway = () => {
 
                             {/* DOB */}
                             <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748B', marginBottom: '4px' }}>Data de Nascimento</label>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>Data de Nascimento</label>
                                 <input
                                     type="date"
                                     className="input"
-                                    style={{ width: '100%' }}
                                     value={data.birthDate}
                                     onChange={e => setData(prev => ({ ...prev, birthDate: e.target.value }))}
                                 />
                             </div>
 
                             {/* Height & Weight Row */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '1.5rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '2rem' }}>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748B', marginBottom: '4px' }}>Altura (cm)</label>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>Altura (cm)</label>
                                     <input
                                         type="number"
                                         placeholder="165"
                                         className="input"
-                                        style={{ width: '100%' }}
                                         value={data.height}
                                         onChange={e => setData(prev => ({ ...prev, height: e.target.value }))}
                                     />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#64748B', marginBottom: '4px' }}>Peso (kg)</label>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>Peso (kg)</label>
                                     <input
                                         type="number"
                                         placeholder="60.5"
                                         step="0.1"
                                         className="input"
-                                        style={{ width: '100%' }}
                                         value={data.weight}
                                         onChange={e => setData(prev => ({ ...prev, weight: e.target.value }))}
                                     />
                                 </div>
                             </div>
 
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                                <button type="button" onClick={() => setIsCreating(false)} className="btn" style={{ flex: 1, color: '#64748B' }}>
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                                <button type="button" onClick={() => setIsCreating(false)} className="btn" style={{ flex: 1, background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-subtle)' }}>
                                     Cancelar
                                 </button>
                                 <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
-                                    Criar
+                                    Adicionar
                                 </button>
                             </div>
                         </form>
