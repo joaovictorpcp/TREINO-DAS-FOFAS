@@ -58,7 +58,7 @@ const WorkoutsPage = () => {
     const sortedMesos = Object.keys(groupedWorkouts).sort((a, b) => b - a);
 
     return (
-        <div className="page-container animate-fade-in" style={{ paddingBottom: '80px' }}>
+        <div className="page-container animate-fade-in">
             <header style={{ marginBottom: '2rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <div>
@@ -170,8 +170,8 @@ const WorkoutsPage = () => {
                                                             <div style={{
                                                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                                 width: '24px', height: '24px', borderRadius: '50%',
-                                                                background: isPlanned ? 'var(--bg-secondary)' : 'rgba(16, 185, 129, 0.2)',
-                                                                color: isPlanned ? 'var(--text-secondary)' : '#10b981'
+                                                                background: w.status === 'completed' ? 'rgba(204, 255, 0, 0.2)' : 'rgba(255, 61, 0, 0.2)',
+                                                                color: w.status === 'completed' ? 'var(--accent-primary)' : 'var(--accent-danger)'
                                                             }}>
                                                                 {(!w.activity_type || w.activity_type === 'weightlifting') && <Dumbbell size={14} />}
                                                                 {w.activity_type === 'running' && <Footprints size={14} />}
@@ -222,7 +222,7 @@ const WorkoutsPage = () => {
                                                     </div>
 
                                                     {isPlanned && (
-                                                        <button className={styles.fillBtn} style={{ color: 'var(--accent-primary)' }}>
+                                                        <button className={styles.fillBtn}>
                                                             Preencher Agora <ArrowRight size={14} />
                                                         </button>
                                                     )}

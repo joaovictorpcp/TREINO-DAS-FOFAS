@@ -154,7 +154,7 @@
     padding: 10px;
     border: none;
     background: var(--accent-primary);
-    color: #fff;
+    color: var(--text-on-accent);
     border-radius: var(--radius-md);
     font-weight: 600;
     cursor: pointer;

@@ -77,15 +77,7 @@ const StudentGateway = () => {
                     justifyContent: 'center',
                     marginBottom: '0.5rem'
                 }}>
-                    <div style={{
-                        background: 'rgba(0, 230, 118, 0.1)',
-                        color: 'var(--accent-primary)',
-                        padding: '10px',
-                        borderRadius: '16px',
-                        boxShadow: '0 0 20px rgba(0, 230, 118, 0.2)'
-                    }}>
-                        <Dumbbell size={32} />
-                    </div>
+                    <img src="/logo-jv.png" alt="Logo" style={{ height: '90px', width: 'auto', objectFit: 'contain', mixBlendMode: 'screen', filter: 'brightness(0.6) contrast(1.5)' }} />
                     <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1', textAlign: 'left' }}>
                         <span style={{ fontFamily: '"Orbitron", sans-serif', fontSize: '2.5rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.05em' }}>
                             JOÃO VICTOR

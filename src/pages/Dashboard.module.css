@@ -23,11 +23,13 @@
 
 /* HERO CARD RESPONSIVE */
 .heroCard {
-    background: #fff;
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-radius: 24px;
     padding: 24px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-    border: 1px solid #f1f5f9;
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--border-subtle);
     display: flex;
     flex-direction: row;
     align-items: center;

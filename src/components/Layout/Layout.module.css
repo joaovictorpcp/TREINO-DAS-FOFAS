@@ -49,18 +49,14 @@
         /* Prevent text wrapping */
     }
 
-    /* Hover State: Expand */
-    .header:hover {
-        width: 280px;
-        /* Expanded width */
+    /* Hover State: Expand - REMOVED for static icon bar */
+    /* .header:hover {
+        width: 280px; 
         background: rgba(10, 10, 10, 0.85);
-        /* Slightly more opaque on hover */
         align-items: flex-start;
-        /* Align expanding content left */
         padding-left: 1.5rem;
-        /* Add left padding for text alignment */
         padding-right: 1.5rem;
-    }
+    } */
 
     .header:hover .logoAndNav {
         align-items: flex-start;
@@ -86,29 +82,24 @@
         margin-bottom: 0;
         padding-left: 0;
         justify-content: center;
-        text-align: left;
+        text-align: center;
         width: 100%;
         transition: all 0.3s;
+        flex-direction: column;
+        /* Stack vertically */
+        gap: 8px;
     }
 
-    /* Toggle Text Visibility */
+    /* Toggle Text Visibility - ADJUSTED for Fixed Sidebar */
     .logoText {
         display: flex;
-        opacity: 0;
-        transform: translateX(-10px);
-        transition: opacity 0.3s ease, transform 0.3s ease;
-        visibility: hidden;
-        /* accessibility */
-        width: 0;
-        /* prevent layout spacing when hidden */
-    }
-
-    .header:hover .logoText {
+        /* Always visible */
+        flex-direction: column;
+        align-items: center;
         opacity: 1;
-        transform: translateX(0);
         visibility: visible;
-        width: auto;
-        margin-left: 10px;
+        width: 100%;
+        margin-left: 0;
     }
 
     /* Nav Links */
@@ -117,9 +108,13 @@
         flex-direction: column;
         width: 100%;
         align-items: center;
-        /* Default center icons */
-        gap: 1rem;
+        gap: 1.5rem;
+        /* Increased gap for better visual separation */
         transition: align-items 0.3s;
+        position: relative;
+        /* Context for absolute indicator */
+        flex: 1;
+        /* Allow nav to fill vertical space */
     }
 
     .header:hover .nav {
@@ -131,15 +126,23 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        /* Default center icon */
         width: 50px;
-        /* Icon Button Width */
         height: 50px;
         border-radius: 14px;
         color: var(--text-secondary);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: color 0.3s ease, background 0.3s ease;
         position: relative;
-        overflow: hidden;
+        z-index: 2;
+        /* Above indicator */
+        background: transparent;
+        /* Let indicator show through if active */
+    }
+
+    .navLink:hover {
+        transform: none;
+        color: var(--text-primary);
+        background: rgba(255, 255, 255, 0.05);
+        /* Subtle highlight */
     }
 
     .header:hover .navLink {
@@ -176,15 +179,26 @@
         background: rgba(255, 255, 255, 0.08);
     }
 
+    /* Active State handled by Indicator, just text color here */
     .navLink.active {
-        background: var(--accent-primary);
         color: #000;
-        box-shadow: 0 0 20px rgba(0, 230, 118, 0.4);
+        /* background removal handled by omitting background property or setting transparent above */
     }
 
-    /* Keep active text black on hover */
-    .header:hover .navLink.active {
-        color: #000;
+    /* Sliding Active Indicator */
+    .activeIndicator {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 50px;
+        height: 50px;
+        background: var(--accent-primary);
+        border-radius: 14px;
+        box-shadow: 0 0 15px rgba(0, 230, 118, 0.5);
+        z-index: 1;
+        /* Behind icons */
+        transition: top 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        /* Delicate slide */
     }
 
     /* Student Profile */
@@ -196,9 +210,10 @@
         transition: justify-content 0.3s;
     }
 
-    .header:hover .studentProfile {
+    /* Student Profile Hover Effects - REMOVED for static bar */
+    /* .header:hover .studentProfile {
         justify-content: flex-start;
-    }
+    } */
 
     .studentBadge {
         padding: 0;
@@ -212,14 +227,13 @@
         transition: all 0.3s;
     }
 
-    .header:hover .studentBadge {
+    /* .header:hover .studentBadge {
         width: 100%;
         border-radius: 12px;
-        /* Pill/Rect on hover */
         justify-content: flex-start;
         padding: 0 12px;
         background: rgba(255, 255, 255, 0.05);
-    }
+    } */
 
     .studentBadge span,
     .studentBadge svg {
@@ -227,7 +241,7 @@
         opacity: 0;
     }
 
-    .header:hover .studentBadge span {
+    /* .header:hover .studentBadge span {
         display: block;
         opacity: 1;
         margin-left: 12px;
@@ -237,7 +251,7 @@
         display: block;
         opacity: 0.5;
         margin-left: auto;
-    }
+    } */
 
     .main {
         flex: 1;
@@ -300,9 +314,13 @@
     text-decoration: none;
 }
 
-.logoIcon {
-    color: var(--accent-primary);
-    stroke-width: 2.5px;
+.logoImage {
+    width: 48px;
+    height: auto;
+    object-fit: contain;
+    display: block;
+    mix-blend-mode: screen;
+    filter: contrast(1.2) brightness(0.8);
 }
 
 /* User Profile Section (Sidebar bottom or Header right) */

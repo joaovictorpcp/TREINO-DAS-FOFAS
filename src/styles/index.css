@@ -13,14 +13,14 @@
   --bg-input: #121212;
 
   /* Accents */
-  --accent-primary: #00E676;
-  /* Neon Green */
+  --accent-primary: #CCFF00;
+  /* Neon Lime */
   --accent-secondary: #00B0FF;
   /* Electric Blue */
-  --accent-glow: rgba(0, 230, 118, 0.4);
+  --accent-glow: rgba(204, 255, 0, 0.4);
   /* Green Glow */
 
-  --accent-success: #00E676;
+  --accent-success: #CCFF00;
   --accent-danger: #FF3D00;
   /* Neon Red/Orange */
   --accent-warning: #FFC400;
@@ -53,7 +53,7 @@
 
   /* Shadows (Neon & Deep) */
   --shadow-card: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
-  --shadow-neon: 0 0 10px var(--accent-glow), 0 0 20px rgba(0, 230, 118, 0.2);
+  --shadow-neon: 0 0 10px var(--accent-glow), 0 0 20px rgba(204, 255, 0, 0.2);
   --shadow-float: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
 
   /* Typography */
@@ -179,7 +179,8 @@ h3 {
   max-width: 1400px;
   /* Slightly wider for dashboard feeling */
   margin: 0 auto;
-  padding: var(--space-md);
+  padding: 6rem var(--space-md) 6rem;
+  /* Top 6rem, Sides 1rem, Bottom 6rem */
   min-height: 100vh;
 }
 

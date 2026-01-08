@@ -25,7 +25,10 @@ const TrainingLog = () => {
     const [mesocycle, setMesocycle] = useState(1);
     const [week, setWeek] = useState(1);
     const [autoGenerate, setAutoGenerate] = useState(false);
-    const [workoutDate, setWorkoutDate] = useState(new Date().toISOString().split('T')[0]); // Default to today YYYY-MM-DD
+    const [workoutDate, setWorkoutDate] = useState(() => {
+        const d = new Date();
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }); // Default to today Local YYYY-MM-DD
     const [category, setCategory] = useState('A'); // Default Category A
     const [observations, setObservations] = useState('');
     const [sessionRpe, setSessionRpe] = useState('');
@@ -57,7 +60,9 @@ const TrainingLog = () => {
                 setWeek(workoutToEdit.meta?.week || 1);
                 setExercises(workoutToEdit.exercises || []);
                 if (workoutToEdit.date) {
-                    setWorkoutDate(new Date(workoutToEdit.date).toISOString().split('T')[0]);
+                    const d = new Date(workoutToEdit.date);
+                    const localDateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+                    setWorkoutDate(localDateStr);
                 }
                 setCategory(workoutToEdit.category || 'A');
                 setObservations(workoutToEdit.observations || '');
@@ -147,6 +152,14 @@ const TrainingLog = () => {
         }
     };
 
+    // Helper to constructing Local Date correctly
+    const getLocalISO = (dateStr) => {
+        if (!dateStr) return new Date().toISOString();
+        const [y, m, d] = dateStr.split('-').map(Number);
+        const dateObj = new Date(y, m - 1, d); // Starts at 00:00 Local
+        return dateObj.toISOString();
+    };
+
     const handleSubmit = async () => {
         try {
             let normalizedLoad = 0;
@@ -184,7 +197,7 @@ const TrainingLog = () => {
                     id: isEditing ? id : undefined,
                     type: 'log',
                     activity_type: 'weightlifting',
-                    date: new Date(workoutDate).toISOString(),
+                    date: getLocalISO(workoutDate),
                     status: 'completed',
                     category,
                     observations,
@@ -214,7 +227,7 @@ const TrainingLog = () => {
                     id: isEditing ? id : undefined,
                     type: 'log',
                     activity_type: activityType,
-                    date: new Date(workoutDate).toISOString(),
+                    date: getLocalISO(workoutDate),
                     status: 'completed',
                     category: category || activityType.charAt(0).toUpperCase() + activityType.slice(1),
                     observations,

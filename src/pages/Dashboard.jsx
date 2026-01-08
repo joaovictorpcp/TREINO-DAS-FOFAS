@@ -111,7 +111,7 @@ const Dashboard = () => {
 
 
     const renderHeroCard = (workout, label = "PRÓXIMO TREINO") => (
-        <div key={workout.id} className={`${styles.heroCard} glass-panel`} style={{ marginBottom: '1rem', position: 'relative', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
+        <div key={workout.id} className={`${styles.heroCard} glass-panel`} style={{ marginBottom: '1rem', position: 'relative', overflow: 'hidden', border: '1px solid var(--accent-primary)' }}>
             <div style={{ flex: 1, zIndex: 2 }}>
                 <div style={{
                     fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px'
@@ -190,7 +190,7 @@ const Dashboard = () => {
     }
 
     return (
-        <div className="page-container animate-fade-in" style={{ paddingBottom: '40px' }}>
+        <div className="page-container animate-fade-in">
             {/* MINIMAL HEADER */}
             <header className={styles.header} style={{ marginBottom: '1rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>

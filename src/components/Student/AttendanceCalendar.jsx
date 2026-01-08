@@ -47,7 +47,7 @@ const AttendanceCalendar = ({ viewMode = 'simple', onDayClick, fullPageMode = fa
         setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1));
     };
 
-    // --- TrainingPeaks Block Logic ---
+    // --- TrainingPeaks Block Logic (Dark Theme) ---
     const getActivityIcon = (type) => {
         switch (type) {
             case 'running': return <Footprints size={14} />;
@@ -60,13 +60,13 @@ const AttendanceCalendar = ({ viewMode = 'simple', onDayClick, fullPageMode = fa
     const getBlockStyle = (status) => {
         const s = (status || '').toLowerCase();
         if (s === 'completed' || s === 'done' || s === 'finished') {
-            return { bg: '#dcfce7', border: '#166534', text: '#14532d', icon: <Check size={12} /> }; // Green
+            return { bg: 'rgba(0, 230, 118, 0.1)', border: 'var(--accent-primary)', text: 'var(--accent-primary)', icon: <Check size={12} /> };
         }
         if (s === 'missed') {
-            return { bg: '#fee2e2', border: '#991b1b', text: '#7f1d1d', icon: <XCircle size={12} /> }; // Red
+            return { bg: 'rgba(239, 68, 68, 0.1)', border: 'var(--accent-danger)', text: 'var(--accent-danger)', icon: <XCircle size={12} /> };
         }
         // Future / Planned
-        return { bg: '#f1f5f9', border: '#94a3b8', text: '#475569', icon: null }; // Grey
+        return { bg: 'rgba(255, 255, 255, 0.05)', border: 'var(--border-subtle)', text: 'var(--text-secondary)', icon: null };
     };
 
     // --- AGENDA DATA (Mobile) ---
@@ -91,34 +91,35 @@ const AttendanceCalendar = ({ viewMode = 'simple', onDayClick, fullPageMode = fa
 
     return (
         <div style={{
-            background: '#fff',
+            background: 'var(--bg-card)',
+            backdropFilter: 'blur(10px)',
             borderRadius: '16px',
             padding: isMobile ? '1rem' : '1.5rem',
-            boxShadow: fullPageMode ? 'none' : '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-            border: fullPageMode ? 'none' : '1px solid #e2e8f0',
+            boxShadow: fullPageMode ? 'none' : 'var(--shadow-card)',
+            border: fullPageMode ? 'none' : '1px solid var(--border-subtle)',
             height: fullPageMode && !isMobile ? '100%' : 'auto',
             display: 'flex', flexDirection: 'column'
         }}>
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <h2 style={{ fontSize: isMobile ? '1.1rem' : '1.25rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>
+                    <h2 style={{ fontSize: isMobile ? '1.1rem' : '1.25rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
                         {isMobile ? 'Agenda' : 'Calendário'}
                     </h2>
                     {fullPageMode && !isMobile && (
-                        <span style={{ fontSize: '0.9rem', color: '#64748B', background: '#f1f5f9', padding: '2px 8px', borderRadius: '12px' }}>Mensal</span>
+                        <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', background: 'var(--bg-primary)', padding: '2px 8px', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>Mensal</span>
                     )}
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f8fafc', padding: '4px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                    <button onClick={() => changeMonth(-1)} style={{ background: '#fff', border: '1px solid #e2e8f0', cursor: 'pointer', padding: '4px', borderRadius: '6px', display: 'flex' }}>
-                        <ChevronLeft size={16} color="#64748B" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-primary)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                    <button onClick={() => changeMonth(-1)} style={{ background: 'transparent', border: '1px solid var(--border-subtle)', cursor: 'pointer', padding: '4px', borderRadius: '6px', display: 'flex', color: 'var(--text-secondary)' }}>
+                        <ChevronLeft size={16} />
                     </button>
-                    <span style={{ fontWeight: 600, color: '#334155', minWidth: isMobile ? '80px' : '120px', textAlign: 'center', fontSize: '0.9rem' }}>
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)', minWidth: isMobile ? '80px' : '120px', textAlign: 'center', fontSize: '0.9rem' }}>
                         {currentDate.toLocaleDateString('pt-BR', { month: isMobile ? 'short' : 'long', year: 'numeric' })}
                     </span>
-                    <button onClick={() => changeMonth(1)} style={{ background: '#fff', border: '1px solid #e2e8f0', cursor: 'pointer', padding: '4px', borderRadius: '6px', display: 'flex' }}>
-                        <ChevronRight size={16} color="#64748B" />
+                    <button onClick={() => changeMonth(1)} style={{ background: 'transparent', border: '1px solid var(--border-subtle)', cursor: 'pointer', padding: '4px', borderRadius: '6px', display: 'flex', color: 'var(--text-secondary)' }}>
+                        <ChevronRight size={16} />
                     </button>
                 </div>
             </div>
@@ -128,7 +129,7 @@ const AttendanceCalendar = ({ viewMode = 'simple', onDayClick, fullPageMode = fa
                 // --- MOBILE AGENDA VIEW ---
                 <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     {agendaData.length === 0 ? (
-                        <div style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
+                        <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px dashed var(--border-subtle)' }}>
                             <CalendarIcon size={32} style={{ marginBottom: '8px', opacity: 0.5 }} />
                             <p>Nenhum treino no período.</p>
                         </div>
@@ -153,7 +154,7 @@ const AttendanceCalendar = ({ viewMode = 'simple', onDayClick, fullPageMode = fa
                                 >
                                     {/* Timeline Line */}
                                     {idx !== agendaData.length - 1 && (
-                                        <div style={{ position: 'absolute', left: '24px', top: '40px', bottom: '-20px', width: '2px', background: '#e2e8f0' }} />
+                                        <div style={{ position: 'absolute', left: '24px', top: '40px', bottom: '-20px', width: '2px', background: 'var(--border-subtle)' }} />
                                     )}
 
                                     {/* Date Bubble */}
@@ -163,9 +164,9 @@ const AttendanceCalendar = ({ viewMode = 'simple', onDayClick, fullPageMode = fa
                                     }}>
                                         <div style={{
                                             width: '48px', height: '48px', borderRadius: '12px',
-                                            background: isToday ? 'var(--accent-primary)' : '#fff',
-                                            border: isToday ? 'none' : '1px solid #e2e8f0',
-                                            color: isToday ? '#fff' : '#64748B',
+                                            background: isToday ? 'var(--accent-primary)' : 'var(--bg-primary)',
+                                            border: isToday ? 'none' : '1px solid var(--border-subtle)',
+                                            color: isToday ? 'var(--text-on-accent)' : 'var(--text-secondary)',
                                             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                                             fontWeight: 700, fontSize: '1rem',
                                             zIndex: 1
@@ -180,22 +181,22 @@ const AttendanceCalendar = ({ viewMode = 'simple', onDayClick, fullPageMode = fa
                                     {/* Card */}
                                     <div style={{
                                         flex: 1,
-                                        background: '#fff',
+                                        background: 'rgba(255,255,255,0.03)',
                                         borderRadius: '12px',
-                                        border: '1px solid #e2e8f0',
+                                        border: '1px solid var(--border-subtle)',
                                         padding: '12px',
-                                        boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                                        boxShadow: 'none',
                                         borderLeft: `4px solid ${style.border}`
                                     }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
-                                            <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                 {getActivityIcon(w.activity_type)}
                                                 {w.category || w.name || 'Treino'}
                                             </div>
                                             {style.icon && <div style={{ color: style.text }}>{style.icon}</div>}
                                         </div>
 
-                                        <div style={{ display: 'flex', gap: '12px', fontSize: '0.85rem', color: '#64748B' }}>
+                                        <div style={{ display: 'flex', gap: '12px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                                             {w.duration_minutes && (
                                                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={12} /> {w.duration_minutes}m</span>
                                             )}
@@ -217,16 +218,16 @@ const AttendanceCalendar = ({ viewMode = 'simple', onDayClick, fullPageMode = fa
                 // --- DESKTOP CALENDAR VIEW (TrainingPeaks Style) ---
                 <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
                     {/* Weekday Headers */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: '8px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: '8px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px' }}>
                         {['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'].map((d, i) => (
-                            <span key={i} style={{ textAlign: 'center', fontSize: '0.8rem', color: '#64748B', fontWeight: 600, textTransform: 'uppercase' }}>{d}</span>
+                            <span key={i} style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase' }}>{d}</span>
                         ))}
                     </div>
                     {/* Month Grid */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gridAutoRows: 'minmax(120px, 1fr)', flex: 1, borderLeft: '1px solid #e2e8f0', borderTop: '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gridAutoRows: 'minmax(120px, 1fr)', flex: 1, borderLeft: '1px solid var(--border-subtle)', borderTop: '1px solid var(--border-subtle)' }}>
                         {monthData.map((day, idx) => {
                             if (day.type === 'padding') {
-                                return <div key={`pad-${idx}`} style={{ background: '#fcfcfc', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }} />;
+                                return <div key={`pad-${idx}`} style={{ background: 'rgba(255,255,255,0.02)', borderRight: '1px solid var(--border-subtle)', borderBottom: '1px solid var(--border-subtle)' }} />;
                             }
 
                             const isToday = new Date().toDateString() === day.date.toDateString();
@@ -234,27 +235,27 @@ const AttendanceCalendar = ({ viewMode = 'simple', onDayClick, fullPageMode = fa
                             return (
                                 <div key={day.date.toString()}
                                     style={{
-                                        background: isToday ? '#fffbeb' : '#fff',
-                                        borderRight: '1px solid #e2e8f0',
-                                        borderBottom: '1px solid #e2e8f0',
+                                        background: isToday ? 'rgba(204, 255, 0, 0.05)' : 'transparent',
+                                        borderRight: '1px solid var(--border-subtle)',
+                                        borderBottom: '1px solid var(--border-subtle)',
                                         padding: '8px',
                                         display: 'flex', flexDirection: 'column', gap: '6px',
                                         position: 'relative',
                                         transition: 'background 0.2s',
                                         minHeight: '100px'
                                     }}
-                                    onLoad={(e) => e.currentTarget.style.background = isToday ? '#fffbeb' : '#f8fafc'}
+                                    onLoad={(e) => e.currentTarget.style.background = isToday ? 'rgba(204, 255, 0, 0.05)' : 'transparent'}
                                     onDragOver={(e) => {
                                         e.preventDefault();
                                         e.dataTransfer.dropEffect = 'move';
-                                        e.currentTarget.style.background = '#f0fdf4'; // Light green highlight
+                                        e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
                                     }}
                                     onDragLeave={(e) => {
-                                        e.currentTarget.style.background = isToday ? '#fffbeb' : '#fff';
+                                        e.currentTarget.style.background = isToday ? 'rgba(204, 255, 0, 0.05)' : 'transparent';
                                     }}
                                     onDrop={(e) => {
                                         e.preventDefault();
-                                        e.currentTarget.style.background = isToday ? '#fffbeb' : '#fff';
+                                        e.currentTarget.style.background = isToday ? 'rgba(204, 255, 0, 0.05)' : 'transparent';
                                         const workoutId = e.dataTransfer.getData('text/plain');
                                         if (workoutId && updateWorkout) {
                                             const newDate = new Date(day.date);
@@ -265,7 +266,7 @@ const AttendanceCalendar = ({ viewMode = 'simple', onDayClick, fullPageMode = fa
                                 >
                                     <span style={{
                                         fontSize: '0.85rem', fontWeight: 700,
-                                        color: isToday ? '#b45309' : '#94a3b8',
+                                        color: isToday ? 'var(--accent-primary)' : 'var(--text-secondary)',
                                         marginBottom: '4px', textAlign: 'right'
                                     }}>
                                         {day.day}
@@ -301,17 +302,17 @@ const AttendanceCalendar = ({ viewMode = 'simple', onDayClick, fullPageMode = fa
                                                         cursor: 'grab',
                                                         display: 'flex', flexDirection: 'column', gap: '2px',
                                                         fontSize: '0.75rem',
-                                                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                                        boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
                                                         transition: 'transform 0.1s',
                                                     }}
                                                     onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
                                                     onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
                                                 >
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden' }}>
                                                         {getActivityIcon(w.activity_type)}
                                                         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{w.category || 'Treino'}</span>
                                                     </div>
-                                                    <div style={{ color: '#475569', fontSize: '0.7rem', display: 'flex', justifyContent: 'space-between' }}>
+                                                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.7rem', display: 'flex', justifyContent: 'space-between' }}>
                                                         {w.duration_minutes ? <span>{w.duration_minutes}m</span> : <span>{w.exercises?.length}ex</span>}
                                                         {w.distance_km > 0 && <span>{w.distance_km}km</span>}
                                                         {w.normalized_load > 0 && <span style={{ fontWeight: 600 }}>TSS {w.normalized_load}</span>}

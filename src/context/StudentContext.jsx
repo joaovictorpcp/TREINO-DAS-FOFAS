@@ -194,8 +194,6 @@ export const StudentProvider = ({ children }) => {
             bodyMetrics,
             addBodyMetric,
             getBodyMetrics,
-            addBodyMetric,
-            getBodyMetrics,
             deleteBodyMetric,
             updateBodyMetric
         }}>

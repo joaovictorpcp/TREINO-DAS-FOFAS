@@ -386,83 +386,72 @@ export const WorkoutProvider = ({ children }) => {
       const weekStart = new Date(startObj);
       weekStart.setDate(startObj.getDate() + (w - 1) * 7);
 
-      // Iterate over base workouts (A, B, C...)
-      // We need to spread them out. 
-      // Strategy: Just create them with the same date (Monday of that week) or spread them?
-      // User didn't specify spreading logic, but standard is usually Mon/Wed/Fri or just "Day 1, Day 2".
-      // Let's assume user will manage exact dates later, or we default them to:
-      // Workout 1: +0 days, Workout 2: +2 days, Workout 3: +4 days (Mon/Wed/Fri style)
-
       baseWorkouts.forEach((base, index) => {
-        let workoutDate = new Date(weekStart);
+        // Determine targets: either explicit multiple days, explicit single day, or fallback
+        let targetDays = [];
 
-        if (base.scheduledDay !== undefined && base.scheduledDay !== '' && base.scheduledDay !== null) {
-          // Targeted Weekday Logic
-          const targetDay = parseInt(base.scheduledDay); // 0 (Sun) - 6 (Sat)
-          const currentDay = workoutDate.getDay();
-
-          // Calculate distance to target day
-          let diff = targetDay - currentDay;
-
-          // If target day is earlier in the week than start date (e.g. start Wed, target Mon),
-          // move to next week? OR assume 'week' means Monday-Sunday block?
-          // Let's assume Week 1 starts on 'startDate'.
-          // If startDate is Wednesday, and we schedule for Monday:
-          // Should it be Next Monday (Week 2 technically?) or "This week's Monday" (Past)?
-          // Standard logic: "Week 1" usually implies the first occurrence of that day ON or AFTER start date.
-
-          // Simplest logic for "Week 1, Week 2...":
-          // Align 'weekStart' to the Sunday/Monday of that week first?
-          // "startDate" from generic config might be arbitrary.
-
-          // Let's stick to: Week 1 Starts on `startDate`.
-          // We find the first occurrence of `targetDay` >= `weekStart`.
-          if (diff < 0) {
-            diff += 7; // Next occurrence
-          }
-          workoutDate.setDate(workoutDate.getDate() + diff);
-
-        } else {
-          // Fallback: Simple spacing logic: 0, 2, 4...
-          const offset = (index * 2) % 7;
-          workoutDate.setDate(weekStart.getDate() + offset);
+        if (base.scheduledDays && base.scheduledDays.length > 0) {
+          targetDays = base.scheduledDays.map(d => parseInt(d));
+        } else if (base.scheduledDay !== undefined && base.scheduledDay !== '' && base.scheduledDay !== null) {
+          targetDays = [parseInt(base.scheduledDay)];
         }
 
-        const exercises = base.exercises.map(ex => ({
-          id: crypto.randomUUID(),
-          name: ex.name,
-          sets: ex.sets,
-          reps: ex.reps || '',
-          load: ex.load || '',
-          rpe: '',  // Empty
-          rir: '',  // Empty
-          vtt: 0,
-          suggestProgression: false,
-          supersetId: ex.supersetId // Preserve Superset Link
-        }));
+        // Helper to create workout for a specific date
+        const createWorkoutForDate = (dateObj) => {
+          const exercises = base.exercises.map(ex => ({
+            id: crypto.randomUUID(),
+            name: ex.name,
+            sets: ex.sets,
+            reps: ex.reps || '',
+            load: ex.load || '',
+            rpe: '',  // Empty
+            rir: '',  // Empty
+            vtt: 0,
+            suggestProgression: false,
+            supersetId: ex.supersetId // Preserve Superset Link
+          }));
 
-        newWorkouts.push({
-          id: crypto.randomUUID(),
-          studentId,
-          date: workoutDate.toISOString(),
-          status: 'planned',
-          category: base.name, // 'Treino A', 'Treino B'
-          scheduledDay: base.scheduledDay, // Persist intention
+          newWorkouts.push({
+            id: crypto.randomUUID(),
+            studentId,
+            date: dateObj.toISOString(),
+            status: 'planned',
+            category: base.name, // 'Treino A', 'Treino B'
+            scheduledDay: dateObj.getDay(), // Persist actual day
 
-          activity_type: programData.activityType || 'weightlifting',
-          duration_minutes: base.duration_minutes,
-          distance_km: base.distance_km,
-          session_rpe: base.session_rpe,
-          drills_description: base.drills_description,
-          main_set_description: base.main_set_description,
+            activity_type: programData.activityType || 'weightlifting',
+            duration_minutes: base.duration_minutes,
+            distance_km: base.distance_km,
+            session_rpe: base.session_rpe,
+            drills_description: base.drills_description,
+            main_set_description: base.main_set_description,
 
-          meta: {
-            mesocycle: nextMesoNum,
-            week: w,
-            programName: name
-          },
-          exercises
-        });
+            meta: {
+              mesocycle: nextMesoNum,
+              week: w,
+              programName: name
+            },
+            exercises
+          });
+        };
+
+        if (targetDays.length > 0) {
+          // Loop through each target day and create a workout
+          targetDays.forEach(targetDay => { // 0-6
+            let workoutDate = new Date(weekStart);
+            const currentDay = workoutDate.getDay();
+            let diff = targetDay - currentDay;
+            if (diff < 0) diff += 7; // Ensure future or today
+            workoutDate.setDate(workoutDate.getDate() + diff);
+            createWorkoutForDate(workoutDate);
+          });
+        } else {
+          // Fallback: Simple spacing logic: 0, 2, 4... if no day selected
+          let workoutDate = new Date(weekStart);
+          const offset = (index * 2) % 7;
+          workoutDate.setDate(weekStart.getDate() + offset);
+          createWorkoutForDate(workoutDate);
+        }
       });
     }
 

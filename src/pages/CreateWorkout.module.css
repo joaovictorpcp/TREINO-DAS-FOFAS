@@ -1,18 +1,4 @@
-/* --- Light Slate & Ultra-Rounded Theme --- */
-
-/* Palette for this Page */
-:root {
-    --slate-bg-pale: #F1F5F9;
-    /* Pale cool gray-blue background */
-    --slate-border: #334155;
-    /* Muted dark slate blue border */
-    --slate-text: #1E293B;
-    /* Muted dark slate text */
-    --slate-text-light: #64748B;
-    --white-fill: #FFFFFF;
-    --radius-pill: 9999px;
-    --radius-ultra: 24px;
-}
+/* --- Dark Neon & Rounded Theme --- */
 
 .header {
     margin-bottom: var(--space-xl);
@@ -25,12 +11,12 @@
     font-size: 1.8rem;
     font-weight: 700;
     margin: 0;
-    color: var(--slate-text);
+    color: var(--text-primary);
     font-family: var(--font-display);
 }
 
 .subtitle {
-    color: var(--slate-text-light);
+    color: var(--text-secondary);
     margin-top: 4px;
     font-weight: 500;
 }
@@ -38,14 +24,14 @@
 /* Main Container: Ultra-Rounded Card */
 .tableContainer {
     border-radius: var(--radius-ultra);
-    background: var(--slate-bg-pale);
-    /* Pale cool gray-blue */
-    box-shadow: none;
-    /* Flat design */
+    background: var(--bg-card);
+    /* Dark Translucent */
+    box-shadow: var(--shadow-card);
     border: 1px solid var(--border-subtle);
     padding: 1.5rem;
-    /* Padding inside the large card */
     overflow: hidden;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
 /* Header Row */
@@ -53,19 +39,17 @@
     display: grid;
     grid-template-columns: 3fr 1fr 1fr 1fr 1fr 1fr 1.2fr 40px;
     gap: var(--space-md);
-    /* Increased gap */
     padding: 0 var(--space-md) var(--space-md) var(--space-md);
     margin-bottom: var(--space-md);
-    border-bottom: 2px solid #E2E8F0;
+    border-bottom: 2px solid var(--border-subtle);
 }
 
 .colName,
 .colNum,
 .colVtt {
     font-weight: 700;
-    color: var(--slate-text);
+    color: var(--text-secondary);
     font-size: 0.85rem;
-    /* Slightly smaller for better fit */
     text-transform: uppercase;
     letter-spacing: 0.05em;
     display: flex;
@@ -87,83 +71,78 @@
     display: grid;
     grid-template-columns: 3fr 1fr 1fr 1fr 1fr 1fr 1.2fr 40px;
     gap: var(--space-md);
-    /* Increased gap */
     align-items: center;
     padding: 0.5rem 0;
-    /* Minimal vertical padding */
 }
 
 /* Ultra-Rounded Pill Inputs */
 .gridRow input {
-    background: var(--white-fill);
-    border: 1px solid #94A3B8;
-    /* Thin dark slate blue border */
+    background: var(--bg-input);
+    border: 1px solid var(--border-subtle);
     border-radius: var(--radius-pill);
-    /* Pill Shape */
     padding: 8px 16px;
     font-weight: 500;
-    color: var(--slate-text);
+    color: var(--text-primary);
     text-align: center;
     width: 100%;
-    /* Remove default browser styles */
     outline: none;
     transition: all 0.2s ease;
 }
 
 .gridRow input:focus {
     border-color: var(--accent-primary);
-    box-shadow: 0 0 0 3px rgba(255, 111, 97, 0.2);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+    background: #18181b;
 }
 
 .colName input {
     text-align: left;
     font-weight: 700;
-    /* Bold for Exercise Name */
+    /* Extra distinctive for the name */
 }
 
 /* Action Icons */
 .iconBtn {
-    background: #fff;
-    border: 1px solid #CBD5E1;
+    background: transparent;
+    border: 1px solid var(--border-subtle);
     border-radius: 50%;
-    /* Circle for icons */
     width: 32px;
     height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--slate-text-light);
+    color: var(--text-muted);
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .iconBtn:hover {
-    background: #EFF6FF;
+    background: rgba(255, 255, 255, 0.05);
     border-color: var(--accent-primary);
     color: var(--accent-primary);
     transform: scale(1.1);
 }
 
-/* Footer Action: Large Ultra-Rounded Button */
+/* Footer Action */
 .footerActions {
     margin-top: 2rem;
 }
 
 .legendBar {
     display: none;
-    /* Hide for minimal look if unused, or style minimally */
 }
 
+/* Toast */
 .toast {
     position: fixed;
     bottom: 2rem;
     right: 2rem;
-    background: #FFF;
+    background: var(--bg-card);
     border: 2px solid var(--accent-danger);
     color: var(--accent-danger);
     padding: 1rem 1.5rem;
     border-radius: var(--radius-ultra);
-    box-shadow: 0 10px 30px rgba(239, 68, 68, 0.15);
+    box-shadow: var(--shadow-card);
     display: flex;
     align-items: center;
     gap: 1rem;
@@ -195,8 +174,9 @@
     .tableContainer {
         padding: 1rem;
         background: transparent;
-        /* Remove background on mobile to let cards float */
         border: none;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
     }
 
     .desktopHeader {
@@ -206,14 +186,13 @@
     .gridRow {
         display: flex;
         flex-direction: column;
-        background: #FFF;
+        background: var(--bg-card);
         border-radius: var(--radius-ultra);
         padding: 1.5rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-        /* Soft shadow for mobile cards */
-        border: 1px solid #E2E8F0;
+        box-shadow: var(--shadow-card);
+        border: 1px solid var(--border-subtle);
         gap: 1.25rem;
-        /* Increased gap between rows */
+        backdrop-filter: blur(12px);
     }
 
     .colName,
@@ -224,38 +203,32 @@
         justify-content: space-between;
         align-items: center;
         gap: 1rem;
-        /* Prevent collision */
     }
 
     .mobileLabel {
         display: block;
         font-weight: 600;
-        color: var(--slate-text-light);
+        color: var(--text-secondary);
         font-size: 0.9rem;
         min-width: 120px;
-        /* Fixed width for alignment */
         text-align: left;
     }
 
     .gridRow input {
         width: 100%;
-        /* Full width available */
         max-width: 200px;
-        /* Cap width */
         text-align: right;
-        /* Align numbers to right */
     }
 
     .colName input {
         width: 100%;
         max-width: none;
-        /* Full width for name */
         text-align: center;
         font-size: 1.1rem;
-        background: #F8FAFC;
+        background: rgba(255, 255, 255, 0.03);
+        /* Subtle highlight */
         border-color: transparent;
         margin-bottom: 0.5rem;
-        /* Separate title */
     }
 
     .colAction {
@@ -295,53 +268,54 @@
 
 .controlGroup label {
     font-size: 0.8rem;
-    color: var(--slate-text-light);
+    color: var(--text-secondary);
     font-weight: 500;
 }
 
 .typeSelector {
     display: flex;
     gap: 4px;
-    background: #f1f5f9;
+    background: var(--bg-input);
     padding: 2px;
     border-radius: 8px;
     height: 42px;
-    /* Match input height roughly */
     align-items: center;
+    border: 1px solid var(--border-subtle);
 }
 
 .typeBtn {
     border: none;
     padding: 6px 16px;
-    /* Wider click area */
     border-radius: 6px;
     font-size: 0.9rem;
     font-weight: 700;
     cursor: pointer;
     background: transparent;
-    color: #94a3b8;
+    color: var(--text-muted);
     transition: all 0.2s;
     height: 100%;
 }
 
 .activeType {
-    background: #fff;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-/* Color logic for Types */
+/* Color logic for Types - keep neon accents */
 .activeType:nth-child(1) {
-    color: #3b82f6;
+    color: var(--accent-secondary);
+    /* Blueish? Or keep original */
 }
 
 /* A */
 .activeType:nth-child(2) {
-    color: #22c55e;
+    color: var(--accent-success);
 }
 
 /* B */
 .activeType:nth-child(3) {
-    color: #f97316;
+    color: var(--accent-warning);
 }
 
 /* C */
@@ -357,10 +331,8 @@
     .controlGroup input,
     .controlGroup select {
         width: 100% !important;
-        /* Override inline styles if any */
     }
 
-    /* Type selector spans full width */
     .controlGroup:nth-child(2) {
         grid-column: span 2;
     }

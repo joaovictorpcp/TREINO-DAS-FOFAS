@@ -1,12 +1,14 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { Home, PlusCircle, Activity, Users, RefreshCw, TrendingUp, Scale } from 'lucide-react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Home, PlusCircle, Activity, Users, RefreshCw, TrendingUp, Scale, LogOut } from 'lucide-react';
 import clsx from 'clsx';
 import { useStudent } from '../../context/StudentContext';
 import styles from './Layout.module.css';
 
 const Layout = ({ children }) => {
     const { students, selectedStudentId, setSelectedStudentId } = useStudent();
+    const location = useLocation();
+    const navigate = useNavigate();
 
     const handleNavClick = (e) => {
         if (!selectedStudentId) {
@@ -22,51 +24,68 @@ const Layout = ({ children }) => {
                 <div className={styles.logoAndNav}>
                     {/* Logo */}
                     <NavLink to="/" className={styles.logo}>
-                        <Activity className={styles.logoIcon} size={28} />
+                        <img src="/logo-jv.png" alt="JOÃO VICTOR PERSONAL TRAINER" className={styles.logoImage} />
                         <div className={styles.logoText} style={{ display: 'flex', flexDirection: 'column', lineHeight: '1' }}>
-                            <span style={{ fontFamily: '"Orbitron", sans-serif', fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.05em' }}>
-                                JOÃO VICTOR
+                            <span style={{ fontFamily: '"Orbitron", sans-serif', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.05em', textAlign: 'center' }}>
+                                JOÃO<br />VICTOR
                             </span>
-                            <span style={{ fontFamily: '"Orbitron", sans-serif', fontSize: '0.65em', fontWeight: 600, color: 'var(--accent-primary)', letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: '2px' }}>
-                                Personal Trainer
+                            <span style={{ fontFamily: '"Orbitron", sans-serif', fontSize: '0.5rem', fontWeight: 600, color: 'var(--accent-primary)', letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: '4px', textAlign: 'center', lineHeight: '1.2' }}>
+                                PERSONAL<br />TRAINER
                             </span>
                         </div>
                     </NavLink>
 
                     {/* Desktop Navigation (Sidebar) */}
                     {selectedStudentId && (
-                        <nav className={styles.nav}>
+                        <nav className={styles.nav} style={{ marginTop: '3rem' }}>
+                            {/* Sliding Active Indicator */}
+                            <div
+                                className={styles.activeIndicator}
+                                style={{
+                                    top: (() => {
+                                        const paths = ['/dashboard', '/workouts', '/mesocycle-builder', '/performance', '/weight'];
+                                        const currentPath = location.pathname;
+                                        // Simple approximation: check which path is active
+                                        const index = paths.findIndex(p => currentPath === p || (p !== '/dashboard' && currentPath.startsWith(p)));
+                                        return index !== -1 ? `${index * (50 + 24)}px` : '-100px'; // 50px height + 24px gap (1.5rem)
+                                    })(),
+                                    opacity: (() => { // Hide if no match
+                                        const paths = ['/dashboard', '/workouts', '/mesocycle-builder', '/performance', '/weight'];
+                                        const currentPath = location.pathname;
+                                        return paths.some(p => currentPath === p || (p !== '/dashboard' && currentPath.startsWith(p))) ? 1 : 0;
+                                    })()
+                                }}
+                            />
+
                             <NavLink to="/dashboard" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)}>
-                                <Home size={24} /> <span>Painel</span>
+                                <Home size={24} />
                             </NavLink>
                             <NavLink to="/workouts" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)}>
-                                <Activity size={24} /> <span>Treinos</span>
+                                <Activity size={24} />
                             </NavLink>
                             <NavLink to="/mesocycle-builder" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)}>
-                                <PlusCircle size={24} /> <span>Criar</span>
+                                <PlusCircle size={24} />
                             </NavLink>
                             <NavLink to="/performance" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)}>
-                                <TrendingUp size={24} /> <span>Performance</span>
+                                <TrendingUp size={24} />
                             </NavLink>
                             <NavLink to="/weight" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)}>
-                                <Scale size={24} /> <span>Medidas</span>
+                                <Scale size={24} />
                             </NavLink>
-                        </nav>
-                    )}
 
-                    {/* Student Profile (Bottom of Sidebar on Desk, Right of Header on Mobile) */}
-                    {selectedStudentId && (
-                        <div className={styles.studentProfile}>
-                            <NavLink to="/" title="Trocar de Aluno" style={{ textDecoration: 'none', width: '100%', display: 'flex', justifyContent: 'center' }}>
-                                <div className={styles.studentBadge}>
-                                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent-primary)', boxShadow: '0 0 10px var(--accent-primary)' }}></div>
-                                    <span className={styles.studentName}>
-                                        {students.find(s => s.id === selectedStudentId)?.name || 'Aluno'}
-                                    </span>
-                                    <RefreshCw size={14} style={{ marginLeft: 'auto', color: '#52525B' }} />
-                                </div>
-                            </NavLink>
-                        </div>
+                            {/* Exit Button - Last Slot */}
+                            <button
+                                onClick={() => {
+                                    setSelectedStudentId(null);
+                                    navigate('/');
+                                }}
+                                className={styles.navLink}
+                                style={{ border: 'none', cursor: 'pointer', color: 'var(--text-muted)', marginTop: 'auto' }} // auto margin pushes it if container is flex col h-full, but nav is likely just flex col.
+                                title="Sair / Trocar Aluno"
+                            >
+                                <LogOut size={24} />
+                            </button>
+                        </nav>
                     )}
                 </div>
             </aside>

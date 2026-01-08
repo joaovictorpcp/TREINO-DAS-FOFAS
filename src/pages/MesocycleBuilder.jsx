@@ -22,7 +22,7 @@ const MesocycleBuilder = () => {
     });
 
     const [baseWorkouts, setBaseWorkouts] = useState([
-        { id: 'A', name: 'Treino A', exercises: [], duration: '', distance: '', rpe: '', drills: '', mainSet: '' }
+        { id: 'A', name: 'Treino A', exercises: [], duration: '', distance: '', rpe: '', drills: '', mainSet: '', scheduledDays: [] }
     ]);
 
     const [activeTab, setActiveTab] = useState('A');
@@ -46,7 +46,8 @@ const MesocycleBuilder = () => {
             distance: '',
             rpe: '',
             drills: '',
-            mainSet: ''
+            mainSet: '',
+            scheduledDays: []
         }]);
         setActiveTab(newTabId);
     };
@@ -346,33 +347,57 @@ const MesocycleBuilder = () => {
                             </button>
                         </div>
 
-                        {/* Weekday Selector for Active Tab */}
+                        {/* Weekday Selector for Active Tab (Multi-Select) */}
                         <div style={{ marginBottom: '1rem', background: 'var(--bg-secondary)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                            <label style={{ marginRight: '10px', fontWeight: 600, color: 'var(--text-primary)' }}>Agendar para:</label>
-                            <select
-                                value={baseWorkouts.find(w => w.id === activeTab)?.scheduledDay || ''}
-                                onChange={(e) => {
-                                    setBaseWorkouts(prev => prev.map(w => {
-                                        if (w.id === activeTab) {
-                                            return { ...w, scheduledDay: parseInt(e.target.value) };
-                                        }
-                                        return w;
-                                    }));
-                                }}
-                                className="input"
-                                style={{ padding: '6px', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-                            >
-                                <option value="">Sem dia fixo (Manual)</option>
-                                <option value="1">Segunda-feira</option>
-                                <option value="2">Terça-feira</option>
-                                <option value="3">Quarta-feira</option>
-                                <option value="4">Quinta-feira</option>
-                                <option value="5">Sexta-feira</option>
-                                <option value="6">Sábado</option>
-                                <option value="0">Domingo</option>
-                            </select>
-                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '10px' }}>
-                                (Opcional: Define o dia da semana recorrente)
+                            <label style={{ display: 'block', marginBottom: '10px', fontWeight: 600, color: 'var(--text-primary)' }}>Dias de Treino:</label>
+
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                {[
+                                    { id: 1, label: 'Seg' },
+                                    { id: 2, label: 'Ter' },
+                                    { id: 3, label: 'Qua' },
+                                    { id: 4, label: 'Qui' },
+                                    { id: 5, label: 'Sex' },
+                                    { id: 6, label: 'Sáb' },
+                                    { id: 0, label: 'Dom' }
+                                ].map(day => {
+                                    const currentWorkout = baseWorkouts.find(w => w.id === activeTab);
+                                    const isSelected = currentWorkout?.scheduledDays?.includes(day.id);
+
+                                    return (
+                                        <button
+                                            key={day.id}
+                                            onClick={() => {
+                                                setBaseWorkouts(prev => prev.map(w => {
+                                                    if (w.id === activeTab) {
+                                                        const currentDays = w.scheduledDays || [];
+                                                        const newDays = currentDays.includes(day.id)
+                                                            ? currentDays.filter(d => d !== day.id)
+                                                            : [...currentDays, day.id];
+                                                        return { ...w, scheduledDays: newDays };
+                                                    }
+                                                    return w;
+                                                }));
+                                            }}
+                                            style={{
+                                                padding: '8px 16px',
+                                                borderRadius: '8px',
+                                                border: isSelected ? '1px solid var(--accent-primary)' : '1px solid var(--border-subtle)',
+                                                background: isSelected ? 'rgba(74, 222, 128, 0.2)' : 'var(--bg-primary)',
+                                                color: isSelected ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                                                fontWeight: isSelected ? 600 : 400,
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s',
+                                                flex: 1
+                                            }}
+                                        >
+                                            {day.label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginTop: '8px' }}>
+                                * Selecione os dias da semana em que este treino se repete.
                             </span>
                         </div>
 
