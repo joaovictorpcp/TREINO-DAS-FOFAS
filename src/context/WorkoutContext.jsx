@@ -125,7 +125,7 @@ export const WorkoutProvider = ({ children }) => {
     if (!studentId) return [];
 
     // 1. Filter & Sort Workouts for Student
-    console.log(`PMC: Calculating for student: ${studentId}`);
+    // 1. Filter & Sort Workouts for Student
     const studentWorkouts = workouts
       .filter(w => {
         const s = (w.status || '').toLowerCase();
@@ -134,7 +134,7 @@ export const WorkoutProvider = ({ children }) => {
       })
       .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    console.log(`PMC: Found ${studentWorkouts.length} completed workouts.`);
+
 
     // 2. Aggregate Daily Load
     // We need a continuous timeline. If no workout, load is 0.
@@ -150,7 +150,7 @@ export const WorkoutProvider = ({ children }) => {
     studentWorkouts.forEach(w => {
       const dKey = new Date(w.date).toISOString().split('T')[0];
       const load = calculateNormalizedLoad(w);
-      // console.log(`PMC: Date ${dKey} Load: ${load}`);
+
       // Sum load if multiple workouts in one day
       loadMap[dKey] = (loadMap[dKey] || 0) + load;
     });

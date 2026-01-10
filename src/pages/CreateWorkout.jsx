@@ -269,7 +269,7 @@ const TrainingLog = () => {
     };
 
     return (
-        <div className="page-container animate-fade-in">
+        <div className={clsx("page-container animate-fade-in", isEditing && styles.editingMode)}>
 
             {/* MAIN ACTIVITY SELECTOR - TOP LEVEL (Controlled Visibility) */}
             {!isEditing && (

@@ -139,8 +139,7 @@ const PerformancePage = () => {
             </div>
 
             {/* MAIN PMC CHART SECTION */}
-            <div className="glass-panel" style={{
-                padding: '32px',
+            <div className="glass-panel responsive-panel" style={{
                 marginBottom: '2rem',
                 border: '1px solid var(--border-subtle)'
             }}>
@@ -148,8 +147,8 @@ const PerformancePage = () => {
                     Gráfico de Gerenciamento de Performance
                 </h3>
 
-                {/* 1. GRAPH - Height controlled via class for responsive adjustment if needed, but fixed height usually fine for charts */}
-                <div style={{ height: '450px', width: '100%' }}>
+                {/* 1. GRAPH */}
+                <div className="chart-container">
                     {pmcData.length > 1 ? (
                         <ResponsiveContainer width="100%" height="100%">
                             <ComposedChart data={pmcData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>

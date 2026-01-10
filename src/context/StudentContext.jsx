@@ -17,7 +17,7 @@ export const StudentProvider = ({ children }) => {
             const saved = localStorage.getItem('students');
             return saved ? JSON.parse(saved) : [];
         } catch (error) {
-            console.error('Failed to load students', error);
+            console.error('Failed to load students');
             return [];
         }
     });
@@ -33,7 +33,7 @@ export const StudentProvider = ({ children }) => {
             const saved = localStorage.getItem('bodyMetrics');
             return saved ? JSON.parse(saved) : [];
         } catch (error) {
-            console.error('Failed to load body metrics', error);
+            console.error('Failed to load body metrics');
             return [];
         }
     });
@@ -43,7 +43,7 @@ export const StudentProvider = ({ children }) => {
         try {
             localStorage.setItem('students', JSON.stringify(students));
         } catch (error) {
-            console.error('Failed to save students', error);
+            console.error('Failed to save students');
         }
     }, [students]);
 
@@ -52,7 +52,7 @@ export const StudentProvider = ({ children }) => {
         try {
             localStorage.setItem('bodyMetrics', JSON.stringify(bodyMetrics));
         } catch (error) {
-            console.error('Failed to save body metrics', error);
+            console.error('Failed to save body metrics');
         }
     }, [bodyMetrics]);
 

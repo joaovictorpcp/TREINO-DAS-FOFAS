@@ -14,6 +14,8 @@ import PerformancePage from './pages/PerformancePage';
 import WeightTrackerPage from './pages/WeightTrackerPage';
 import { useStudent } from './context/StudentContext';
 import './styles/index.css';
+import ProtectedRoute from './components/Auth/ProtectedRoute';
+import AdminRoute from './components/Auth/AdminRoute';
 
 function App() {
   return (
@@ -37,16 +39,21 @@ const MainContent = () => {
 
   return (
     <Layout>
+
       <Routes>
         <Route path="/" element={<StudentGateway />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/create" element={<CreateWorkout />} />
-        <Route path="/mesocycle-builder" element={<MesocycleBuilder />} />
-        <Route path="/workouts" element={<WorkoutsPage />} />
-        <Route path="/edit/:id" element={<CreateWorkout />} />
-        <Route path="/students" element={<StudentsPage />} />
-        <Route path="/performance" element={<PerformancePage />} />
-        <Route path="/weight" element={<WeightTrackerPage />} />
+
+        {/* Protected Student Routes */}
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/create" element={<ProtectedRoute><CreateWorkout /></ProtectedRoute>} />
+        <Route path="/mesocycle-builder" element={<ProtectedRoute><MesocycleBuilder /></ProtectedRoute>} />
+        <Route path="/workouts" element={<ProtectedRoute><WorkoutsPage /></ProtectedRoute>} />
+        <Route path="/edit/:id" element={<ProtectedRoute><CreateWorkout /></ProtectedRoute>} />
+        <Route path="/performance" element={<ProtectedRoute><PerformancePage /></ProtectedRoute>} />
+        <Route path="/weight" element={<ProtectedRoute><WeightTrackerPage /></ProtectedRoute>} />
+
+        {/* Protected Admin/Trainer Route */}
+        <Route path="/students" element={<AdminRoute><StudentsPage /></AdminRoute>} />
       </Routes>
     </Layout>
   );

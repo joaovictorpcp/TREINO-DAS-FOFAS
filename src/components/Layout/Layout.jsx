@@ -109,9 +109,9 @@ const Layout = ({ children }) => {
                         <PlusCircle size={20} />
                         <span>Criar</span>
                     </NavLink>
-                    <NavLink to="/students" onClick={handleNavClick} className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}>
-                        <Users size={20} />
-                        <span>Alunos</span>
+                    <NavLink to="/performance" onClick={handleNavClick} className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}>
+                        <TrendingUp size={20} />
+                        <span>Performance</span>
                     </NavLink>
                     <NavLink to="/weight" onClick={handleNavClick} className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}>
                         <Scale size={20} />

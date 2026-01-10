@@ -180,7 +180,7 @@
     }
 
     .desktopHeader {
-        display: none;
+        display: none !important;
     }
 
     .gridRow {
@@ -239,6 +239,11 @@
         width: 100%;
         border-top: 1px solid var(--border-subtle);
         padding-top: 1rem;
+    }
+
+    /* Hide Add Exercise Button in Edit Mode on Mobile */
+    :global(.page-container).editingMode .footerActions {
+        display: none;
     }
 }
 

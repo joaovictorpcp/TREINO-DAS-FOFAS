@@ -219,3 +219,25 @@ h3 {
     transform: translateY(0);
   }
 }
+
+/* Mobile Chart Visibility Fixes */
+.responsive-panel {
+  padding: 32px;
+}
+
+.chart-container {
+  position: relative;
+  height: 450px;
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .responsive-panel {
+    padding: 16px;
+  }
+
+  .chart-container {
+    height: 300px;
+  }
+}
