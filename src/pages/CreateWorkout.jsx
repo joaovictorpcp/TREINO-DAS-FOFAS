@@ -12,11 +12,11 @@ import { useStudent } from '../context/StudentContext';
 const TrainingLog = () => {
     const navigate = useNavigate();
     const { id } = useParams(); // Get ID from URL if editing
-    const { addWorkout, updateWorkout, getWorkoutById, generateFullMesocycle, getExerciseHistory, getRecentAverageVolume } = useWorkout();
+    const { addWorkout, updateWorkout, getWorkoutById, generateFullMesocycle } = useWorkout();
     const { selectedStudentId } = useStudent();
 
-    const [showSafetyToast, setShowSafetyToast] = useState(false);
-    const [isGuideOpen, setIsGuideOpen] = useState(false);
+    // const [showSafetyToast, setShowSafetyToast] = useState(false);
+    // const [isGuideOpen, setIsGuideOpen] = useState(false);
 
     // Edit Mode State
     const [isEditing, setIsEditing] = useState(false);

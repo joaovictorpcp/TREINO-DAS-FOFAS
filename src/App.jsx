@@ -12,7 +12,6 @@ import StudentGateway from './pages/StudentGateway';
 import MesocycleBuilder from './pages/MesocycleBuilder';
 import PerformancePage from './pages/PerformancePage';
 import WeightTrackerPage from './pages/WeightTrackerPage';
-import { useStudent } from './context/StudentContext';
 import './styles/index.css';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import AdminRoute from './components/Auth/AdminRoute';
@@ -31,11 +30,7 @@ function App() {
 
 // Separate component to access useStudent context
 const MainContent = () => {
-  const { selectedStudentId } = useStudent();
-
-  // if (!selectedStudentId) {
-  //   return <StudentGateway />;
-  // }
+  // const { selectedStudentId } = useStudent(); // Used by Layout internally now
 
   return (
     <Layout>

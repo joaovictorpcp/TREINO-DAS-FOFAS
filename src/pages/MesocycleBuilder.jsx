@@ -7,7 +7,7 @@ import styles from './MesocycleBuilder.module.css';
 
 const MesocycleBuilder = () => {
     const { createMesocycle } = useWorkout();
-    const { selectedStudentId, students } = useStudent();
+    const { selectedStudentId } = useStudent();
     const navigate = useNavigate();
 
     const [step, setStep] = useState(1); // 1: Config, 2: Base Week

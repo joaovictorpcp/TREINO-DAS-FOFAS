@@ -18,7 +18,7 @@ const getCache = () => {
     try {
         const cached = localStorage.getItem(CACHE_KEY);
         return cached ? JSON.parse(cached) : {};
-    } catch (e) {
+    } catch {
         return {};
     }
 };

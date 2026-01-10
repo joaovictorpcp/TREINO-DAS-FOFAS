@@ -51,12 +51,12 @@ const WeightTrackerPage = () => {
     }, [bodyMetrics, selectedStudentId]);
 
     const latestMetric = studentMetrics.length > 0 ? studentMetrics[studentMetrics.length - 1] : null;
-    const startMetric = studentMetrics.length > 0 ? studentMetrics[0] : null;
 
     // Calculate Change
-    const totalChange = latestMetric && startMetric
-        ? (latestMetric.weight - startMetric.weight).toFixed(1)
-        : '0.0';
+    // Calculate Change
+    // const totalChange = latestMetric && startMetric
+    //     ? (latestMetric.weight - startMetric.weight).toFixed(1)
+    //     : '0.0';
 
     // --- POLLOCK 7 CALCULATION ---
     const calculateBodyDensityAndFat = (folds, age, gender) => {

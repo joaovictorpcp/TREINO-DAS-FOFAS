@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
+/* eslint-disable react-refresh/only-export-components */
+
 const WorkoutContext = createContext();
 
 export const useWorkout = () => {
@@ -362,7 +364,7 @@ export const WorkoutProvider = ({ children }) => {
   const createMesocycle = (programData) => {
     const { name, weeks, baseWorkouts, studentId, startDate } = programData;
     const newWorkouts = [];
-    const mesoId = crypto.randomUUID(); // Unique ID for this specific mesocycle run (optional usage)
+    // const mesoId = crypto.randomUUID(); // Unique ID for this specific mesocycle run (optional)
     // We can use a timestamp or increment for the 'mesocycle' number, but let's stick to the user's input or auto-detect
     // For now, let's find the max mesocycle and increment
     const latestMeso = workouts.filter(w => w.studentId === studentId).length > 0
@@ -581,6 +583,7 @@ export const WorkoutProvider = ({ children }) => {
       updateWorkout,
       getWorkoutById,
       clearWorkouts,
+      calculateVolumeLoad, // Exposed now
       generateFullMesocycle,
       mirrorWeekToMonth,
       createMesocycle,

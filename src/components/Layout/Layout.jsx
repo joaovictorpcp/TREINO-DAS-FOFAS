@@ -6,7 +6,7 @@ import { useStudent } from '../../context/StudentContext';
 import styles from './Layout.module.css';
 
 const Layout = ({ children }) => {
-    const { students, selectedStudentId, setSelectedStudentId } = useStudent();
+    const { selectedStudentId, setSelectedStudentId } = useStudent();
     const location = useLocation();
     const navigate = useNavigate();
 

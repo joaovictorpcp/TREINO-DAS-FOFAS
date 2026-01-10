@@ -1,18 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Lock } from 'lucide-react';
 
 const AdminRoute = ({ children }) => {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState(() => {
+        return sessionStorage.getItem('admin_auth') === 'true';
+    });
     const [pin, setPin] = useState('');
     const [error, setError] = useState(false);
-
-    useEffect(() => {
-        const SessionAuth = sessionStorage.getItem('admin_auth');
-        if (SessionAuth === 'true') {
-            setIsAuthenticated(true);
-        }
-    }, []);
 
     const handleLogin = (e) => {
         e.preventDefault();

@@ -3,7 +3,7 @@ import { useWorkout } from '../../context/WorkoutContext';
 import { useStudent } from '../../context/StudentContext';
 import { ChevronLeft, ChevronRight, Check, Calendar as CalendarIcon, Clock, Dumbbell, Footprints, Bike, Waves, AlertCircle, XCircle, MapPin, Activity } from 'lucide-react';
 
-const AttendanceCalendar = ({ viewMode = 'simple', onDayClick, fullPageMode = false }) => {
+const AttendanceCalendar = ({ onDayClick, fullPageMode = false }) => {
     const { workouts, updateWorkout } = useWorkout();
     const { selectedStudentId } = useStudent();
 
@@ -139,8 +139,8 @@ const AttendanceCalendar = ({ viewMode = 'simple', onDayClick, fullPageMode = fa
                             const todayStr = new Date().toDateString();
                             const wDateStr = wDate.toDateString();
 
-                            let dayLabel = wDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
-                            if (wDateStr === todayStr) dayLabel = "HOJE";
+                            // let dayLabel = wDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
+                            // if (wDateStr === todayStr) dayLabel = "HOJE";
 
                             const s = w.status === 'completed' ? 'completed' : ((wDate < new Date() && w.status !== 'completed') ? 'missed' : 'planned');
                             const style = getBlockStyle(s);

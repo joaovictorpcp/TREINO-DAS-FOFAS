@@ -5,7 +5,7 @@ import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import Modal from '../ui/Modal';
 
 const BiometricCard = () => {
-    const { students, selectedStudentId, updateStudent, bodyMetrics, addBodyMetric, getBodyMetrics, deleteBodyMetric } = useStudent();
+    const { students, selectedStudentId, updateStudent, addBodyMetric, getBodyMetrics, deleteBodyMetric } = useStudent();
     const student = students.find(s => s.id === selectedStudentId);
 
     const [height, setHeight] = useState('');
@@ -21,18 +21,7 @@ const BiometricCard = () => {
     // This ensures updates in context (from add/delete) reflect immediately without local state lag
     const metrics = React.useMemo(() => {
         return getBodyMetrics(selectedStudentId);
-    }, [selectedStudentId, bodyMetrics, getBodyMetrics]);
-
-    useEffect(() => {
-        if (student) {
-            setHeight(student.height || '');
-            // Handle both camelCase (new) and snake_case (legacy)
-            const dob = student.birthDate || student.birth_date || '';
-            setBirthDate(dob);
-            calculateAge(dob);
-            // No need to set metrics state here anymore
-        }
-    }, [student]);
+    }, [selectedStudentId, getBodyMetrics]);
 
     const calculateAge = (dob) => {
         if (!dob) {
@@ -44,6 +33,19 @@ const BiometricCard = () => {
         const ageDate = new Date(difference);
         setAge(Math.abs(ageDate.getUTCFullYear() - 1970));
     };
+
+    useEffect(() => {
+        if (student) {
+            // Only update if values differ to avoid loops/warnings
+            const newHeight = student.height || '';
+            const newDob = student.birthDate || student.birth_date || '';
+
+            setHeight(h => h !== newHeight ? newHeight : h); // eslint-disable-line react-hooks/set-state-in-effect
+            setBirthDate(d => d !== newDob ? newDob : d);
+
+            if (newDob) calculateAge(newDob);
+        }
+    }, [student?.height, student?.birthDate, student?.birth_date]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleUpdate = () => {
         if (!selectedStudentId) return;

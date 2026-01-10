@@ -1,6 +1,6 @@
 export const generateEndurancePlan = (payload) => {
     const { studentProfile, trainingGoal } = payload;
-    const { modality, benchmark, goalType, schedule } = trainingGoal;
+    const { modality, schedule } = trainingGoal;
 
     const generatedWorkouts = [];
     const today = new Date();

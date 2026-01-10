@@ -1,6 +1,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
+/* eslint-disable react-refresh/only-export-components */
+
 const ExerciseContext = createContext();
 
 export const useExercise = () => {

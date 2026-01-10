@@ -8,7 +8,7 @@ import styles from './Dashboard.module.css';
 const Dashboard = () => {
     const context = useWorkout();
     const navigate = useNavigate();
-    const workouts = Array.isArray(context.workouts) ? context.workouts : [];
+    const workouts = useMemo(() => Array.isArray(context.workouts) ? context.workouts : [], [context.workouts]);
     const { selectedStudentId, students } = useStudent();
 
     // If no student selected, user should stick to "Select Student" or "Loading"

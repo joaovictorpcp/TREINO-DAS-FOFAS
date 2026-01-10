@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
+/* eslint-disable react-refresh/only-export-components */
+
 const StudentContext = createContext();
 
 export const useStudent = () => {
@@ -16,7 +18,7 @@ export const StudentProvider = ({ children }) => {
         try {
             const saved = localStorage.getItem('students');
             return saved ? JSON.parse(saved) : [];
-        } catch (error) {
+        } catch {
             console.error('Failed to load students');
             return [];
         }
@@ -32,7 +34,7 @@ export const StudentProvider = ({ children }) => {
         try {
             const saved = localStorage.getItem('bodyMetrics');
             return saved ? JSON.parse(saved) : [];
-        } catch (error) {
+        } catch {
             console.error('Failed to load body metrics');
             return [];
         }
@@ -42,7 +44,7 @@ export const StudentProvider = ({ children }) => {
     useEffect(() => {
         try {
             localStorage.setItem('students', JSON.stringify(students));
-        } catch (error) {
+        } catch {
             console.error('Failed to save students');
         }
     }, [students]);
@@ -51,7 +53,7 @@ export const StudentProvider = ({ children }) => {
     useEffect(() => {
         try {
             localStorage.setItem('bodyMetrics', JSON.stringify(bodyMetrics));
-        } catch (error) {
+        } catch {
             console.error('Failed to save body metrics');
         }
     }, [bodyMetrics]);
