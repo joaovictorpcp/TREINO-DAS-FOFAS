@@ -13,18 +13,24 @@ import MesocycleBuilder from './pages/MesocycleBuilder';
 import PerformancePage from './pages/PerformancePage';
 import WeightTrackerPage from './pages/WeightTrackerPage';
 import './styles/index.css';
+import { AuthProvider } from './context/AuthContext';
+import LoginPage from './pages/LoginPage';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import AdminRoute from './components/Auth/AdminRoute';
 
 function App() {
   return (
-    <StudentProvider>
-      <WorkoutProvider>
-        <Router>
-          <MainContent />
-        </Router>
-      </WorkoutProvider>
-    </StudentProvider>
+    <AuthProvider>
+      <StudentProvider>
+        <ExerciseProvider>
+          <WorkoutProvider>
+            <Router>
+              <MainContent />
+            </Router>
+          </WorkoutProvider>
+        </ExerciseProvider>
+      </StudentProvider>
+    </AuthProvider>
   );
 }
 
@@ -37,6 +43,7 @@ const MainContent = () => {
 
       <Routes>
         <Route path="/" element={<StudentGateway />} />
+        <Route path="/login" element={<LoginPage />} />
 
         {/* Protected Student Routes */}
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
