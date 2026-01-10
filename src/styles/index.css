@@ -79,6 +79,10 @@ body {
   background-position: center;
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
+  /* Mobile Safe Area */
+  padding-bottom: env(safe-area-inset-bottom);
+  overflow-x: hidden;
+  /* Prevent horizontal scroll */
 }
 
 h1,
@@ -239,5 +243,15 @@ h3 {
 
   .chart-container {
     height: 300px;
+  }
+
+  /* Mobile Touch Targets & Safe Areas */
+  button,
+  a,
+  input,
+  select {
+    min-height: 44px;
+    /* Apple Human Interface Guidelines */
+    touch-action: manipulation;
   }
 }

@@ -238,12 +238,34 @@ const WeightTrackerPage = () => {
                     {/* Chart */}
                     <div className="glass-panel" style={{ height: '380px', padding: '1rem' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '1rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>Analise Gráfica</h3>
-                                <div style={{ display: 'flex', gap: '8px', background: 'var(--bg-secondary)', padding: '4px', borderRadius: '8px' }}>
-                                    <button onClick={() => setActiveChart('weight')} className={activeChart === 'weight' ? 'btn btn-sm btn-primary' : 'btn btn-sm'} style={activeChart !== 'weight' ? { background: 'transparent', color: 'var(--text-secondary)', boxShadow: 'none' } : {}}>Peso</button>
-                                    <button onClick={() => setActiveChart('bodyFat')} className={activeChart === 'bodyFat' ? 'btn btn-sm btn-primary' : 'btn btn-sm'} style={activeChart !== 'bodyFat' ? { background: 'transparent', color: 'var(--text-secondary)', boxShadow: 'none' } : {}}>Gordura %</button>
-                                    <button onClick={() => setActiveChart('perimetry')} className={activeChart === 'perimetry' ? 'btn btn-sm btn-primary' : 'btn btn-sm'} style={activeChart !== 'perimetry' ? { background: 'transparent', color: 'var(--text-secondary)', boxShadow: 'none' } : {}}>Perimetria</button>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>Analise Gráfica</h3>
+                                </div>
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-evenly', /* Equal spacing as requested */
+                                    alignItems: 'center',
+                                    width: '100%',
+                                    gap: '4px', /* Reduced gap to allow spacing to dominate */
+                                    background: 'var(--bg-secondary)',
+                                    padding: '4px',
+                                    borderRadius: '12px',
+                                    overflowX: 'auto',
+                                    whiteSpace: 'nowrap',
+                                    scrollbarWidth: 'none',
+                                    msOverflowStyle: 'none',
+                                    WebkitOverflowScrolling: 'touch'
+                                }}>
+                                    <style>{`
+                                        /* Hide scrollbar for Chrome, Safari and Opera */
+                                        .chart-selector::-webkit-scrollbar {
+                                            display: none;
+                                        }
+                                    `}</style>
+                                    <button onClick={() => setActiveChart('weight')} className={activeChart === 'weight' ? 'btn btn-sm btn-primary' : 'btn btn-sm'} style={{ flexShrink: 0, fontSize: '0.8rem', padding: '4px 12px', ...(activeChart !== 'weight' ? { background: 'transparent', color: 'var(--text-secondary)', boxShadow: 'none' } : {}) }}>Peso</button>
+                                    <button onClick={() => setActiveChart('bodyFat')} className={activeChart === 'bodyFat' ? 'btn btn-sm btn-primary' : 'btn btn-sm'} style={{ flexShrink: 0, fontSize: '0.8rem', padding: '4px 12px', ...(activeChart !== 'bodyFat' ? { background: 'transparent', color: 'var(--text-secondary)', boxShadow: 'none' } : {}) }}>Gordura %</button>
+                                    <button onClick={() => setActiveChart('perimetry')} className={activeChart === 'perimetry' ? 'btn btn-sm btn-primary' : 'btn btn-sm'} style={{ flexShrink: 0, fontSize: '0.8rem', padding: '4px 12px', ...(activeChart !== 'perimetry' ? { background: 'transparent', color: 'var(--text-secondary)', boxShadow: 'none' } : {}) }}>Perimetria</button>
                                 </div>
                             </div>
 
@@ -312,7 +334,7 @@ const WeightTrackerPage = () => {
                                     padding: '1rem 1.5rem', borderBottom: '1px solid var(--border-subtle)',
                                     display: 'flex', flexDirection: 'column', gap: '8px'
                                 }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                             <div style={{
                                                 width: '32px', height: '32px', borderRadius: '8px',
@@ -331,7 +353,7 @@ const WeightTrackerPage = () => {
                                             </div>
                                         </div>
 
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', marginLeft: 'auto' }}>
                                             <div style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-primary)' }}>
                                                 {metric.weight} kg
                                             </div>

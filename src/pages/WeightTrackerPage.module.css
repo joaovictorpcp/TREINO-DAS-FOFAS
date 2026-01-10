@@ -33,6 +33,11 @@
     align-items: start;
 }
 
+.mainLayout>* {
+    min-width: 0;
+    /* Critical for Grid overflow prevention */
+}
+
 /* Form Panel sticky behavior handled here or inline, inline is fine for simple sticky */
 
 @media (max-width: 900px) {

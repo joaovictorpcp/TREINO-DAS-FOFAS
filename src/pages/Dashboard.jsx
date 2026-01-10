@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 import { useStudent } from '../context/StudentContext';
-import { Trophy, Rocket, Dumbbell, Bike, Footprints, Waves } from 'lucide-react';
+import { Trophy, Rocket, Bike, Footprints, Waves } from 'lucide-react';
 import styles from './Dashboard.module.css';
 
 const Dashboard = () => {

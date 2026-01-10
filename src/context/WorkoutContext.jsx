@@ -18,7 +18,7 @@ export const WorkoutProvider = ({ children }) => {
       const parsed = saved ? JSON.parse(saved) : [];
       return Array.isArray(parsed) ? parsed : [];
     } catch (error) {
-      console.error('Failed to load workouts', error);
+      console.error('Data load error', error);
       return [];
     }
   });
@@ -27,7 +27,7 @@ export const WorkoutProvider = ({ children }) => {
     try {
       localStorage.setItem('workouts', JSON.stringify(workouts));
     } catch (error) {
-      console.error('Failed to save workouts', error);
+      console.error('Data save error', error);
     }
   }, [workouts]);
 
@@ -587,7 +587,6 @@ export const WorkoutProvider = ({ children }) => {
       getExerciseHistory,
       getRecentAverageVolume,
       getPMCData,
-      importMesocycle,
       importMesocycle,
       duplicateMesocycleToNext
     }}>
