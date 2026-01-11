@@ -73,7 +73,15 @@ export const StudentProvider = ({ children }) => {
     }, [selectedStudentId]);
 
     const addStudent = async (name, goal, profileData = {}) => {
-        if (!session?.user) return;
+        console.log('[StudentContext] addStudent called', { name, goal, profileData });
+
+        if (!session?.user) {
+            console.error('[StudentContext] No session found. execution stopped.');
+            alert('Erro: Usuário não autenticado.');
+            return;
+        }
+
+        console.log('[StudentContext] User:', session.user.id);
 
         // Prepare new student object
         // We'll store initial weight in profile_data.metrics if provided
@@ -98,14 +106,19 @@ export const StudentProvider = ({ children }) => {
         };
 
         try {
+            console.log('[StudentContext] Sending to Supabase:', newStudentData);
             const { data, error } = await supabase
                 .from('students')
                 .insert([newStudentData])
                 .select()
                 .single();
 
-            if (error) throw error;
+            if (error) {
+                console.error('[StudentContext] Supabase Error:', error);
+                throw error;
+            }
 
+            console.log('[StudentContext] Success:', data);
             const savedStudent = { ...data, ...(data.profile_data || {}) };
             setStudents(prev => [...prev, savedStudent]);
 
@@ -115,7 +128,7 @@ export const StudentProvider = ({ children }) => {
             }
         } catch (error) {
             console.error('Error adding student:', error);
-            alert('Erro ao adicionar aluno.');
+            alert(`Erro ao adicionar aluno: ${error.message || error.code}`);
         }
     };
 
