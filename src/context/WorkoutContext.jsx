@@ -76,7 +76,15 @@ export const WorkoutProvider = ({ children }) => {
       status: workout.status || 'planned',
       exercises: workout.exercises || [],
       meta: workout.meta || {},
-      ...workout // catch-all for other fields if they match columns
+
+      ...workout, // catch-all
+
+      // Overwrite/Sanitize numerics
+      duration_minutes: workout.duration_minutes === "" ? null : workout.duration_minutes,
+      distance_km: workout.distance_km === "" ? null : workout.distance_km,
+      session_rpe: workout.session_rpe === "" ? null : workout.session_rpe,
+      volume_load_kg: workout.volume_load_kg === "" ? null : workout.volume_load_kg,
+      normalized_load: workout.normalized_load === "" ? null : workout.normalized_load,
     };
 
     // Remove client-side only fields that might conflict or aren't columns
@@ -644,9 +652,9 @@ export const WorkoutProvider = ({ children }) => {
             status: 'planned',
 
             activity_type: programData.activityType || 'weightlifting',
-            duration_minutes: base.duration_minutes,
-            distance_km: base.distance_km,
-            session_rpe: base.session_rpe,
+            duration_minutes: base.duration_minutes === "" ? null : base.duration_minutes,
+            distance_km: base.distance_km === "" ? null : base.distance_km,
+            session_rpe: base.session_rpe === "" ? null : base.session_rpe,
             drills_description: base.drills_description,
             main_set_description: base.main_set_description,
 
