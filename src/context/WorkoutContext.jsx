@@ -710,7 +710,9 @@ export const WorkoutProvider = ({ children }) => {
     }
   };
 
-  const importMesocycle = (fromStudentId, toStudentId, mesocycleNumber) => {
+  const importMesocycle = async (fromStudentId, toStudentId, mesocycleNumber) => {
+    if (!session?.user) return;
+
     // 1. Get Source Workouts
     const sourceWorkouts = workouts.filter(w =>
       w.studentId === fromStudentId &&
@@ -751,11 +753,15 @@ export const WorkoutProvider = ({ children }) => {
       }));
 
       return {
-        ...source,
-        id: crypto.randomUUID(),
-        studentId: toStudentId,
+        // id: crypto.randomUUID(), // Let DB generate
+        user_id: session.user.id,
+        student_id: toStudentId,
         date: newDate.toISOString(),
         status: 'planned',
+
+        // Ensure other required fields are present if needed, but upsert/insert handles defaults
+        category: source.category,
+
         meta: {
           ...source.meta,
           mesocycle: newMesoNum, // Assign new incremental meso number
@@ -764,11 +770,35 @@ export const WorkoutProvider = ({ children }) => {
       };
     });
 
-    setWorkouts(prev => [...newWorkouts, ...prev]);
-    return newWorkouts.length;
+    // 5. Insert to DB
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('workouts')
+        .insert(newWorkouts)
+        .select();
+
+      if (error) throw error;
+
+      // 6. Update State
+      const mappedData = data.map(w => ({
+        ...w,
+        studentId: w.student_id
+      }));
+
+      setWorkouts(prev => [...mappedData, ...prev]);
+      return mappedData.length;
+    } catch (err) {
+      console.error("Error importing mesocycle:", err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const duplicateMesocycleToNext = (studentId, sourceMeso) => {
+  const duplicateMesocycleToNext = async (studentId, sourceMeso) => {
+    if (!session?.user) return;
+
     // 1. Get Source Workouts
     const sourceWorkouts = workouts.filter(w =>
       w.studentId === studentId &&
@@ -806,10 +836,14 @@ export const WorkoutProvider = ({ children }) => {
       }));
 
       return {
-        ...source,
-        id: crypto.randomUUID(),
+        // id: crypto.randomUUID(), // Let DB generate
+        user_id: session.user.id,
+        student_id: studentId,
         date: newDate.toISOString(),
         status: 'planned',
+
+        category: source.category,
+
         meta: {
           ...source.meta,
           mesocycle: newMesoNum
@@ -818,9 +852,31 @@ export const WorkoutProvider = ({ children }) => {
       };
     });
 
-    setWorkouts(prev => [...newWorkouts, ...prev]);
-    alert(`Mesociclo #${newMesoNum} criado com sucesso! (${newWorkouts.length} treinos duplicados).`);
-    return newMesoNum;
+    // 4. Insert to DB
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('workouts')
+        .insert(newWorkouts)
+        .select();
+
+      if (error) throw error;
+
+      // 5. Update State
+      const mappedData = data.map(w => ({
+        ...w,
+        studentId: w.student_id
+      }));
+
+      setWorkouts(prev => [...mappedData, ...prev]);
+      alert(`Mesociclo #${newMesoNum} criado com sucesso! (${mappedData.length} treinos duplicados).`);
+      return newMesoNum;
+    } catch (err) {
+      console.error("Error duplicating mesocycle:", err);
+      alert("Erro ao duplicar mesociclo: " + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
