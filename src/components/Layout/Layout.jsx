@@ -81,7 +81,7 @@ const Layout = ({ children }) => {
                             <button
                                 onClick={() => {
                                     setSelectedStudentId(null);
-                                    navigate('/');
+                                    navigate('/gateway');
                                 }}
                                 className={styles.navLink}
                                 style={{ border: 'none', cursor: 'pointer', color: 'var(--text-muted)', marginTop: 'auto' }} // auto margin pushes it if container is flex col h-full, but nav is likely just flex col.

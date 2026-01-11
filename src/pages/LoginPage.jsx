@@ -8,8 +8,8 @@ const LoginPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Redirect back to where they were or /students
-    const from = location.state?.from?.pathname || '/students';
+    // Redirect back to where they were or /gateway
+    const from = location.state?.from?.pathname || '/gateway';
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');

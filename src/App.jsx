@@ -44,8 +44,8 @@ const MainContent = () => {
     <Layout>
 
       <Routes>
-        <Route path="/" element={<StudentGateway />} />
-        <Route path="/login" element={<LoginPage />} />
+        <Route path="/" element={<LoginPage />} />
+        <Route path="/gateway" element={<StudentGateway />} />
 
         {/* Protected Student Routes */}
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
