@@ -195,7 +195,6 @@ const TrainingLog = () => {
 
                 const workoutData = {
                     id: isEditing ? id : undefined,
-                    type: 'log',
                     activity_type: 'weightlifting',
                     date: getLocalISO(workoutDate),
                     status: 'completed',
@@ -225,7 +224,6 @@ const TrainingLog = () => {
 
                 const workoutData = {
                     id: isEditing ? id : undefined,
-                    type: 'log',
                     activity_type: activityType,
                     date: getLocalISO(workoutDate),
                     status: 'completed',

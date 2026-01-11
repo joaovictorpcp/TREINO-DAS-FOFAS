@@ -55,22 +55,17 @@ export const WorkoutProvider = ({ children }) => {
     } catch (error) {
       console.error('Error fetching workouts:', error);
       setError(error.message || 'Unknown error');
-      // alert('Debug: Erro ao buscar treinos: ' + (error.message || JSON.stringify(error))); 
     } finally {
       setLoading(false);
     }
   };
 
   const addWorkout = async (workout) => {
-    if (!session?.user) {
-      alert('Erro: Usuário não logado.');
-      return;
-    }
+    if (!session?.user) return;
 
     // Ensure we have a studentId!
     if (!workout.studentId) {
       console.error("Cannot add workout without studentId");
-      alert('Erro: Student ID faltando.');
       return;
     }
 
@@ -99,7 +94,6 @@ export const WorkoutProvider = ({ children }) => {
       setWorkouts(prev => [{ ...data, studentId: data.student_id }, ...prev]);
     } catch (error) {
       console.error('Error adding workout:', error);
-      alert('Erro ao salvar no Banco de Dados: ' + (error.message || error.details || JSON.stringify(error)));
     }
   };
 
