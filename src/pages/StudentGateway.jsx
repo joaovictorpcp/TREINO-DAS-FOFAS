@@ -9,7 +9,7 @@ const StudentGateway = () => {
     const { workouts, clearWorkouts } = useWorkout();
     const navigate = useNavigate();
     const [isCreating, setIsCreating] = useState(false);
-    const [data, setData] = useState({ name: '', birthDate: '', height: '', weight: '' });
+    const [data, setData] = useState({ name: '', birthDate: '', height: '', weight: '', gender: '' });
 
     // Clear selection on mount (when returning to Home)
     React.useEffect(() => {
@@ -37,12 +37,13 @@ const StudentGateway = () => {
         const profile = {
             birthDate: data.birthDate || null,
             height: data.height ? parseFloat(data.height) : null,
-            weight: data.weight ? parseFloat(data.weight) : null
+            weight: data.weight ? parseFloat(data.weight) : null,
+            gender: data.gender || 'female'
         };
 
         addStudent(data.name, "Aluna", profile);
 
-        setData({ name: '', birthDate: '', height: '', weight: '' });
+        setData({ name: '', birthDate: '', height: '', weight: '', gender: '' });
         setIsCreating(false);
     };
 
@@ -259,15 +260,30 @@ const StudentGateway = () => {
                                 />
                             </div>
 
-                            {/* DOB */}
-                            <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>Data de Nascimento</label>
-                                <input
-                                    type="date"
-                                    className="input"
-                                    value={data.birthDate}
-                                    onChange={e => setData(prev => ({ ...prev, birthDate: e.target.value }))}
-                                />
+                            {/* Gender & DOB Row */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '1rem' }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>Gênero</label>
+                                    <select
+                                        className="input"
+                                        value={data.gender}
+                                        onChange={e => setData(prev => ({ ...prev, gender: e.target.value }))}
+                                        style={{ width: '100%' }}
+                                    >
+                                        <option value="">Selecione...</option>
+                                        <option value="female">Feminino</option>
+                                        <option value="male">Masculino</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>Data de Nascimento</label>
+                                    <input
+                                        type="date"
+                                        className="input"
+                                        value={data.birthDate}
+                                        onChange={e => setData(prev => ({ ...prev, birthDate: e.target.value }))}
+                                    />
+                                </div>
                             </div>
 
                             {/* Height & Weight Row */}
