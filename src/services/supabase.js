@@ -7,7 +7,11 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 let supabaseClient;
 
 if (!supabaseUrl || !supabaseUrl.startsWith('http')) {
-    console.error('CRITICAL: VITE_SUPABASE_URL is missing or invalid. Check your .env setup.');
+    console.error('CRITICAL: Supabase URL issue.');
+    console.log('Value received:', supabaseUrl);
+    console.log('Type:', typeof supabaseUrl);
+    if (supabaseUrl) console.log('First char:', supabaseUrl.charAt(0));
+    console.error('VITE_SUPABASE_URL is missing, empty, or does not start with http.');
     // Create a dummy client that warns on every method call to prevent "cannot read property of undefined" crashes
     supabaseClient = {
         auth: {
