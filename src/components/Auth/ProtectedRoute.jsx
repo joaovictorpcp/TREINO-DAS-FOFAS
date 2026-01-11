@@ -30,7 +30,8 @@ const ProtectedRoute = ({ children }) => {
     }
 
     // Optional: If you strictly require a student selection for these routes:
-    if (!selectedStudentId) {
+    // Optional: If you strictly require a student selection for these routes:
+    if (!selectedStudentId && location.pathname !== '/gateway') {
         // If logged in but no student selected, maybe redirect to gateway?
         return <Navigate to="/gateway" replace />;
     }
