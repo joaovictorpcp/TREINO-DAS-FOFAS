@@ -419,7 +419,10 @@ export const WorkoutProvider = ({ children }) => {
     return totalVolume / recentWorkouts.length;
   };
 
-  const generateFullMesocycle = (baseWorkout) => {
+  const generateFullMesocycle = async (baseWorkout) => {
+    // 1. Check Auth
+    if (!session?.user) return;
+
     const newWorkouts = [];
     const baseDate = new Date(baseWorkout.date);
     const meso = baseWorkout.meta?.mesocycle || 1;
@@ -444,7 +447,9 @@ export const WorkoutProvider = ({ children }) => {
       nextDate.setDate(baseDate.getDate() + (i * 7));
 
       newWorkouts.push({
-        id: crypto.randomUUID(),
+        // id: crypto.randomUUID(), // Let DB generate
+        user_id: session.user.id,
+        student_id: baseWorkout.studentId, // Ensure we use correct ID
         date: nextDate.toISOString(),
         status: 'planned',
         meta: {
@@ -454,10 +459,34 @@ export const WorkoutProvider = ({ children }) => {
         exercises: clonedExercises
       });
     }
-    setWorkouts(prev => [...newWorkouts, ...prev]);
+
+    // 2. Insert to DB
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('workouts')
+        .insert(newWorkouts)
+        .select();
+
+      if (error) throw error;
+
+      // 3. Update State
+      const mappedData = data.map(w => ({
+        ...w,
+        studentId: w.student_id
+      }));
+
+      setWorkouts(prev => [...mappedData, ...prev]);
+    } catch (err) {
+      console.error("Error auto-generating mesocycle:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const mirrorWeekToMonth = (studentId, mesocycle) => {
+  const mirrorWeekToMonth = async (studentId, mesocycle) => {
+    if (!session?.user) return;
+
     // 1. Get Week 1 Workouts for this Student & Mesocycle
     const week1Workouts = workouts.filter(w =>
       w.studentId === studentId &&
@@ -495,11 +524,13 @@ export const WorkoutProvider = ({ children }) => {
         }));
 
         newWorkouts.push({
-          id: crypto.randomUUID(),
+          // id: crypto.randomUUID(), // Let DB generate
+          user_id: session.user.id,
+          student_id: baseWorkout.studentId,
           date: nextDate.toISOString(),
           status: 'planned',
           category: baseWorkout.category,
-          studentId: baseWorkout.studentId,
+
           meta: {
             mesocycle: mesocycle,
             week: w
@@ -509,13 +540,42 @@ export const WorkoutProvider = ({ children }) => {
       });
     }
 
-    setWorkouts(prev => [...newWorkouts, ...prev]);
-    alert(`Sucesso! Espelho realizado. ${newWorkouts.length} novos treinos criados para as semanas 2, 3 e 4.`);
+    // 3. Insert to DB
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('workouts')
+        .insert(newWorkouts)
+        .select();
+
+      if (error) throw error;
+
+      // 4. Update State
+      const mappedData = data.map(w => ({
+        ...w,
+        studentId: w.student_id
+      }));
+
+      setWorkouts(prev => [...mappedData, ...prev]);
+      alert(`Sucesso! Espelho realizado. ${mappedData.length} novos treinos criados e salvos no banco.`);
+    } catch (err) {
+      console.error("Error mirroring mesocycle:", err);
+      alert("Erro ao espelhar mesociclo: " + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const createMesocycle = (programData) => {
+  const createMesocycle = async (programData) => {
     const { name, weeks, baseWorkouts, studentId, startDate } = programData;
     const newWorkouts = [];
+
+    // Ensure we have a valid session user
+    if (!session?.user) {
+      alert("Erro: Você precisa estar logado para criar um mesociclo.");
+      return;
+    }
+
     // const mesoId = crypto.randomUUID(); // Unique ID for this specific mesocycle run (optional)
     // We can use a timestamp or increment for the 'mesocycle' number, but let's stick to the user's input or auto-detect
     // For now, let's find the max mesocycle and increment
@@ -566,8 +626,18 @@ export const WorkoutProvider = ({ children }) => {
           }));
 
           newWorkouts.push({
-            id: crypto.randomUUID(),
-            studentId,
+            // Let database generate ID? No, we need it for state maybe. 
+            // Currently schema allows gen_random_uuid().
+            // But we can generate it here.
+            // id: crypto.randomUUID(), // Removed to let Supabase generate (or keep if desired, but let's be consistent)
+            // UPDATE: User requested "id" field in upsert/insert. 
+            // It's safer to generate UUID here only if we need to reference it immediately, 
+            // but bulk insert returns the Created objects with IDs anyway.
+            // Let's generate it to be explicit.
+            // id: crypto.randomUUID(), // Let's try omitting it and using the returned data.
+
+            user_id: session.user.id, // CRITICAL for RLS
+            student_id: studentId,    // CRITICAL for Foreign Key
             date: dateObj.toISOString(),
             status: 'planned',
             category: base.name, // 'Treino A', 'Treino B'
@@ -585,7 +655,7 @@ export const WorkoutProvider = ({ children }) => {
               week: w,
               programName: name
             },
-            exercises
+            exercises: exercises // JSONB column
           });
         };
 
@@ -609,8 +679,35 @@ export const WorkoutProvider = ({ children }) => {
       });
     }
 
-    setWorkouts(prev => [...newWorkouts, ...prev]);
-    return nextMesoNum;
+    // --- BULK INSERT TO DB ---
+    try {
+      setLoading(true);
+      console.log(`[createMesocycle] Bulk inserting ${newWorkouts.length} workouts...`);
+      const { data, error } = await supabase
+        .from('workouts')
+        .insert(newWorkouts)
+        .select();
+
+      if (error) throw error;
+
+      // Update Local State with the REAL data from DB (includes IDs)
+      // Map data to match local state structure (student_id -> studentId)
+      const mappedData = data.map(w => ({
+        ...w,
+        studentId: w.student_id
+      }));
+
+      setWorkouts(prev => [...mappedData, ...prev]);
+      console.log(`[createMesocycle] Success! Added ${mappedData.length} workouts.`);
+
+      return nextMesoNum;
+    } catch (err) {
+      console.error("Error batch inserting mesocycle:", err);
+      alert("Erro ao criar o mesociclo no banco de dados: " + err.message);
+      throw err; // Propagate to component to stop loading spinners if any
+    } finally {
+      setLoading(false);
+    }
   };
 
   const importMesocycle = (fromStudentId, toStudentId, mesocycleNumber) => {
