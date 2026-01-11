@@ -297,18 +297,51 @@ export const WorkoutProvider = ({ children }) => {
         delete dbData.studentId;
       }
 
+      // CRITICAL FIX: Ensure student_id is NEVER null for upserts that might act as inserts
+      if (!dbData.student_id) {
+        console.error("Attempting to save workout without student_id! This will cause RLS issues or missing data.");
+        // Try to recover from context if available? 
+        // Since we are inside generic context, we might not have 'selectedStudentId' easily accessible without importing 'useStudent' inside 'useWorkout'?
+        // Actually, 'WorkoutProvider' does NOT consume 'StudentContext'. 
+        // So we must rely on the caller passing it.
+        throw new Error("Erro Crítico: ID do Aluno não fornecido ao salvar treino. (student_id missing)");
+      }
+
+      // Ensure ID is part of the payload for upsert
+      dbData.id = id;
+
+      // Remove any undefined/null fields if they might cause issues, 
+      // but upsert usually handles them. 
+      // Ideally we ensure user_id is present if it's an insert? 
+      // But for update existing logic, it might not fail if RLS forces it?
+      // Actually, for upsert to work as INSERT, we MUST provide user_id if it's not default.
+      if (!dbData.user_id && session?.user?.id) {
+        dbData.user_id = session.user.id;
+      }
+
+      // Use UPSERT instead of UPDATE
       const { data, error } = await supabase
         .from('workouts')
-        .update(dbData)
-        .eq('id', id)
+        .upsert(dbData) // Upsert handles both insert and update based on PK (id)
         .select()
         .single();
 
       if (error) throw error;
+
       // FIX: Ensure studentId is properly mapped back for local state!
-      setWorkouts(prev => prev.map(w => w.id === id ? { ...data, studentId: data.student_id } : w));
+      // We also need to handle the case where we are 'adding' via this function now (if ID didn't exist)
+      // So we check if it exists in state to update, or add it.
+      setWorkouts(prev => {
+        const exists = prev.find(w => w.id === id);
+        if (exists) {
+          return prev.map(w => w.id === id ? { ...data, studentId: data.student_id } : w);
+        } else {
+          return [{ ...data, studentId: data.student_id }, ...prev];
+        }
+      });
     } catch (error) {
-      console.error('Error updating workout:', error);
+      console.error('Error updating/upserting workout:', error);
+      alert('Erro ao salvar (Upsert): ' + (error.message || JSON.stringify(error)));
     }
   };
 
