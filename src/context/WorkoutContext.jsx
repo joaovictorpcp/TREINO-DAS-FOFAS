@@ -529,11 +529,12 @@ export const WorkoutProvider = ({ children }) => {
           student_id: baseWorkout.studentId,
           date: nextDate.toISOString(),
           status: 'planned',
-          category: baseWorkout.category,
+          // category removed from root
 
           meta: {
             mesocycle: mesocycle,
-            week: w
+            week: w,
+            category: baseWorkout.meta?.category || baseWorkout.category // Fallback or read from meta
           },
           exercises: clonedExercises
         });
@@ -636,12 +637,11 @@ export const WorkoutProvider = ({ children }) => {
             // Let's generate it to be explicit.
             // id: crypto.randomUUID(), // Let's try omitting it and using the returned data.
 
-            user_id: session.user.id, // CRITICAL for RLS
-            student_id: studentId,    // CRITICAL for Foreign Key
+            // user_id and student_id are top level
+            user_id: session.user.id,
+            student_id: studentId,
             date: dateObj.toISOString(),
             status: 'planned',
-            category: base.name, // 'Treino A', 'Treino B'
-            scheduledDay: dateObj.getDay(), // Persist actual day
 
             activity_type: programData.activityType || 'weightlifting',
             duration_minutes: base.duration_minutes,
@@ -653,9 +653,11 @@ export const WorkoutProvider = ({ children }) => {
             meta: {
               mesocycle: nextMesoNum,
               week: w,
-              programName: name
+              programName: name,
+              category: base.name, // Moved to meta
+              scheduledDay: dateObj.getDay() // Moved to meta
             },
-            exercises: exercises // JSONB column
+            exercises: exercises
           });
         };
 
@@ -759,12 +761,12 @@ export const WorkoutProvider = ({ children }) => {
         date: newDate.toISOString(),
         status: 'planned',
 
-        // Ensure other required fields are present if needed, but upsert/insert handles defaults
-        category: source.category,
+        // category removed
 
         meta: {
           ...source.meta,
-          mesocycle: newMesoNum, // Assign new incremental meso number
+          mesocycle: newMesoNum,
+          category: source.meta?.category || source.category
         },
         exercises: clonedExercises
       };
@@ -842,11 +844,12 @@ export const WorkoutProvider = ({ children }) => {
         date: newDate.toISOString(),
         status: 'planned',
 
-        category: source.category,
+        // category removed
 
         meta: {
           ...source.meta,
-          mesocycle: newMesoNum
+          mesocycle: newMesoNum,
+          category: source.meta?.category || source.category
         },
         exercises: clonedExercises
       };
