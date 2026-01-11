@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../services/supabase';
+import { useAuth } from './AuthContext';
 
 /* eslint-disable react-refresh/only-export-components */
 
@@ -13,52 +15,55 @@ export const useStudent = () => {
 };
 
 export const StudentProvider = ({ children }) => {
-    // Load Students
-    const [students, setStudents] = useState(() => {
-        try {
-            const saved = localStorage.getItem('students');
-            return saved ? JSON.parse(saved) : [];
-        } catch {
-            console.error('Failed to load students');
-            return [];
-        }
-    });
+    const { session } = useAuth();
+    const [students, setStudents] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    // Load Selected Student ID
+    // Selected Student State
     const [selectedStudentId, setSelectedStudentId] = useState(() => {
         return localStorage.getItem('selectedStudentId') || null;
     });
 
-    // Load Body Metrics
-    const [bodyMetrics, setBodyMetrics] = useState(() => {
-        try {
-            const saved = localStorage.getItem('bodyMetrics');
-            return saved ? JSON.parse(saved) : [];
-        } catch {
-            console.error('Failed to load body metrics');
-            return [];
-        }
-    });
+    // Body Metrics are derived from student data now, but we keep this state for compatibility/caching if needed
+    // Actually, let's derive it on the fly or fetch it separately?
+    // For simplicity, we'll fetch students and their data (including profile_data which has metrics?)
+    // Wait, the schema has profile_data for static info.
+    // AND we decided to keep metrics inside profile_data for now based on previous context analysis?
+    // Let's check the schema again: "profile_data jsonb default '{}'::jsonb, -- Stores height, gender, birthDate, etc."
+    // It DOES NOT explicitly say metrics array.
+    // However, to avoid creating a new table mid-flight, let's store metrics in `profile_data.metrics`.
 
-    // Persist Students
     useEffect(() => {
-        try {
-            localStorage.setItem('students', JSON.stringify(students));
-        } catch {
-            console.error('Failed to save students');
+        if (session?.user) {
+            fetchStudents();
+        } else {
+            setStudents([]);
         }
-    }, [students]);
+    }, [session]);
 
-    // Persist Body Metrics
-    useEffect(() => {
+    const fetchStudents = async () => {
         try {
-            localStorage.setItem('bodyMetrics', JSON.stringify(bodyMetrics));
-        } catch {
-            console.error('Failed to save body metrics');
-        }
-    }, [bodyMetrics]);
+            setLoading(true);
+            const { data, error } = await supabase
+                .from('students')
+                .select('*')
+                .order('name');
 
-    // Persist Selection
+            if (error) throw error;
+            // Flatten profile_data for compatibility with components expecting student.birthDate etc.
+            const mapped = (data || []).map(s => ({
+                ...s,
+                ...(s.profile_data || {})
+            }));
+            setStudents(mapped);
+        } catch (error) {
+            console.error('Error fetching students:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Persist Selection Locally
     useEffect(() => {
         if (selectedStudentId) {
             localStorage.setItem('selectedStudentId', selectedStudentId);
@@ -67,94 +72,163 @@ export const StudentProvider = ({ children }) => {
         }
     }, [selectedStudentId]);
 
-    const addStudent = (name, goal, profileData = {}) => {
-        const newStudent = {
-            id: crypto.randomUUID(),
-            created_at: new Date().toISOString(),
+    const addStudent = async (name, goal, profileData = {}) => {
+        if (!session?.user) return;
+
+        // Prepare new student object
+        // We'll store initial weight in profile_data.metrics if provided
+        let metrics = [];
+        if (profileData.weight) {
+            metrics.push({
+                id: crypto.randomUUID(),
+                weight: parseFloat(profileData.weight),
+                date: new Date().toISOString().split('T')[0],
+                created_at: new Date().toISOString()
+            });
+        }
+
+        const newStudentData = {
+            user_id: session.user.id,
             name,
             goal,
-            birthDate: profileData.birthDate || null,
-            gender: profileData.gender || 'male', // 'male' or 'female'
-            height: profileData.height || '',
-            ...profileData
+            profile_data: {
+                ...profileData,
+                metrics // Initialize with first metric
+            }
         };
 
-        setStudents(prev => [...prev, newStudent]);
+        try {
+            const { data, error } = await supabase
+                .from('students')
+                .insert([newStudentData])
+                .select()
+                .single();
 
-        // If weight provided, log it as first metric
-        if (profileData.weight) {
-            addBodyMetric(newStudent.id, profileData.weight, new Date().toISOString().split('T')[0]);
-        }
+            if (error) throw error;
 
-        // Auto select if it's the first one
-        if (students.length === 0) {
-            setSelectedStudentId(newStudent.id);
-        }
-    };
+            const savedStudent = { ...data, ...(data.profile_data || {}) };
+            setStudents(prev => [...prev, savedStudent]);
 
-    const deleteStudent = (id) => {
-        setStudents(prev => prev.filter(s => s.id !== id));
-        if (selectedStudentId === id) {
-            setSelectedStudentId(null);
-        }
-    };
-
-    const updateStudent = (id, updatedData) => {
-        setStudents(prev => prev.map(s => {
-            if (s.id === id) {
-                return { ...s, ...updatedData };
+            // Auto select
+            if (students.length === 0) {
+                setSelectedStudentId(data.id);
             }
-            return s;
-        }));
+        } catch (error) {
+            console.error('Error adding student:', error);
+            alert('Erro ao adicionar aluno.');
+        }
     };
 
-    const addBodyMetric = (studentId, weight, date, skinfolds = null, bodyFat = null, circumferences = null) => {
+    const deleteStudent = async (id) => {
+        try {
+            const { error } = await supabase
+                .from('students')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+
+            setStudents(prev => prev.filter(s => s.id !== id));
+            if (selectedStudentId === id) {
+                setSelectedStudentId(null);
+            }
+        } catch (error) {
+            console.error('Error deleting student:', error);
+            alert('Erro ao apagar aluno.');
+        }
+    };
+
+    const updateStudent = async (id, updatedData) => {
+        // We need to merge updatedData into the existing student
+        // Note: updatedData might contain top-level fields (name, goal) OR profile_data fields
+
+        const student = students.find(s => s.id === id);
+        if (!student) return;
+
+        const { name, goal, ...profileUpdates } = updatedData;
+
+        // Prepare update object
+        const updates = {};
+        if (name) updates.name = name;
+        if (goal) updates.goal = goal;
+
+        // Merge profile data
+        if (Object.keys(profileUpdates).length > 0) {
+            updates.profile_data = {
+                ...student.profile_data,
+                ...profileUpdates
+            };
+        }
+
+        try {
+            const { data, error } = await supabase
+                .from('students')
+                .update(updates)
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            setStudents(prev => prev.map(s => s.id === id ? data : s));
+        } catch (error) {
+            console.error('Error updating student:', error);
+        }
+    };
+
+    // Body Metrics Helpers - Now working on profile_data.metrics array
+    const getBodyMetrics = (studentId) => {
+        const student = students.find(s => s.id === studentId);
+        if (!student || !student.profile_data?.metrics) return [];
+
+        return student.profile_data.metrics.sort((a, b) => new Date(a.date) - new Date(b.date));
+    };
+
+    const addBodyMetric = async (studentId, weight, date, skinfolds = null, bodyFat = null, circumferences = null) => {
+        const student = students.find(s => s.id === studentId);
+        if (!student) return;
+
+        const currentMetrics = student.profile_data.metrics || [];
+
         const newMetric = {
             id: crypto.randomUUID(),
-            studentId,
+            studentId, // redundant but useful for compatibility
             weight: parseFloat(weight),
             date,
-            skinfolds, // { chest, axilla, triceps, subscapular, abdomen, suprailiac, thigh }
-            circumferences, // { arm, forearm, thigh, calf, hips, abdomen, waist, chest, shoulder, neck }
+            skinfolds,
+            circumferences,
             bodyFat: bodyFat ? parseFloat(bodyFat) : null,
             created_at: new Date().toISOString()
         };
-        setBodyMetrics(prev => [...prev, newMetric]);
 
-        // Also update current weight on student object for caching
-        updateStudent(studentId, { weight: parseFloat(weight) });
+        const updatedMetrics = [...currentMetrics, newMetric];
+
+        // Update via updateStudent which handles the profile_data merge
+        await updateStudent(studentId, { metrics: updatedMetrics });
     };
 
-    const getBodyMetrics = (studentId) => {
-        return bodyMetrics
-            .filter(m => m.studentId === studentId)
-            .sort((a, b) => new Date(a.date) - new Date(b.date));
-    };
+    const deleteBodyMetric = async (id) => {
+        // Need to find which student has this metric
+        // Inefficient search, but safe enough for small data
+        // Ideally we pass studentId, but the interface is deleteBodyMetric(id)
 
-    const deleteBodyMetric = (id) => {
-        // Find existing metric
-        const metricToDelete = bodyMetrics.find(m => m.id === id);
+        // Actually, we can use selectedStudentId as usage is typically in context of a student
+        // Or find the student
+        let targetStudent = students.find(s => s.profile_data?.metrics?.some(m => m.id === id));
 
-        if (metricToDelete) {
-            // Filter out the deleted one
-            const updatedMetrics = bodyMetrics.filter(m => m.id !== id);
-
-            // Update state
-            setBodyMetrics(updatedMetrics);
-
-            // Update student current weight cache
-            const studentMetrics = updatedMetrics
-                .filter(m => m.studentId === metricToDelete.studentId)
-                .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-            const latest = studentMetrics.length > 0 ? studentMetrics[studentMetrics.length - 1] : null;
-            updateStudent(metricToDelete.studentId, { weight: latest ? latest.weight : null });
+        if (targetStudent) {
+            const currentMetrics = targetStudent.profile_data.metrics || [];
+            const updatedMetrics = currentMetrics.filter(m => m.id !== id);
+            await updateStudent(targetStudent.id, { metrics: updatedMetrics });
         }
     };
 
-    const updateBodyMetric = (id, weight, date, skinfolds = null, bodyFat = null, circumferences = null) => {
-        setBodyMetrics(prev => {
-            const updated = prev.map(m => {
+    const updateBodyMetric = async (id, weight, date, skinfolds = null, bodyFat = null, circumferences = null) => {
+        let targetStudent = students.find(s => s.profile_data?.metrics?.some(m => m.id === id));
+
+        if (targetStudent) {
+            const currentMetrics = targetStudent.profile_data.metrics || [];
+            const updatedMetrics = currentMetrics.map(m => {
                 if (m.id === id) {
                     return {
                         ...m,
@@ -167,33 +241,22 @@ export const StudentProvider = ({ children }) => {
                 }
                 return m;
             });
-
-            // Update student cache if necessary
-            // We need to find the studentId to check if this update affects the 'latest' weight
-            const metric = prev.find(m => m.id === id);
-            if (metric) {
-                // Get all metrics for this student from the NEW updated list
-                const studentMetrics = updated
-                    .filter(m => m.studentId === metric.studentId)
-                    .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-                const latest = studentMetrics.length > 0 ? studentMetrics[studentMetrics.length - 1] : null;
-                updateStudent(metric.studentId, { weight: latest ? latest.weight : null });
-            }
-
-            return updated;
-        });
+            await updateStudent(targetStudent.id, { metrics: updatedMetrics });
+        }
     };
+
+    const bodyMetrics = []; // Compatibility default (unused publicly now as we use getBodyMetrics)
 
     return (
         <StudentContext.Provider value={{
             students,
+            loading,
             selectedStudentId,
             setSelectedStudentId,
             addStudent,
             deleteStudent,
             updateStudent,
-            bodyMetrics,
+            bodyMetrics, // Deprecated but exposed to avoid breaking destructuring
             addBodyMetric,
             getBodyMetrics,
             deleteBodyMetric,

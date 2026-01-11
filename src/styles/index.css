@@ -185,7 +185,36 @@ h3 {
   margin: 0 auto;
   padding: 6rem var(--space-md) 6rem;
   /* Top 6rem, Sides 1rem, Bottom 6rem */
+  /* Top 6rem, Sides 1rem, Bottom 6rem */
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.page-header {
+  margin-bottom: var(--space-lg);
+}
+
+.page-title {
+  font-size: 2rem;
+  color: var(--accent-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-xs);
+  text-shadow: var(--shadow-neon);
+}
+
+.section-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.main-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  width: 100%;
 }
 
 /* Scrollbar Customization */

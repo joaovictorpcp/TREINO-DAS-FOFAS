@@ -12,11 +12,13 @@ import StudentGateway from './pages/StudentGateway';
 import MesocycleBuilder from './pages/MesocycleBuilder';
 import PerformancePage from './pages/PerformancePage';
 import WeightTrackerPage from './pages/WeightTrackerPage';
+import CalculatorPage from './pages/CalculatorPage';
 import './styles/index.css';
 import { AuthProvider } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import AdminRoute from './components/Auth/AdminRoute';
+import NotFoundPage from './pages/NotFoundPage';
 
 function App() {
   return (
@@ -53,9 +55,13 @@ const MainContent = () => {
         <Route path="/edit/:id" element={<ProtectedRoute><CreateWorkout /></ProtectedRoute>} />
         <Route path="/performance" element={<ProtectedRoute><PerformancePage /></ProtectedRoute>} />
         <Route path="/weight" element={<ProtectedRoute><WeightTrackerPage /></ProtectedRoute>} />
+        <Route path="/calculator" element={<ProtectedRoute><CalculatorPage /></ProtectedRoute>} />
 
         {/* Protected Admin/Trainer Route */}
         <Route path="/students" element={<AdminRoute><StudentsPage /></AdminRoute>} />
+
+        {/* 404 Catch-All */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Layout>
   );

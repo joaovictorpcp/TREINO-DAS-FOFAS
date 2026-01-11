@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Home, PlusCircle, Activity, Users, RefreshCw, TrendingUp, Scale, LogOut } from 'lucide-react';
+import { Home, PlusCircle, Activity, Users, RefreshCw, TrendingUp, Scale, LogOut, Calculator } from 'lucide-react';
+
 import clsx from 'clsx';
 import { useStudent } from '../../context/StudentContext';
 import styles from './Layout.module.css';
@@ -43,14 +44,14 @@ const Layout = ({ children }) => {
                                 className={styles.activeIndicator}
                                 style={{
                                     top: (() => {
-                                        const paths = ['/dashboard', '/workouts', '/mesocycle-builder', '/performance', '/weight'];
+                                        const paths = ['/dashboard', '/workouts', '/mesocycle-builder', '/performance', '/weight', '/calculator'];
                                         const currentPath = location.pathname;
                                         // Simple approximation: check which path is active
                                         const index = paths.findIndex(p => currentPath === p || (p !== '/dashboard' && currentPath.startsWith(p)));
                                         return index !== -1 ? `${index * (50 + 24)}px` : '-100px'; // 50px height + 24px gap (1.5rem)
                                     })(),
                                     opacity: (() => { // Hide if no match
-                                        const paths = ['/dashboard', '/workouts', '/mesocycle-builder', '/performance', '/weight'];
+                                        const paths = ['/dashboard', '/workouts', '/mesocycle-builder', '/performance', '/weight', '/calculator'];
                                         const currentPath = location.pathname;
                                         return paths.some(p => currentPath === p || (p !== '/dashboard' && currentPath.startsWith(p))) ? 1 : 0;
                                     })()
@@ -71,6 +72,9 @@ const Layout = ({ children }) => {
                             </NavLink>
                             <NavLink to="/weight" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)}>
                                 <Scale size={24} />
+                            </NavLink>
+                            <NavLink to="/calculator" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)}>
+                                <Calculator size={24} />
                             </NavLink>
 
                             {/* Exit Button - Last Slot */}
@@ -116,6 +120,10 @@ const Layout = ({ children }) => {
                     <NavLink to="/weight" onClick={handleNavClick} className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}>
                         <Scale size={20} />
                         <span>Peso</span>
+                    </NavLink>
+                    <NavLink to="/calculator" onClick={handleNavClick} className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}>
+                        <Calculator size={20} />
+                        <span>Calc</span>
                     </NavLink>
                 </nav>
             )}

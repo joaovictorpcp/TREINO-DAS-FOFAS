@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../services/supabase';
+import { useAuth } from './AuthContext';
 
 /* eslint-disable react-refresh/only-export-components */
 
@@ -13,37 +15,75 @@ export const useWorkout = () => {
 };
 
 export const WorkoutProvider = ({ children }) => {
-  // Initialize with empty array (clean slate)
-  const [workouts, setWorkouts] = useState(() => {
-    try {
-      const saved = localStorage.getItem('workouts');
-      const parsed = saved ? JSON.parse(saved) : [];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (error) {
-      console.error('Data load error', error);
-      return [];
-    }
-  });
+  const { session } = useAuth();
+  const [workouts, setWorkouts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('workouts', JSON.stringify(workouts));
-    } catch (error) {
-      console.error('Data save error', error);
+    if (session?.user) {
+      fetchWorkouts();
+    } else {
+      setWorkouts([]);
     }
-  }, [workouts]);
+  }, [session]);
 
-  const addWorkout = (workout) => {
+  const fetchWorkouts = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('workouts')
+        .select('*')
+        .order('date', { ascending: false }); // Latest first
+
+      if (error) throw error;
+      // Map DB columns to App state (student_id -> studentId)
+      const mapped = (data || []).map(w => ({
+        ...w,
+        studentId: w.student_id // critical for filtering
+      }));
+      setWorkouts(mapped);
+    } catch (error) {
+      console.error('Error fetching workouts:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addWorkout = async (workout) => {
+    if (!session?.user) return;
+
+    // Ensure we have a studentId!
+    if (!workout.studentId) {
+      console.error("Cannot add workout without studentId");
+      return;
+    }
+
     const newWorkout = {
-      id: crypto.randomUUID(), // Ensure string ID
-      date: new Date().toISOString(),
-      ...workout,
+      user_id: session.user.id,
+      student_id: workout.studentId, // Map to column name
+      date: workout.date || new Date().toISOString(),
+      status: workout.status || 'planned',
+      exercises: workout.exercises || [],
+      meta: workout.meta || {},
+      ...workout // catch-all for other fields if they match columns
     };
-    setWorkouts((prev) => {
-      const updated = [newWorkout, ...prev];
-      // Trigger PMC Recalc if needed (or just let consumer call getPMC)
-      return updated;
-    });
+
+    // Remove client-side only fields that might conflict or aren't columns
+    delete newWorkout.id; // DB generates ID usually, but we can pass it if we want. Schema uses gen_random_uuid()
+    delete newWorkout.studentId; // Mapped to student_id
+
+    try {
+      const { data, error } = await supabase
+        .from('workouts')
+        .insert([newWorkout])
+        .select()
+        .single();
+
+      if (error) throw error;
+      setWorkouts(prev => [{ ...data, studentId: data.student_id }, ...prev]);
+    } catch (error) {
+      console.error('Error adding workout:', error);
+    }
   };
 
   // --- PERFORMANCE LOGIC START ---
@@ -208,32 +248,97 @@ export const WorkoutProvider = ({ children }) => {
 
   // --- PERFORMANCE LOGIC END ---
 
-  const bulkAddWorkouts = (newWorkouts) => {
-    setWorkouts(prev => {
-      const updated = [...prev, ...newWorkouts];
-      try {
-        localStorage.setItem('workouts', JSON.stringify(updated));
-      } catch (e) {
-        console.error("Failed to bulk save workouts", e);
+  const bulkAddWorkouts = async (newWorkouts) => {
+    if (!session?.user || newWorkouts.length === 0) return;
+
+    const formattedWorkouts = newWorkouts.map(w => ({
+      user_id: session.user.id,
+      student_id: w.studentId,
+      date: w.date,
+      status: w.status,
+      exercises: w.exercises,
+      meta: w.meta,
+      // Add other fields if necessary
+    }));
+
+    try {
+      const { data, error } = await supabase
+        .from('workouts')
+        .insert(formattedWorkouts)
+        .select();
+
+      if (error) throw error;
+      setWorkouts(prev => [...data, ...prev]);
+      return data;
+    } catch (error) {
+      console.error('Error bulk adding workouts:', error);
+    }
+  };
+
+  const updateWorkout = async (id, updatedData) => {
+    try {
+      // Map studentId to student_id if present
+      const dbData = { ...updatedData };
+      if (dbData.studentId) {
+        dbData.student_id = dbData.studentId;
+        delete dbData.studentId;
       }
-      return updated;
-    });
+
+      const { data, error } = await supabase
+        .from('workouts')
+        .update(dbData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      setWorkouts(prev => prev.map(w => w.id === id ? data : w));
+    } catch (error) {
+      console.error('Error updating workout:', error);
+    }
   };
 
-  const updateWorkout = (id, updatedData) => {
-    setWorkouts(prev => prev.map(w => w.id == id ? { ...w, ...updatedData } : w));
+  const deleteWorkout = async (id) => {
+    try {
+      const { error } = await supabase
+        .from('workouts')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      setWorkouts(prev => prev.filter(w => w.id !== id));
+    } catch (error) {
+      console.error('Error deleting workout:', error);
+    }
   };
 
-  const deleteWorkout = (id) => {
-    setWorkouts((prev) => prev.filter((w) => w.id !== id));
-  };
+  const clearWorkouts = async (studentId = null) => {
+    try {
+      let query = supabase.from('workouts').delete();
 
-  const clearWorkouts = (studentId = null) => {
-    if (studentId) {
-      setWorkouts((prev) => prev.filter((w) => w.studentId !== studentId));
-    } else {
-      setWorkouts([]);
-      localStorage.removeItem('workouts');
+      if (studentId) {
+        query = query.eq('student_id', studentId);
+      } else {
+        // Safety: without studentId, this deletes ALL workouts for the user (due to RLS)
+        // Maybe this is intended for "Clear All Data" button
+        query = query.neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+      }
+
+      const { error } = await query;
+      if (error) throw error;
+
+      if (studentId) {
+        setWorkouts(prev => prev.filter(w => w.studentId !== studentId)); // studentId is cleaner in frontend
+        // Note: DB returns student_id, but we need to check how we stored it in state.
+        // fetch returns object with keys as column names (student_id).
+        // So we should filter by student_id or map it.
+        // Let's assume state has snake_case keys now? Yes, data from fetch has snake_case.
+        setWorkouts(prev => prev.filter(w => w.student_id !== studentId));
+      } else {
+        setWorkouts([]);
+      }
+    } catch (error) {
+      console.error('Error clearing workouts:', error);
     }
   };
 
@@ -577,6 +682,7 @@ export const WorkoutProvider = ({ children }) => {
   return (
     <WorkoutContext.Provider value={{
       workouts,
+      loading,
       addWorkout,
       bulkAddWorkouts,
       deleteWorkout,
