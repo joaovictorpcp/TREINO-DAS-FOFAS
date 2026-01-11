@@ -75,13 +75,19 @@ export const StudentProvider = ({ children }) => {
     const addStudent = async (name, goal, profileData = {}) => {
         console.log('[StudentContext] addStudent called', { name, goal, profileData });
 
-        if (!session?.user) {
-            console.error('[StudentContext] No session found. execution stopped.');
-            alert('Erro: Usuário não autenticado.');
+        // STRENGTHENED CHECK: Fetch fresh user from Supabase to ensure token is valid for current project
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+        if (authError || !user) {
+            console.error('[StudentContext] Fresh Connection Check Failed:', authError);
+            console.log('Session context was:', session); // Log what the context thought it had
+            alert('Erro: Sessão inválida ou expirada. Por favor, faça login novamente.');
+            // Optional: You could trigger a logout here via a callback or window.location
             return;
         }
 
-        console.log('[StudentContext] User:', session.user.id);
+        console.log('[StudentContext] Fresh User ID:', user.id);
+        const userId = user.id;
 
         // Prepare new student object
         // We'll store initial weight in profile_data.metrics if provided
@@ -96,7 +102,7 @@ export const StudentProvider = ({ children }) => {
         }
 
         const newStudentData = {
-            user_id: session.user.id,
+            user_id: userId,
             name,
             goal,
             profile_data: {
