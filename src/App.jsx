@@ -46,7 +46,7 @@ const MainContent = () => {
 
       <Routes>
         <Route path="/" element={<LoginPage />} />
-        <Route path="/gateway" element={<StudentGateway />} />
+        <Route path="/gateway" element={<ProtectedRoute><StudentGateway /></ProtectedRoute>} />
         <Route path="/register" element={<RegisterPage />} />
 
         {/* Protected Student Routes */}

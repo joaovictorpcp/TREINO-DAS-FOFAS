@@ -4,10 +4,12 @@ import { Home, PlusCircle, Activity, Users, RefreshCw, TrendingUp, Scale, LogOut
 
 import clsx from 'clsx';
 import { useStudent } from '../../context/StudentContext';
+import { useAuth } from '../../context/AuthContext';
 import styles from './Layout.module.css';
 
 const Layout = ({ children }) => {
     const { selectedStudentId, setSelectedStudentId } = useStudent();
+    const { session } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -37,7 +39,7 @@ const Layout = ({ children }) => {
                     </NavLink>
 
                     {/* Desktop Navigation (Sidebar) */}
-                    {selectedStudentId && (
+                    {session && selectedStudentId && (
                         <nav className={styles.nav} style={{ marginTop: '3rem' }}>
                             {/* Sliding Active Indicator */}
                             <div
@@ -99,7 +101,7 @@ const Layout = ({ children }) => {
             </main>
 
             {/* Mobile Bottom Nav */}
-            {selectedStudentId && (
+            {session && selectedStudentId && (
                 <nav className={styles.mobileNav}>
                     <NavLink to="/dashboard" onClick={handleNavClick} className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}>
                         <Home size={20} />
