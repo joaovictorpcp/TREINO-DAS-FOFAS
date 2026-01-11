@@ -18,6 +18,7 @@ export const WorkoutProvider = ({ children }) => {
   const { session } = useAuth();
   const [workouts, setWorkouts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (session?.user) {
@@ -30,6 +31,7 @@ export const WorkoutProvider = ({ children }) => {
   const fetchWorkouts = async () => {
     try {
       setLoading(true);
+      setError(null);
       const { data, error } = await supabase
         .from('workouts')
         .select('*')
@@ -44,6 +46,7 @@ export const WorkoutProvider = ({ children }) => {
       setWorkouts(mapped);
     } catch (error) {
       console.error('Error fetching workouts:', error);
+      setError(error.message || 'Unknown error');
     } finally {
       setLoading(false);
     }
@@ -245,6 +248,8 @@ export const WorkoutProvider = ({ children }) => {
 
     return timeline;
   };
+
+  // --- PERFORMANCE LOGIC END ---
 
   // --- PERFORMANCE LOGIC END ---
 
@@ -683,6 +688,7 @@ export const WorkoutProvider = ({ children }) => {
     <WorkoutContext.Provider value={{
       workouts,
       loading,
+      error,
       addWorkout,
       bulkAddWorkouts,
       deleteWorkout,
