@@ -354,6 +354,41 @@ const Dashboard = () => {
                 </div>
 
             </section>
+
+            {/* DEBUG FOOTER - REMOVE AFTER FIXING */}
+            <div style={{
+                marginTop: '4rem',
+                padding: '1rem',
+                background: '#1a1a1a',
+                color: '#4ade80',
+                fontSize: '0.8rem',
+                fontFamily: 'monospace',
+                borderTop: '1px solid #333'
+            }}>
+                <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>🔧 DEBUG INFO (Envie print se o erro persistir)</p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
+                    <div>User ID (Auth): <span style={{ color: '#fff' }}>{useWorkout().session?.user?.id || 'Não logado'}</span></div>
+                    <div>Workouts Loaded: <span style={{ color: '#fff' }}>{workouts.length}</span></div>
+                    <div>Selected Student: <span style={{ color: '#fff' }}>{selectedStudentId || 'Nenhum'}</span></div>
+                    <div>Missed Count: <span style={{ color: '#fff' }}>{missedStats.count}</span></div>
+                </div>
+                <button
+                    onClick={() => {
+                        console.log('Forcing refresh...');
+                        navigate(0);
+                    }}
+                    style={{
+                        marginTop: '10px',
+                        padding: '4px 12px',
+                        background: '#333',
+                        color: '#fff',
+                        border: '1px solid #555',
+                        cursor: 'pointer'
+                    }}
+                >
+                    Forçar Recarregamento (F5)
+                </button>
+            </div>
         </div>
     );
 };

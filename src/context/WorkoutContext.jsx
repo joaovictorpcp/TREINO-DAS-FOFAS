@@ -32,12 +32,20 @@ export const WorkoutProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
+      // console.log('[WorkoutContext] Fetching workouts for user:', session?.user?.id);
+
       const { data, error } = await supabase
         .from('workouts')
         .select('*')
         .order('date', { ascending: false }); // Latest first
 
-      if (error) throw error;
+      if (error) {
+        console.error('[WorkoutContext] Supabase Error:', error);
+        throw error;
+      };
+
+      // console.log('[WorkoutContext] Fetched count:', data?.length);
+
       // Map DB columns to App state (student_id -> studentId)
       const mapped = (data || []).map(w => ({
         ...w,
@@ -47,17 +55,22 @@ export const WorkoutProvider = ({ children }) => {
     } catch (error) {
       console.error('Error fetching workouts:', error);
       setError(error.message || 'Unknown error');
+      // alert('Debug: Erro ao buscar treinos: ' + (error.message || JSON.stringify(error))); 
     } finally {
       setLoading(false);
     }
   };
 
   const addWorkout = async (workout) => {
-    if (!session?.user) return;
+    if (!session?.user) {
+      alert('Erro: Usuário não logado.');
+      return;
+    }
 
     // Ensure we have a studentId!
     if (!workout.studentId) {
       console.error("Cannot add workout without studentId");
+      alert('Erro: Student ID faltando.');
       return;
     }
 
@@ -86,6 +99,7 @@ export const WorkoutProvider = ({ children }) => {
       setWorkouts(prev => [{ ...data, studentId: data.student_id }, ...prev]);
     } catch (error) {
       console.error('Error adding workout:', error);
+      alert('Erro ao salvar no Banco de Dados: ' + (error.message || error.details || JSON.stringify(error)));
     }
   };
 
@@ -297,7 +311,8 @@ export const WorkoutProvider = ({ children }) => {
         .single();
 
       if (error) throw error;
-      setWorkouts(prev => prev.map(w => w.id === id ? data : w));
+      // FIX: Ensure studentId is properly mapped back for local state!
+      setWorkouts(prev => prev.map(w => w.id === id ? { ...data, studentId: data.student_id } : w));
     } catch (error) {
       console.error('Error updating workout:', error);
     }
