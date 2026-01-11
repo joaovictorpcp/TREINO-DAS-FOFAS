@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Lock, LogIn, AlertCircle } from 'lucide-react';
 
 const LoginPage = () => {
@@ -118,7 +118,14 @@ const LoginPage = () => {
                     </button>
                 </form>
 
-                <div style={{ marginTop: '2rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1.5rem' }}>
+                <div style={{ marginTop: '2rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                        Não tem uma conta?{' '}
+                        <Link to="/register" style={{ color: '#4ade80', textDecoration: 'none', fontWeight: 600 }}>
+                            Criar Conta
+                        </Link>
+                    </p>
+
                     <button
                         type="button"
                         onClick={() => window.location.href = '/'}

@@ -16,6 +16,7 @@ import CalculatorPage from './pages/CalculatorPage';
 import './styles/index.css';
 import { AuthProvider } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import AdminRoute from './components/Auth/AdminRoute';
 import NotFoundPage from './pages/NotFoundPage';
@@ -46,6 +47,7 @@ const MainContent = () => {
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/gateway" element={<StudentGateway />} />
+        <Route path="/register" element={<RegisterPage />} />
 
         {/* Protected Student Routes */}
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

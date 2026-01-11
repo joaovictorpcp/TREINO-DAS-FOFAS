@@ -45,6 +45,7 @@ export const AuthProvider = ({ children }) => {
         user: session?.user ?? null,
         loading,
         signIn,
+        signUp: (email, password) => supabase.auth.signUp({ email, password }),
         signOut
     };
 
