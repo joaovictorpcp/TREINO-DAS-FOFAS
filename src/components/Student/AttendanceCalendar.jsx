@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useWorkout } from '../../context/WorkoutContext';
 import { useStudent } from '../../context/StudentContext';
-import { ChevronLeft, ChevronRight, Check, Calendar as CalendarIcon, Clock, Dumbbell, Footprints, Bike, Waves, AlertCircle, XCircle, MapPin, Activity } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Calendar as CalendarIcon, Clock, Dumbbell, Footprints, Bike, Waves, AlertCircle, XCircle, MapPin, Activity, Trash2 } from 'lucide-react';
 
 const AttendanceCalendar = ({ onDayClick, fullPageMode = false }) => {
     const { workouts, updateWorkout, deleteWorkout } = useWorkout();
