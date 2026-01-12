@@ -109,6 +109,14 @@ const WeightTrackerPage = () => {
     };
 
 
+
+    // Helper to format date string (YYYY-MM-DD) to DD/MM/YYYY without timezone conversion
+    const formatDateUser = (dateString) => {
+        if (!dateString) return '-';
+        const [year, month, day] = dateString.split('-');
+        return `${day}/${month}/${year}`;
+    };
+
     const handleAddWeight = (e) => {
         e.preventDefault();
         if (!weightInput || !selectedStudentId) return;
@@ -297,7 +305,7 @@ const WeightTrackerPage = () => {
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" />
                                     <XAxis
                                         dataKey="date"
-                                        tickFormatter={(str) => new Date(str).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                                        tickFormatter={(str) => formatDateUser(str).slice(0, 5)} // Show DD/MM
                                         tick={{ fontSize: 12, fill: 'var(--text-muted)' }}
                                         stroke="none"
                                     />
@@ -310,7 +318,7 @@ const WeightTrackerPage = () => {
                                     />
                                     <Tooltip
                                         contentStyle={{ borderRadius: '8px', border: '1px solid var(--border-subtle)', background: '#09090b', color: '#fff' }}
-                                        labelFormatter={(label) => new Date(label).toLocaleDateString('pt-BR')}
+                                        labelFormatter={(label) => formatDateUser(label)}
                                     />
                                     <Line
                                         type="monotone"
@@ -353,7 +361,7 @@ const WeightTrackerPage = () => {
                                             </div>
                                             <div>
                                                 <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                                                    {new Date(metric.date).toLocaleDateString('pt-BR')}
+                                                    {formatDateUser(metric.date)}
                                                 </div>
                                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                                                     {metric.bodyFat ? `Gordura: ${metric.bodyFat}%` : 'Sem dobras'}

@@ -4,7 +4,7 @@ import { useStudent } from '../../context/StudentContext';
 import { ChevronLeft, ChevronRight, Check, Calendar as CalendarIcon, Clock, Dumbbell, Footprints, Bike, Waves, AlertCircle, XCircle, MapPin, Activity } from 'lucide-react';
 
 const AttendanceCalendar = ({ onDayClick, fullPageMode = false }) => {
-    const { workouts, updateWorkout } = useWorkout();
+    const { workouts, updateWorkout, deleteWorkout } = useWorkout();
     const { selectedStudentId } = useStudent();
 
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -29,6 +29,7 @@ const AttendanceCalendar = ({ onDayClick, fullPageMode = false }) => {
         const monthlyWorkouts = workouts.filter(w => {
             if (w.studentId !== selectedStudentId) return false;
             const wDate = new Date(w.date);
+            // Handle Timezone offset for strict date comparison if needed, but simple Month/Year check usually safe
             return wDate.getMonth() === currentDate.getMonth() &&
                 wDate.getFullYear() === currentDate.getFullYear();
         });
@@ -70,23 +71,27 @@ const AttendanceCalendar = ({ onDayClick, fullPageMode = false }) => {
     };
 
     // --- AGENDA DATA (Mobile) ---
+    // UPDATED: Now filters based on the SELECTED MONTH (currentDate), not a fixed "Agenda" window.
     const agendaData = useMemo(() => {
         if (!selectedStudentId) return [];
-        // Show 2 days past, Today, 7 days future
-        const center = new Date();
-        center.setHours(0, 0, 0, 0);
-        const start = new Date(center);
-        start.setDate(start.getDate() - 3);
-        const end = new Date(center);
-        end.setDate(end.getDate() + 14);
 
         return workouts
             .filter(w => {
+                if (w.studentId !== selectedStudentId) return false;
                 const d = new Date(w.date);
-                return w.studentId === selectedStudentId && d >= start && d <= end;
+                // Strict Month/Year filtering based on header navigation
+                return d.getMonth() === currentDate.getMonth() &&
+                    d.getFullYear() === currentDate.getFullYear();
             })
             .sort((a, b) => new Date(a.date) - new Date(b.date));
-    }, [workouts, selectedStudentId]);
+    }, [workouts, selectedStudentId, currentDate]);
+
+    const handleDelete = (e, workoutId) => {
+        e.stopPropagation(); // Prevent card click
+        if (window.confirm("Tem certeza que deseja apagar este treino?")) {
+            deleteWorkout(workoutId);
+        }
+    };
 
 
     return (
@@ -131,7 +136,7 @@ const AttendanceCalendar = ({ onDayClick, fullPageMode = false }) => {
                     {agendaData.length === 0 ? (
                         <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px dashed var(--border-subtle)' }}>
                             <CalendarIcon size={32} style={{ marginBottom: '8px', opacity: 0.5 }} />
-                            <p>Nenhum treino no período.</p>
+                            <p>Nenhum treino neste mês.</p>
                         </div>
                     ) : (
                         agendaData.map((w, idx) => {
@@ -139,12 +144,12 @@ const AttendanceCalendar = ({ onDayClick, fullPageMode = false }) => {
                             const todayStr = new Date().toDateString();
                             const wDateStr = wDate.toDateString();
 
-                            // let dayLabel = wDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
-                            // if (wDateStr === todayStr) dayLabel = "HOJE";
-
                             const s = w.status === 'completed' ? 'completed' : ((wDate < new Date() && w.status !== 'completed') ? 'missed' : 'planned');
                             const style = getBlockStyle(s);
                             const isToday = wDateStr === todayStr;
+
+                            // Workout Name Logic: Prioritize Custom Name -> Category -> Default
+                            const displayName = w.meta?.category || w.category || w.name || 'Treino';
 
                             return (
                                 <div key={w.id} onClick={() => onDayClick && onDayClick(w.id)}
@@ -186,14 +191,27 @@ const AttendanceCalendar = ({ onDayClick, fullPageMode = false }) => {
                                         border: '1px solid var(--border-subtle)',
                                         padding: '12px',
                                         boxShadow: 'none',
-                                        borderLeft: `4px solid ${style.border}`
+                                        borderLeft: `4px solid ${style.border}`,
+                                        position: 'relative' // For absolute buttons
                                     }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
                                             <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                 {getActivityIcon(w.activity_type)}
-                                                {w.category || w.name || 'Treino'}
+                                                {displayName}
                                             </div>
-                                            {style.icon && <div style={{ color: style.text }}>{style.icon}</div>}
+                                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                {/* Delete Button Mobile */}
+                                                <button
+                                                    onClick={(e) => handleDelete(e, w.id)}
+                                                    style={{
+                                                        background: 'none', border: 'none', color: 'var(--text-muted)',
+                                                        cursor: 'pointer', padding: '4px', zIndex: 10
+                                                    }}
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                                {style.icon && <div style={{ color: style.text }}>{style.icon}</div>}
+                                            </div>
                                         </div>
 
                                         <div style={{ display: 'flex', gap: '12px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
@@ -281,6 +299,10 @@ const AttendanceCalendar = ({ onDayClick, fullPageMode = false }) => {
                                             return (
                                                 <div key={w.id}
                                                     draggable={true}
+                                                    className="group" // For hover effects if using Tailwind, but we'll use inline styles with state or simple CSS if possible. Since we're using inline styles mostly, we'll use a local hover state logic or just always show it small/opacity. 
+                                                    // actually, we can't easily use 'group-hover' with inline styles. 
+                                                    // Let's make it visible but subtle, or use a class if one exists.
+                                                    // We'll rely on the existing onMouseEnter/Leave for scale, and maybe opacity for the button.
                                                     onDragStart={(e) => {
                                                         e.dataTransfer.setData('text/plain', w.id);
                                                         e.dataTransfer.effectAllowed = 'move';
@@ -304,14 +326,49 @@ const AttendanceCalendar = ({ onDayClick, fullPageMode = false }) => {
                                                         fontSize: '0.75rem',
                                                         boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
                                                         transition: 'transform 0.1s',
+                                                        position: 'relative',
+                                                        overflow: 'hidden'
                                                     }}
-                                                    onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
-                                                    onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                                                    onMouseEnter={e => {
+                                                        e.currentTarget.style.transform = 'scale(1.02)';
+                                                        const btn = e.currentTarget.querySelector('.delete-btn');
+                                                        if (btn) btn.style.display = 'flex';
+                                                    }}
+                                                    onMouseLeave={e => {
+                                                        e.currentTarget.style.transform = 'scale(1)';
+                                                        const btn = e.currentTarget.querySelector('.delete-btn');
+                                                        if (btn) btn.style.display = 'none';
+                                                    }}
                                                 >
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', paddingRight: '16px' }}>
                                                         {getActivityIcon(w.activity_type)}
-                                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{w.category || 'Treino'}</span>
+                                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{w.meta?.category || w.category || w.name || 'Treino'}</span>
                                                     </div>
+
+                                                    {/* Delete Button - Desktop (Hidden by default, shown on hover via JS above) */}
+                                                    <button
+                                                        className="delete-btn"
+                                                        onClick={(e) => handleDelete(e, w.id)}
+                                                        style={{
+                                                            position: 'absolute',
+                                                            top: '2px',
+                                                            right: '2px',
+                                                            background: 'rgba(0,0,0,0.5)',
+                                                            color: '#fff',
+                                                            border: 'none',
+                                                            borderRadius: '4px',
+                                                            width: '20px',
+                                                            height: '20px',
+                                                            display: 'none', // Hidden initially
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            cursor: 'pointer',
+                                                            zIndex: 20
+                                                        }}
+                                                    >
+                                                        <Trash2 size={12} />
+                                                    </button>
+
                                                     <div style={{ color: 'var(--text-secondary)', fontSize: '0.7rem', display: 'flex', justifyContent: 'space-between' }}>
                                                         {w.duration_minutes ? <span>{w.duration_minutes}m</span> : <span>{w.exercises?.length}ex</span>}
                                                         {w.distance_km > 0 && <span>{w.distance_km}km</span>}
