@@ -17,6 +17,7 @@ const WorkoutsPage = () => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [importSourceStudentId, setImportSourceStudentId] = useState('');
     const [importSourceMeso, setImportSourceMeso] = useState('');
+    const [keepData, setKeepData] = useState(false);
 
     // Derived state for import options
     const sourceStudentWorkouts = importSourceStudentId
@@ -27,11 +28,12 @@ const WorkoutsPage = () => {
     const handleImportWrapper = () => {
         if (!importSourceStudentId || !importSourceMeso) return;
         try {
-            const count = importMesocycle(importSourceStudentId, selectedStudentId, parseInt(importSourceMeso));
+            const count = importMesocycle(importSourceStudentId, selectedStudentId, parseInt(importSourceMeso), keepData);
             alert(`${count} treinos importados com sucesso!`);
             setIsImportModalOpen(false);
             setImportSourceStudentId('');
             setImportSourceMeso('');
+            setKeepData(false);
         } catch (error) {
             alert(error.message);
         }
@@ -294,6 +296,21 @@ const WorkoutsPage = () => {
                                             <option key={m} value={m}>Mesociclo #{m}</option>
                                         ))}
                                     </select>
+                                </div>
+                            )}
+
+                            {importSourceMeso && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '0.5rem' }}>
+                                    <input
+                                        type="checkbox"
+                                        id="keepData"
+                                        checked={keepData}
+                                        onChange={(e) => setKeepData(e.target.checked)}
+                                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                    />
+                                    <label htmlFor="keepData" style={{ cursor: 'pointer', color: 'var(--text-primary)', fontSize: '0.9rem' }}>
+                                        Manter cargas e dados preenchidos?
+                                    </label>
                                 </div>
                             )}
 

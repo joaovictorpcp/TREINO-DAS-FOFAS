@@ -730,7 +730,7 @@ export const WorkoutProvider = ({ children }) => {
     }
   };
 
-  const importMesocycle = async (fromStudentId, toStudentId, mesocycleNumber) => {
+  const importMesocycle = async (fromStudentId, toStudentId, mesocycleNumber, keepData = false) => {
     if (!session?.user) return;
 
     // 1. Get Source Workouts
@@ -765,10 +765,11 @@ export const WorkoutProvider = ({ children }) => {
       const clonedExercises = source.exercises.map(ex => ({
         ...ex,
         id: crypto.randomUUID(),
-        load: '', // Reset
-        rpe: '',
-        rir: '',
-        vtt: 0,
+        load: keepData ? ex.load : '', // Keep or Reset
+        reps: keepData ? ex.reps : ex.reps, // Reps usually kept anyway, but explicit
+        rpe: keepData ? ex.rpe : '',
+        rir: keepData ? ex.rir : '',
+        vtt: keepData ? (ex.vtt || 0) : 0,
         suggestProgression: false
       }));
 

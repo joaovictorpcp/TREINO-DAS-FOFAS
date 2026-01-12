@@ -1,14 +1,79 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useWorkout } from '../../context/WorkoutContext';
 import { useStudent } from '../../context/StudentContext';
-import { ChevronLeft, ChevronRight, Check, Calendar as CalendarIcon, Clock, Dumbbell, Footprints, Bike, Waves, AlertCircle, XCircle, MapPin, Activity, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Calendar as CalendarIcon, Clock, Dumbbell, Footprints, Bike, Waves, AlertCircle, XCircle, MapPin, Activity, Trash2, Copy, Square, CheckSquare, X } from 'lucide-react';
 
 const AttendanceCalendar = ({ onDayClick, fullPageMode = false }) => {
-    const { workouts, updateWorkout, deleteWorkout } = useWorkout();
+    const { workouts, updateWorkout, deleteWorkout, bulkAddWorkouts } = useWorkout();
     const { selectedStudentId } = useStudent();
 
     const [currentDate, setCurrentDate] = useState(new Date());
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    // Bulk Selection State
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
+    const [selectedWorkouts, setSelectedWorkouts] = useState([]);
+    const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
+    const [duplicateTargetDate, setDuplicateTargetDate] = useState('');
+
+    const toggleSelection = (id) => {
+        setSelectedWorkouts(prev =>
+            prev.includes(id) ? prev.filter(wId => wId !== id) : [...prev, id]
+        );
+    };
+
+    const handleBulkDelete = async () => {
+        if (!confirm(`Tem certeza que deseja apagar ${selectedWorkouts.length} treinos?`)) return;
+        await Promise.all(selectedWorkouts.map(id => deleteWorkout(id)));
+        setSelectedWorkouts([]);
+        setIsSelectionMode(false);
+    };
+
+    const handleBulkDuplicate = async () => {
+        if (!duplicateTargetDate) return;
+        if (selectedWorkouts.length === 0) return;
+
+        const targets = workouts.filter(w => selectedWorkouts.includes(w.id));
+        if (targets.length === 0) return;
+
+        const sortedTargets = [...targets].sort((a, b) => new Date(a.date) - new Date(b.date));
+        const earliestDate = new Date(sortedTargets[0].date);
+        const newStartDate = new Date(duplicateTargetDate);
+        // Set newStartDate to Noon to avoid TZ issues
+        newStartDate.setHours(12, 0, 0, 0);
+
+        const timeDiff = newStartDate.getTime() - earliestDate.getTime();
+
+        const newWorkoutsData = sortedTargets.map(w => {
+            const originalDate = new Date(w.date);
+            const nextDate = new Date(originalDate.getTime() + timeDiff);
+
+            return {
+                ...w,
+                date: nextDate.toISOString(),
+                studentId: selectedStudentId || w.studentId,
+                status: 'planned',
+                exercises: w.exercises.map(ex => ({
+                    ...ex,
+                    id: crypto.randomUUID(),
+                    load: ex.load,
+                    reps: ex.reps,
+                    rpe: '',
+                    rir: '',
+                    vtt: 0
+                })),
+                meta: { ...w.meta }
+            };
+        });
+
+        await bulkAddWorkouts(newWorkoutsData);
+
+        setIsDuplicateModalOpen(false);
+        setDuplicateTargetDate('');
+        setSelectedWorkouts([]);
+        setIsSelectionMode(false);
+        alert(`${newWorkoutsData.length} treinos duplicados com sucesso!`);
+    };
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -114,6 +179,30 @@ const AttendanceCalendar = ({ onDayClick, fullPageMode = false }) => {
                     {fullPageMode && !isMobile && (
                         <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', background: 'var(--bg-primary)', padding: '2px 8px', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>Mensal</span>
                     )}
+                    <button
+                        onClick={() => {
+                            if (isSelectionMode) {
+                                setIsSelectionMode(false);
+                                setSelectedWorkouts([]);
+                            } else {
+                                setIsSelectionMode(true);
+                            }
+                        }}
+                        style={{
+                            background: isSelectionMode ? 'var(--accent-primary)' : 'transparent',
+                            color: isSelectionMode ? '#000' : 'var(--text-secondary)',
+                            border: isSelectionMode ? 'none' : '1px dashed var(--border-subtle)',
+                            borderRadius: '6px',
+                            padding: '4px 8px',
+                            cursor: 'pointer',
+                            fontSize: '0.8rem',
+                            display: 'flex', alignItems: 'center', gap: '4px',
+                            marginLeft: '8px'
+                        }}
+                    >
+                        {isSelectionMode ? <CheckSquare size={14} /> : <Square size={14} />}
+                        {isSelectionMode ? 'Cancelar' : 'Selecionar'}
+                    </button>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-primary)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
@@ -150,15 +239,26 @@ const AttendanceCalendar = ({ onDayClick, fullPageMode = false }) => {
 
                             // Workout Name Logic: Prioritize Custom Name -> Category -> Default
                             const displayName = w.meta?.category || w.category || w.name || 'Treino';
+                            const isSelected = selectedWorkouts.includes(w.id);
 
                             return (
-                                <div key={w.id} onClick={() => onDayClick && onDayClick(w.id)}
+                                <div key={w.id} onClick={() => isSelectionMode ? toggleSelection(w.id) : (onDayClick && onDayClick(w.id))}
                                     style={{
-                                        display: 'flex', gap: '16px', position: 'relative'
+                                        display: 'flex', gap: '16px', position: 'relative',
+                                        opacity: (isSelectionMode && !isSelected) ? 0.6 : 1,
+                                        transition: 'opacity 0.2s',
+                                        cursor: isSelectionMode ? 'pointer' : 'default'
                                     }}
                                 >
+                                    {/* Selection Checkbox Mobile */}
+                                    {isSelectionMode && (
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            {isSelected ? <CheckSquare color="var(--accent-primary)" size={24} /> : <Square color="var(--text-muted)" size={24} />}
+                                        </div>
+                                    )}
+
                                     {/* Timeline Line */}
-                                    {idx !== agendaData.length - 1 && (
+                                    {!isSelectionMode && idx !== agendaData.length - 1 && (
                                         <div style={{ position: 'absolute', left: '24px', top: '40px', bottom: '-20px', width: '2px', background: 'var(--border-subtle)' }} />
                                     )}
 
@@ -295,15 +395,14 @@ const AttendanceCalendar = ({ onDayClick, fullPageMode = false }) => {
                                         {day.workouts.map(w => {
                                             const status = w.status === 'completed' ? 'completed' : ((new Date(w.date) < new Date() && w.status !== 'completed') ? 'missed' : 'planned');
                                             const style = getBlockStyle(status);
+                                            const isSelected = selectedWorkouts.includes(w.id);
 
                                             return (
                                                 <div key={w.id}
-                                                    draggable={true}
-                                                    className="group" // For hover effects if using Tailwind, but we'll use inline styles with state or simple CSS if possible. Since we're using inline styles mostly, we'll use a local hover state logic or just always show it small/opacity. 
-                                                    // actually, we can't easily use 'group-hover' with inline styles. 
-                                                    // Let's make it visible but subtle, or use a class if one exists.
-                                                    // We'll rely on the existing onMouseEnter/Leave for scale, and maybe opacity for the button.
+                                                    draggable={!isSelectionMode}
+                                                    className="group"
                                                     onDragStart={(e) => {
+                                                        if (isSelectionMode) { e.preventDefault(); return; }
                                                         e.dataTransfer.setData('text/plain', w.id);
                                                         e.dataTransfer.effectAllowed = 'move';
                                                         e.currentTarget.style.opacity = '0.5';
@@ -313,26 +412,33 @@ const AttendanceCalendar = ({ onDayClick, fullPageMode = false }) => {
                                                     }}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        onDayClick && onDayClick(w.id);
+                                                        if (isSelectionMode) {
+                                                            toggleSelection(w.id);
+                                                        } else {
+                                                            onDayClick && onDayClick(w.id);
+                                                        }
                                                     }}
                                                     title={w.name}
                                                     style={{
-                                                        background: style.bg,
-                                                        borderLeft: `3px solid ${style.border}`,
+                                                        background: isSelected ? 'rgba(204, 255, 0, 0.1)' : style.bg,
+                                                        borderLeft: `3px solid ${isSelected ? 'var(--accent-primary)' : style.border}`,
+                                                        border: isSelected ? '1px solid var(--accent-primary)' : undefined,
                                                         padding: '6px',
                                                         borderRadius: '4px',
-                                                        cursor: 'grab',
+                                                        cursor: isSelectionMode ? 'pointer' : 'grab',
                                                         display: 'flex', flexDirection: 'column', gap: '2px',
                                                         fontSize: '0.75rem',
                                                         boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
-                                                        transition: 'transform 0.1s',
+                                                        transition: 'all 0.1s',
                                                         position: 'relative',
                                                         overflow: 'hidden'
                                                     }}
                                                     onMouseEnter={e => {
-                                                        e.currentTarget.style.transform = 'scale(1.02)';
-                                                        const btn = e.currentTarget.querySelector('.delete-btn');
-                                                        if (btn) btn.style.display = 'flex';
+                                                        if (!isSelectionMode) {
+                                                            e.currentTarget.style.transform = 'scale(1.02)';
+                                                            const btn = e.currentTarget.querySelector('.delete-btn');
+                                                            if (btn) btn.style.display = 'flex';
+                                                        }
                                                     }}
                                                     onMouseLeave={e => {
                                                         e.currentTarget.style.transform = 'scale(1)';
@@ -340,34 +446,42 @@ const AttendanceCalendar = ({ onDayClick, fullPageMode = false }) => {
                                                         if (btn) btn.style.display = 'none';
                                                     }}
                                                 >
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', paddingRight: '16px' }}>
+                                                    {isSelectionMode && (
+                                                        <div style={{ position: 'absolute', top: '2px', right: '2px', zIndex: 10 }}>
+                                                            {isSelected ? <CheckSquare size={14} color="var(--accent-primary)" fill="rgba(0,0,0,0.5)" /> : <Square size={14} color="rgba(255,255,255,0.3)" />}
+                                                        </div>
+                                                    )}
+
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', paddingRight: isSelectionMode ? '16px' : '16px' }}>
                                                         {getActivityIcon(w.activity_type)}
                                                         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{w.meta?.category || w.category || w.name || 'Treino'}</span>
                                                     </div>
 
-                                                    {/* Delete Button - Desktop (Hidden by default, shown on hover via JS above) */}
-                                                    <button
-                                                        className="delete-btn"
-                                                        onClick={(e) => handleDelete(e, w.id)}
-                                                        style={{
-                                                            position: 'absolute',
-                                                            top: '2px',
-                                                            right: '2px',
-                                                            background: 'rgba(0,0,0,0.5)',
-                                                            color: '#fff',
-                                                            border: 'none',
-                                                            borderRadius: '4px',
-                                                            width: '20px',
-                                                            height: '20px',
-                                                            display: 'none', // Hidden initially
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            cursor: 'pointer',
-                                                            zIndex: 20
-                                                        }}
-                                                    >
-                                                        <Trash2 size={12} />
-                                                    </button>
+                                                    {/* Delete Button - Desktop (Hidden in selection mode) */}
+                                                    {!isSelectionMode && (
+                                                        <button
+                                                            className="delete-btn"
+                                                            onClick={(e) => handleDelete(e, w.id)}
+                                                            style={{
+                                                                position: 'absolute',
+                                                                top: '2px',
+                                                                right: '2px',
+                                                                background: 'rgba(0,0,0,0.5)',
+                                                                color: '#fff',
+                                                                border: 'none',
+                                                                borderRadius: '4px',
+                                                                width: '20px',
+                                                                height: '20px',
+                                                                display: 'none',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                cursor: 'pointer',
+                                                                zIndex: 20
+                                                            }}
+                                                        >
+                                                            <Trash2 size={12} />
+                                                        </button>
+                                                    )}
 
                                                     <div style={{ color: 'var(--text-secondary)', fontSize: '0.7rem', display: 'flex', justifyContent: 'space-between' }}>
                                                         {w.duration_minutes ? <span>{w.duration_minutes}m</span> : <span>{w.exercises?.length}ex</span>}
@@ -381,6 +495,107 @@ const AttendanceCalendar = ({ onDayClick, fullPageMode = false }) => {
                                 </div>
                             );
                         })}
+                    </div>
+                </div>
+            )}
+            {/* Floating Action Bar (Selection Mode) */}
+            {isSelectionMode && (
+                <div className="animate-slide-up" style={{
+                    position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
+                    background: 'var(--bg-card)', padding: '12px 24px', borderRadius: '16px',
+                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--border-subtle)',
+                    display: 'flex', alignItems: 'center', gap: '16px', zIndex: 100,
+                    minWidth: '300px', justifyContent: 'center'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem', marginRight: '8px' }}>
+                        <span style={{ fontWeight: 700, color: 'var(--accent-primary)' }}>{selectedWorkouts.length}</span>
+                        selecionado(s)
+                    </div>
+
+                    <div style={{ width: '1px', height: '20px', background: 'var(--border-subtle)' }} />
+
+                    <button
+                        onClick={handleBulkDelete}
+                        disabled={selectedWorkouts.length === 0}
+                        style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', fontSize: '0.7rem' }}
+                    >
+                        <Trash2 size={20} />
+                        Excluir
+                    </button>
+
+                    <button
+                        onClick={() => setIsDuplicateModalOpen(true)}
+                        disabled={selectedWorkouts.length === 0}
+                        style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', fontSize: '0.7rem' }}
+                    >
+                        <Copy size={20} />
+                        Duplicar
+                    </button>
+
+                    <button
+                        onClick={() => { setIsSelectionMode(false); setSelectedWorkouts([]); }}
+                        style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', fontSize: '0.7rem', marginLeft: '8px' }}
+                    >
+                        <XCircle size={20} />
+                        Cancelar
+                    </button>
+                </div>
+            )}
+
+            {/* Duplicate Modal */}
+            {isDuplicateModalOpen && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.8)', zIndex: 200,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    backdropFilter: 'blur(4px)'
+                }}>
+                    <div className="glass-panel" style={{
+                        padding: '2rem', borderRadius: '16px',
+                        width: '90%', maxWidth: '400px',
+                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
+                        background: 'var(--bg-primary)',
+                        border: '1px solid var(--border-subtle)'
+                    }}>
+                        <h3 style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '1rem' }}>
+                            Duplicar {selectedWorkouts.length} treinos
+                        </h3>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                            Selecione a data de início para a cópia. Os intervalos entre os treinos originais serão mantidos.
+                        </p>
+
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Início da Cópia:</label>
+                            <input
+                                type="date"
+                                value={duplicateTargetDate}
+                                onChange={e => setDuplicateTargetDate(e.target.value)}
+                                className="input"
+                                style={{
+                                    width: '100%', padding: '12px', borderRadius: '8px',
+                                    background: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)',
+                                    color: 'var(--text-primary)'
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                            <button
+                                onClick={() => setIsDuplicateModalOpen(false)}
+                                className="btn"
+                                style={{ background: 'transparent', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleBulkDuplicate}
+                                disabled={!duplicateTargetDate}
+                                className="btn btn-primary"
+                                style={{ opacity: !duplicateTargetDate ? 0.5 : 1 }}
+                            >
+                                Confirmar
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
