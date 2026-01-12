@@ -189,7 +189,8 @@ export const StudentProvider = ({ children }) => {
 
             if (error) throw error;
 
-            setStudents(prev => prev.map(s => s.id === id ? data : s));
+            const savedStudent = { ...data, ...(data.profile_data || {}) };
+            setStudents(prev => prev.map(s => s.id === id ? savedStudent : s));
         } catch (error) {
             console.error('Error updating student:', error);
         }
@@ -264,7 +265,10 @@ export const StudentProvider = ({ children }) => {
         }
     };
 
-    const bodyMetrics = []; // Compatibility default (unused publicly now as we use getBodyMetrics)
+    // Derived body metrics from all students (Restores compatibility with WeightTrackerPage consumption)
+    const bodyMetrics = React.useMemo(() => {
+        return students.flatMap(s => s.profile_data?.metrics || []);
+    }, [students]);
 
     return (
         <StudentContext.Provider value={{

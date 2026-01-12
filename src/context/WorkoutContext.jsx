@@ -305,6 +305,16 @@ export const WorkoutProvider = ({ children }) => {
         delete dbData.studentId;
       }
 
+      // Auto-fill student_id from existing state if missing (Common in partial updates like Drag & Drop)
+      if (!dbData.student_id) {
+        const existing = workouts.find(w => w.id === id);
+        if (existing) {
+          dbData.student_id = existing.studentId || existing.student_id;
+          // We might also want to fill other non-nullable fields if this is strictly an upsert that acts like insert
+          // But for now, student_id is the one causing the specific error.
+        }
+      }
+
       // CRITICAL FIX: Ensure student_id is NEVER null for upserts that might act as inserts
       if (!dbData.student_id) {
         console.error("Attempting to save workout without student_id! This will cause RLS issues or missing data.");

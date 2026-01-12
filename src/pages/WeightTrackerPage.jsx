@@ -26,13 +26,17 @@ const WeightTrackerPage = () => {
         neck: '',
         shoulder: '',
         chest: '',
-        arm: '',
-        forearm: '',
+        armRight: '',
+        armLeft: '',
+        forearmRight: '',
+        forearmLeft: '',
         waist: '',
         abdomen: '',
         hips: '',
-        thigh: '',
-        calf: ''
+        thighRight: '',
+        thighLeft: '',
+        calfRight: '',
+        calfLeft: ''
     });
 
     const [editingId, setEditingId] = useState(null);
@@ -133,7 +137,7 @@ const WeightTrackerPage = () => {
         setWeightInput('');
         setDateInput(new Date().toISOString().split('T')[0]);
         setSkinfolds({ chest: '', axilla: '', triceps: '', subscapular: '', abdomen: '', suprailiac: '', thigh: '' });
-        setCircumferences({ neck: '', shoulder: '', chest: '', arm: '', forearm: '', waist: '', abdomen: '', hips: '', thigh: '', calf: '' });
+        setCircumferences({ neck: '', shoulder: '', chest: '', armRight: '', armLeft: '', forearmRight: '', forearmLeft: '', waist: '', abdomen: '', hips: '', thighRight: '', thighLeft: '', calfRight: '', calfLeft: '' });
     };
 
     const startEdit = (metric) => {
@@ -150,7 +154,7 @@ const WeightTrackerPage = () => {
         if (metric.circumferences) {
             setCircumferences(metric.circumferences);
         } else {
-            setCircumferences({ neck: '', shoulder: '', chest: '', arm: '', forearm: '', waist: '', abdomen: '', hips: '', thigh: '', calf: '' });
+            setCircumferences({ neck: '', shoulder: '', chest: '', armRight: '', armLeft: '', forearmRight: '', forearmLeft: '', waist: '', abdomen: '', hips: '', thighRight: '', thighLeft: '', calfRight: '', calfLeft: '' });
         }
     };
 
@@ -159,7 +163,7 @@ const WeightTrackerPage = () => {
         setWeightInput('');
         setDateInput(new Date().toISOString().split('T')[0]);
         setSkinfolds({ chest: '', axilla: '', triceps: '', subscapular: '', abdomen: '', suprailiac: '', thigh: '' });
-        setCircumferences({ neck: '', shoulder: '', chest: '', arm: '', forearm: '', waist: '', abdomen: '', hips: '', thigh: '', calf: '' });
+        setCircumferences({ neck: '', shoulder: '', chest: '', armRight: '', armLeft: '', forearmRight: '', forearmLeft: '', waist: '', abdomen: '', hips: '', thighRight: '', thighLeft: '', calfRight: '', calfLeft: '' });
     };
 
     const updateSkinfold = (field, value) => {
@@ -193,8 +197,12 @@ const WeightTrackerPage = () => {
     });
 
     const perimetryLabels = {
-        neck: 'Pescoço', shoulder: 'Ombro', chest: 'Tórax', arm: 'Braço', forearm: 'Antebraço',
-        waist: 'Cintura', abdomen: 'Abdômen', hips: 'Quadril', thigh: 'Coxa', calf: 'Panturrilha'
+        neck: 'Pescoço', shoulder: 'Ombro', chest: 'Tórax',
+        armRight: 'Braço Dir.', armLeft: 'Braço Esq.',
+        forearmRight: 'Antebraço Dir.', forearmLeft: 'Antebraço Esq.',
+        waist: 'Cintura', abdomen: 'Abdômen', hips: 'Quadril',
+        thighRight: 'Coxa Dir.', thighLeft: 'Coxa Esq.',
+        calfRight: 'Panturrilha Dir.', calfLeft: 'Panturrilha Esq.'
     };
 
     return (
@@ -378,9 +386,11 @@ const WeightTrackerPage = () => {
                                     {metric.circumferences && Object.values(metric.circumferences).some(v => v) && (
                                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: '48px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                                             <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Perimetria:</span>
-                                            {metric.circumferences.arm && <span className="bg-zinc-800 px-2 py-1 rounded text-zinc-300">Braço: {metric.circumferences.arm}</span>}
+                                            {metric.circumferences.armRight && <span className="bg-zinc-800 px-2 py-1 rounded text-zinc-300">Braço D: {metric.circumferences.armRight}</span>}
+                                            {metric.circumferences.armLeft && <span className="bg-zinc-800 px-2 py-1 rounded text-zinc-300">Braço E: {metric.circumferences.armLeft}</span>}
                                             {metric.circumferences.waist && <span className="bg-zinc-800 px-2 py-1 rounded text-zinc-300">Cintura: {metric.circumferences.waist}</span>}
-                                            {metric.circumferences.hips && <span className="bg-zinc-800 px-2 py-1 rounded text-zinc-300">Quadril: {metric.circumferences.hips}</span>}
+                                            {metric.circumferences.thighRight && <span className="bg-zinc-800 px-2 py-1 rounded text-zinc-300">Coxa D: {metric.circumferences.thighRight}</span>}
+                                            {metric.circumferences.thighLeft && <span className="bg-zinc-800 px-2 py-1 rounded text-zinc-300">Coxa E: {metric.circumferences.thighLeft}</span>}
                                         </div>
                                     )}
                                 </div>
