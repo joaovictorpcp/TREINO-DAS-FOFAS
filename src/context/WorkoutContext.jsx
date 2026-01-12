@@ -300,6 +300,12 @@ export const WorkoutProvider = ({ children }) => {
     try {
       // Map studentId to student_id if present
       const dbData = { ...updatedData };
+
+      // Sanitize standard numeric fields (convert "" to null)
+      ['duration_minutes', 'distance_km', 'session_rpe', 'volume_load_kg', 'normalized_load'].forEach(field => {
+        if (dbData[field] === "") dbData[field] = null;
+      });
+
       if (dbData.studentId) {
         dbData.student_id = dbData.studentId;
         delete dbData.studentId;
@@ -404,6 +410,73 @@ export const WorkoutProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Error clearing workouts:', error);
+    }
+  };
+
+  const bulkDeleteWorkouts = async (ids) => {
+    if (!ids || ids.length === 0) return;
+    try {
+      const { error } = await supabase
+        .from('workouts')
+        .delete()
+        .in('id', ids);
+
+      if (error) throw error;
+      setWorkouts(prev => prev.filter(w => !ids.includes(w.id)));
+    } catch (error) {
+      console.error('Error bulk deleting:', error);
+      alert('Erro ao excluir treinos em massa.');
+    }
+  };
+
+  const bulkDuplicateWorkouts = async (ids, targetDateStr = null) => {
+    if (!ids || ids.length === 0) return;
+    try {
+      const selectedWorkouts = workouts.filter(w => ids.includes(w.id));
+      const newWorkouts = selectedWorkouts.map(w => {
+        const newDate = targetDateStr ? new Date(targetDateStr) : new Date(w.date);
+
+        // If creating on same day, ensure unique ID (Supabase does this)
+        // Clean ID and timestamps
+        const { id, created_at, ...rest } = w;
+
+        return {
+          ...rest,
+          // If we have local studentId, map to student_id for DB
+          student_id: w.studentId || w.student_id,
+          date: newDate.toISOString(),
+          status: 'planned', // Reset status for duplicate? Usually yes.
+          exercises: w.exercises.map(ex => ({
+            ...ex,
+            id: crypto.randomUUID(),
+            // Reset performance data for duplication?
+            // "Na aba treinos, tenho o calendario e a aba LISTA. No formato lista, que eu possa selecionar os treinos para duplicar e ou apagar."
+            // Usually duplication is for Planning.
+            rpe: '',
+            rir: '',
+            vtt: 0,
+            suggestProgression: false
+          }))
+        };
+      });
+
+      const { data, error } = await supabase
+        .from('workouts')
+        .insert(newWorkouts)
+        .select();
+
+      if (error) throw error;
+
+      const mappedData = data.map(w => ({
+        ...w,
+        studentId: w.student_id
+      }));
+
+      setWorkouts(prev => [...mappedData, ...prev]);
+      return mappedData;
+    } catch (error) {
+      console.error('Error bulk duplicating:', error);
+      alert('Erro ao duplicar treinos.');
     }
   };
 
@@ -765,8 +838,8 @@ export const WorkoutProvider = ({ children }) => {
       const clonedExercises = source.exercises.map(ex => ({
         ...ex,
         id: crypto.randomUUID(),
-        load: keepData ? ex.load : '', // Keep or Reset
-        reps: keepData ? ex.reps : ex.reps, // Reps usually kept anyway, but explicit
+        load: ex.load, // Always keep load (Plan)
+        reps: ex.reps, // Always keep reps (Plan)
         rpe: keepData ? ex.rpe : '',
         rir: keepData ? ex.rir : '',
         vtt: keepData ? (ex.vtt || 0) : 0,
@@ -778,7 +851,17 @@ export const WorkoutProvider = ({ children }) => {
         user_id: session.user.id,
         student_id: toStudentId,
         date: newDate.toISOString(),
-        status: 'planned',
+        // If we want it to count for graph, status might need to be 'completed' if source was completed?
+        status: keepData ? source.status : 'planned',
+
+        // Attributes
+        activity_type: source.activity_type || 'weightlifting',
+        duration_minutes: keepData ? source.duration_minutes : null,
+        distance_km: keepData ? source.distance_km : null,
+        session_rpe: keepData ? source.session_rpe : null,
+        normalized_load: keepData ? source.normalized_load : null,
+        drills_description: source.drills_description || null,
+        main_set_description: source.main_set_description || null,
 
         // category removed
 
@@ -919,8 +1002,11 @@ export const WorkoutProvider = ({ children }) => {
       getExerciseHistory,
       getRecentAverageVolume,
       getPMCData,
+      getPMCData,
       importMesocycle,
-      duplicateMesocycleToNext
+      duplicateMesocycleToNext,
+      bulkDeleteWorkouts,
+      bulkDuplicateWorkouts
     }}>
       {children}
     </WorkoutContext.Provider>

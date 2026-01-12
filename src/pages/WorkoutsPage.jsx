@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useWorkout } from '../context/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, List, Download, X, StickyNote, CheckCircle, Circle, ArrowRight, Dumbbell, Bike, Footprints, Waves, Clock, MapPin, LayoutGrid } from 'lucide-react';
+import { Calendar, List, Download, X, StickyNote, CheckCircle, Circle, ArrowRight, Dumbbell, Bike, Footprints, Waves, Clock, MapPin, LayoutGrid, CheckSquare, Square, Trash2, Copy } from 'lucide-react';
 import { useStudent } from '../context/StudentContext';
 import styles from './WorkoutsPage.module.css';
 import AttendanceCalendar from '../components/Student/AttendanceCalendar';
 
 const WorkoutsPage = () => {
-    const { workouts, clearWorkouts, importMesocycle } = useWorkout();
+    const { workouts, clearWorkouts, importMesocycle, bulkDeleteWorkouts, bulkDuplicateWorkouts } = useWorkout();
     const { selectedStudentId, students } = useStudent();
     const navigate = useNavigate();
 
@@ -47,6 +47,40 @@ const WorkoutsPage = () => {
     const handleClearAll = () => {
         if (window.confirm("Tem certeza que deseja apagar TODOS os treinos exibidos?")) {
             clearWorkouts(selectedStudentId);
+        }
+    };
+
+    // Bulk Selection State
+    const [selectedWorkouts, setSelectedWorkouts] = useState([]);
+
+    const toggleSelection = (id) => {
+        setSelectedWorkouts(prev =>
+            prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+        );
+    };
+
+    const handleSelectAll = (ids) => {
+        const allSelected = ids.every(id => selectedWorkouts.includes(id));
+        if (allSelected) {
+            setSelectedWorkouts(prev => prev.filter(id => !ids.includes(id)));
+        } else {
+            setSelectedWorkouts(prev => [...new Set([...prev, ...ids])]);
+        }
+    };
+
+    const handleBulkDeleteWrapper = async () => {
+        if (window.confirm(`Tem certeza que deseja excluir ${selectedWorkouts.length} treinos?`)) {
+            await bulkDeleteWorkouts(selectedWorkouts);
+            setSelectedWorkouts([]);
+        }
+    };
+
+    const handleBulkDuplicateWrapper = async () => {
+        const dateStr = window.prompt("Para qual data deseja duplicar? (YYYY-MM-DD)\nDeixe em branco para duplicar no mesmo dia.", "");
+        if (dateStr !== null) {
+            await bulkDuplicateWorkouts(selectedWorkouts, dateStr || null);
+            setSelectedWorkouts([]);
+            alert("Treinos duplicados com sucesso!");
         }
     };
 
@@ -102,18 +136,39 @@ const WorkoutsPage = () => {
                     </div>
 
                     <div style={{ display: 'flex', gap: '8px' }}>
-                        <button
-                            onClick={() => setIsImportModalOpen(true)}
-                            className="btn"
-                            style={{ display: 'flex', alignItems: 'center', gap: '6px', border: '1px dashed var(--border-subtle)', color: 'var(--text-secondary)', fontSize: '0.9rem', background: 'transparent' }}
-                        >
-                            <Download size={16} /> Importar Ciclo
-                        </button>
+                        {selectedWorkouts.length > 0 ? (
+                            <>
+                                <button
+                                    onClick={handleBulkDuplicateWrapper}
+                                    className="btn"
+                                    style={{ display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid var(--accent-primary)', color: 'var(--accent-primary)', fontSize: '0.9rem', background: 'rgba(204, 255, 0, 0.1)' }}
+                                >
+                                    <Copy size={16} /> Duplicar ({selectedWorkouts.length})
+                                </button>
+                                <button
+                                    onClick={handleBulkDeleteWrapper}
+                                    className="btn"
+                                    style={{ display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid var(--accent-danger)', color: 'var(--accent-danger)', fontSize: '0.9rem', background: 'rgba(255, 61, 0, 0.1)' }}
+                                >
+                                    <Trash2 size={16} /> Excluir ({selectedWorkouts.length})
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <button
+                                    onClick={() => setIsImportModalOpen(true)}
+                                    className="btn"
+                                    style={{ display: 'flex', alignItems: 'center', gap: '6px', border: '1px dashed var(--border-subtle)', color: 'var(--text-secondary)', fontSize: '0.9rem', background: 'transparent' }}
+                                >
+                                    <Download size={16} /> Importar Ciclo
+                                </button>
 
-                        {workouts.length > 0 && viewMode === 'list' && (
-                            <button onClick={handleClearAll} className="btn" style={{ color: '#ef4444', border: '1px solid #7f1d1d', background: 'rgba(239, 68, 68, 0.1)', fontSize: '0.9rem' }}>
-                                Limpar
-                            </button>
+                                {workouts.length > 0 && viewMode === 'list' && (
+                                    <button onClick={handleClearAll} className="btn" style={{ color: '#ef4444', border: '1px solid #7f1d1d', background: 'rgba(239, 68, 68, 0.1)', fontSize: '0.9rem' }}>
+                                        Limpar
+                                    </button>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>
@@ -168,6 +223,19 @@ const WorkoutsPage = () => {
                                                 >
                                                     <div className={styles.cardHeader}>
                                                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                            {/* Checkbox for Bulk Selection */}
+                                                            {viewMode === 'list' && (
+                                                                <div
+                                                                    onClick={(e) => { e.stopPropagation(); toggleSelection(w.id); }}
+                                                                    style={{ cursor: 'pointer', marginRight: '4px', display: 'flex', alignItems: 'center' }}
+                                                                >
+                                                                    {selectedWorkouts.includes(w.id)
+                                                                        ? <CheckSquare size={20} color="var(--accent-primary)" />
+                                                                        : <Square size={20} color="var(--text-muted)" />
+                                                                    }
+                                                                </div>
+                                                            )}
+
                                                             <span className={styles.weekBadge} style={{ background: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>Semana {w.meta?.week}</span>
                                                             <div style={{
                                                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
