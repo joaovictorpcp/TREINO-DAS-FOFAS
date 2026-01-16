@@ -20,6 +20,7 @@ import RegisterPage from './pages/RegisterPage';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import AdminRoute from './components/Auth/AdminRoute';
 import NotFoundPage from './pages/NotFoundPage';
+import StudentArea from './pages/StudentArea';
 
 function App() {
   return (
@@ -39,28 +40,28 @@ function App() {
 
 // Separate component to access useStudent context
 const MainContent = () => {
-
-
   return (
     <Layout>
-
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/gateway" element={<ProtectedRoute><StudentGateway /></ProtectedRoute>} />
         <Route path="/register" element={<RegisterPage />} />
 
-        {/* Protected Student Routes */}
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/create" element={<ProtectedRoute><CreateWorkout /></ProtectedRoute>} />
-        <Route path="/mesocycle-builder" element={<ProtectedRoute><MesocycleBuilder /></ProtectedRoute>} />
+        {/* ALUNO AREA */}
+        <Route path="/area-do-aluno" element={<ProtectedRoute><StudentArea /></ProtectedRoute>} />
+
+        {/* Protected COACH Routes */}
+        <Route path="/dashboard" element={<AdminRoute><Dashboard /></AdminRoute>} />
+        <Route path="/create" element={<AdminRoute><CreateWorkout /></AdminRoute>} />
+        <Route path="/mesocycle-builder" element={<AdminRoute><MesocycleBuilder /></AdminRoute>} />
+        <Route path="/students" element={<AdminRoute><StudentsPage /></AdminRoute>} />
+
+        {/* SHARED Routes (Accessible by both, provided they have student context selected) */}
         <Route path="/workouts" element={<ProtectedRoute><WorkoutsPage /></ProtectedRoute>} />
         <Route path="/edit/:id" element={<ProtectedRoute><CreateWorkout /></ProtectedRoute>} />
         <Route path="/performance" element={<ProtectedRoute><PerformancePage /></ProtectedRoute>} />
         <Route path="/weight" element={<ProtectedRoute><WeightTrackerPage /></ProtectedRoute>} />
         <Route path="/calculator" element={<ProtectedRoute><CalculatorPage /></ProtectedRoute>} />
-
-        {/* Protected Admin/Trainer Route */}
-        <Route path="/students" element={<AdminRoute><StudentsPage /></AdminRoute>} />
 
         {/* 404 Catch-All */}
         <Route path="*" element={<NotFoundPage />} />

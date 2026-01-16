@@ -9,7 +9,7 @@ import styles from './Layout.module.css';
 
 const Layout = ({ children }) => {
     const { selectedStudentId, setSelectedStudentId } = useStudent();
-    const { session } = useAuth();
+    const { session, role } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -41,43 +41,45 @@ const Layout = ({ children }) => {
                     {/* Desktop Navigation (Sidebar) */}
                     {session && selectedStudentId && (
                         <nav className={styles.nav} style={{ marginTop: '3rem' }}>
-                            {/* Sliding Active Indicator */}
-                            <div
-                                className={styles.activeIndicator}
-                                style={{
-                                    top: (() => {
-                                        const paths = ['/dashboard', '/workouts', '/mesocycle-builder', '/performance', '/weight', '/calculator'];
-                                        const currentPath = location.pathname;
-                                        // Simple approximation: check which path is active
-                                        const index = paths.findIndex(p => currentPath === p || (p !== '/dashboard' && currentPath.startsWith(p)));
-                                        return index !== -1 ? `${index * (50 + 24)}px` : '-100px'; // 50px height + 24px gap (1.5rem)
-                                    })(),
-                                    opacity: (() => { // Hide if no match
-                                        const paths = ['/dashboard', '/workouts', '/mesocycle-builder', '/performance', '/weight', '/calculator'];
-                                        const currentPath = location.pathname;
-                                        return paths.some(p => currentPath === p || (p !== '/dashboard' && currentPath.startsWith(p))) ? 1 : 0;
-                                    })()
-                                }}
-                            />
-
-                            <NavLink to="/dashboard" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)}>
-                                <Home size={24} />
-                            </NavLink>
-                            <NavLink to="/workouts" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)}>
-                                <Activity size={24} />
-                            </NavLink>
-                            <NavLink to="/mesocycle-builder" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)}>
-                                <PlusCircle size={24} />
-                            </NavLink>
-                            <NavLink to="/performance" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)}>
-                                <TrendingUp size={24} />
-                            </NavLink>
-                            <NavLink to="/weight" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)}>
-                                <Scale size={24} />
-                            </NavLink>
-                            <NavLink to="/calculator" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)}>
-                                <Calculator size={24} />
-                            </NavLink>
+                            {role === 'professor' ? (
+                                <>
+                                    {/* --- PROFESSOR MENU --- */}
+                                    <NavLink to="/dashboard" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)}>
+                                        <Home size={24} />
+                                    </NavLink>
+                                    <NavLink to="/workouts" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)}>
+                                        <Activity size={24} />
+                                    </NavLink>
+                                    <NavLink to="/mesocycle-builder" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)}>
+                                        <PlusCircle size={24} />
+                                    </NavLink>
+                                    <NavLink to="/performance" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)}>
+                                        <TrendingUp size={24} />
+                                    </NavLink>
+                                    <NavLink to="/weight" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)}>
+                                        <Scale size={24} />
+                                    </NavLink>
+                                    <NavLink to="/calculator" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)}>
+                                        <Calculator size={24} />
+                                    </NavLink>
+                                </>
+                            ) : (
+                                <>
+                                    {/* --- ALUNO MENU --- */}
+                                    {/* Início -> Area do Aluno */}
+                                    <NavLink to="/area-do-aluno" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)} title="Página Inicial">
+                                        <Home size={24} />
+                                    </NavLink>
+                                    {/* Meus Treinos -> Workouts List */}
+                                    <NavLink to="/workouts" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)} title="Meus Treinos">
+                                        <Activity size={24} />
+                                    </NavLink>
+                                    {/* Performance */}
+                                    <NavLink to="/performance" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)} title="Performance">
+                                        <TrendingUp size={24} />
+                                    </NavLink>
+                                </>
+                            )}
 
                             {/* Exit Button - Last Slot */}
                             <button
@@ -86,7 +88,7 @@ const Layout = ({ children }) => {
                                     navigate('/gateway');
                                 }}
                                 className={styles.navLink}
-                                style={{ border: 'none', cursor: 'pointer', color: 'var(--text-muted)', marginTop: 'auto' }} // auto margin pushes it if container is flex col h-full, but nav is likely just flex col.
+                                style={{ border: 'none', cursor: 'pointer', color: 'var(--text-muted)', marginTop: 'auto' }}
                                 title="Sair / Trocar Aluno"
                             >
                                 <LogOut size={24} />
@@ -103,30 +105,56 @@ const Layout = ({ children }) => {
             {/* Mobile Bottom Nav */}
             {session && selectedStudentId && (
                 <nav className={styles.mobileNav}>
-                    <NavLink to="/dashboard" onClick={handleNavClick} className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}>
-                        <Home size={20} />
-                        <span>Início</span>
-                    </NavLink>
-                    <NavLink to="/workouts" onClick={handleNavClick} className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}>
-                        <Activity size={20} />
-                        <span>Treinos</span>
-                    </NavLink>
-                    <NavLink to="/mesocycle-builder" onClick={handleNavClick} className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}>
-                        <PlusCircle size={20} />
-                        <span>Criar</span>
-                    </NavLink>
-                    <NavLink to="/performance" onClick={handleNavClick} className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}>
-                        <TrendingUp size={20} />
-                        <span>Performance</span>
-                    </NavLink>
-                    <NavLink to="/weight" onClick={handleNavClick} className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}>
-                        <Scale size={20} />
-                        <span>Peso</span>
-                    </NavLink>
-                    <NavLink to="/calculator" onClick={handleNavClick} className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}>
-                        <Calculator size={20} />
-                        <span>Calc</span>
-                    </NavLink>
+                    {role === 'professor' ? (
+                        <>
+                            <NavLink to="/dashboard" onClick={handleNavClick} className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}>
+                                <Home size={20} />
+                                <span>Início</span>
+                            </NavLink>
+                            <NavLink to="/workouts" onClick={handleNavClick} className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}>
+                                <Activity size={20} />
+                                <span>Treinos</span>
+                            </NavLink>
+                            <NavLink to="/mesocycle-builder" onClick={handleNavClick} className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}>
+                                <PlusCircle size={20} />
+                                <span>Criar</span>
+                            </NavLink>
+                            <NavLink to="/performance" onClick={handleNavClick} className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}>
+                                <TrendingUp size={20} />
+                                <span>Perf.</span>
+                            </NavLink>
+                            <NavLink to="/weight" onClick={handleNavClick} className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}>
+                                <Scale size={20} />
+                                <span>Peso</span>
+                            </NavLink>
+                        </>
+                    ) : (
+                        <>
+                            <NavLink to="/area-do-aluno" onClick={handleNavClick} className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}>
+                                <Home size={20} />
+                                <span>Início</span>
+                            </NavLink>
+                            <NavLink to="/workouts" onClick={handleNavClick} className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}>
+                                <Activity size={20} />
+                                <span>Treinos</span>
+                            </NavLink>
+                            <NavLink to="/performance" onClick={handleNavClick} className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}>
+                                <TrendingUp size={20} />
+                                <span>Perf.</span>
+                            </NavLink>
+                            <button
+                                onClick={() => {
+                                    setSelectedStudentId(null);
+                                    navigate('/gateway');
+                                }}
+                                className={styles.mobileNavItem}
+                                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)' }}
+                            >
+                                <LogOut size={20} />
+                                <span>Sair</span>
+                            </button>
+                        </>
+                    )}
                 </nav>
             )}
         </div>

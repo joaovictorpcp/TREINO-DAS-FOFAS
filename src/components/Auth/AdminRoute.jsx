@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Lock, Loader2 } from 'lucide-react';
 
 const AdminRoute = ({ children }) => {
-    const { session, loading } = useAuth();
+    const { session, loading, role } = useAuth();
     const location = useLocation();
 
     if (loading) {
@@ -27,7 +27,12 @@ const AdminRoute = ({ children }) => {
 
     if (!session) {
         // Redirect to login page, saving the current location they were trying to go to
-        return <Navigate to="/login" state={{ from: location }} replace />;
+        return <Navigate to="/" state={{ from: location }} replace />;
+    }
+
+    // Role Check
+    if (role === 'aluno') {
+        return <Navigate to="/area-do-aluno" replace />;
     }
 
     return children;
