@@ -433,16 +433,16 @@ export const WorkoutProvider = ({ children }) => {
       const newWorkouts = selectedWorkouts.map(w => {
         let newDate;
         if (targetDateStr) {
-          // Fix: Parse YYYY-MM-DD manually to create a Local Date at midnight
+          // Fix: Parse YYYY-MM-DD manually to create a Local Date at NOON to prevent timezone shifts
           const [y, m, d] = targetDateStr.split('-').map(Number);
-          newDate = new Date(y, m - 1, d);
+          newDate = new Date(y, m - 1, d, 12, 0, 0);
         } else {
           newDate = new Date(w.date);
         }
 
         // If creating on same day, ensure unique ID (Supabase does this)
-        // Clean ID and timestamps
-        const { id, created_at, ...rest } = w;
+        // Clean ID, created_at, and frontend-only studentId
+        const { id, created_at, studentId, ...rest } = w;
 
         return {
           ...rest,
