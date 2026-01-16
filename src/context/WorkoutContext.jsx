@@ -32,7 +32,6 @@ export const WorkoutProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      // console.log('[WorkoutContext] Fetching workouts for user:', session?.user?.id);
 
       const { data, error } = await supabase
         .from('workouts')
@@ -43,8 +42,6 @@ export const WorkoutProvider = ({ children }) => {
         console.error('[WorkoutContext] Supabase Error:', error);
         throw error;
       };
-
-      // console.log('[WorkoutContext] Fetched count:', data?.length);
 
       // Map DB columns to App state (student_id -> studentId)
       const mapped = (data || []).map(w => ({
@@ -434,7 +431,14 @@ export const WorkoutProvider = ({ children }) => {
     try {
       const selectedWorkouts = workouts.filter(w => ids.includes(w.id));
       const newWorkouts = selectedWorkouts.map(w => {
-        const newDate = targetDateStr ? new Date(targetDateStr) : new Date(w.date);
+        let newDate;
+        if (targetDateStr) {
+          // Fix: Parse YYYY-MM-DD manually to create a Local Date at midnight
+          const [y, m, d] = targetDateStr.split('-').map(Number);
+          newDate = new Date(y, m - 1, d);
+        } else {
+          newDate = new Date(w.date);
+        }
 
         // If creating on same day, ensure unique ID (Supabase does this)
         // Clean ID and timestamps

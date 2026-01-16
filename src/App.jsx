@@ -39,7 +39,7 @@ function App() {
 
 // Separate component to access useStudent context
 const MainContent = () => {
-  // const { selectedStudentId } = useStudent(); // Used by Layout internally now
+
 
   return (
     <Layout>

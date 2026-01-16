@@ -184,7 +184,51 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            <div style={{ zIndex: 2, marginTop: isCompact ? '1rem' : '1.5rem' }}>
+            {/* Compact Exercise List */}
+            {workout.exercises && workout.exercises.length > 0 && (
+                <div style={{
+                    marginTop: '1.5rem',
+                    marginBottom: '1.5rem',
+                    background: 'rgba(0,0,0,0.2)',
+                    borderRadius: '12px',
+                    padding: '12px',
+                    maxHeight: '220px',
+                    overflowY: 'auto'
+                }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', fontWeight: 700 }}>
+                        Resumo da Sessão
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {workout.exercises.map((ex, idx) => {
+                            const isSuperset = !!ex.supersetId;
+                            // Check previous/next for visual grouping
+                            const prevIsSame = idx > 0 && workout.exercises[idx - 1].supersetId === ex.supersetId;
+                            const nextIsSame = idx < workout.exercises.length - 1 && workout.exercises[idx + 1].supersetId === ex.supersetId;
+
+                            return (
+                                <div key={idx} style={{
+                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                    padding: '8px 12px',
+                                    background: 'var(--bg-secondary)',
+                                    borderRadius: '8px',
+                                    borderLeft: isSuperset ? '3px solid var(--accent-primary)' : '3px solid transparent',
+                                    marginLeft: isSuperset ? (prevIsSame ? '12px' : '0') : '0', // Indent logic or just border
+                                    marginBottom: (isSuperset && nextIsSame) ? '-4px' : '0' // Visually merge?
+                                }}>
+                                    <span style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 500, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        {ex.name || 'Exercício sem nome'}
+                                    </span>
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600, marginLeft: '12px' }}>
+                                        {ex.sets}x{ex.reps}
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            <div style={{ zIndex: 2, marginTop: isCompact ? '0' : '1.5rem' }}>
                 <button
                     onClick={() => navigate(`/edit/${workout.id}`)}
                     className="btn-primary"
