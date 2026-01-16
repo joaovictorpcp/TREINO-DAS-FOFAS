@@ -55,10 +55,14 @@ export const AuthProvider = ({ children }) => {
         let mounted = true;
 
         // Safety Timeout: Force loading to false after 5 seconds to prevent infinite hang
-        const safetyTimeout = setTimeout(() => {
+        const safetyTimeout = setTimeout(async () => {
             if (mounted && loading) {
-                console.warn('[Auth] Session check timed out. Forcing loading to false.');
+                console.warn('[Auth] Session check timed out. Forcing logout and clearing state.');
                 setLoading(false);
+                await supabase.auth.signOut();
+                setSession(null);
+                setRole(null);
+                alert('Sessão expirada ou instável. Por favor, faça login novamente.');
             }
         }, 5000);
 
