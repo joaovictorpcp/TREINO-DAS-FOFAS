@@ -175,9 +175,24 @@
     }
 
     /* Active State handled by Indicator, just text color here */
+    /* Active State handled by Indicator, just text color here */
     .navLink.active {
+        color: var(--text-primary);
+        /* Ensure specific style override if using indicator, or fallback */
+        /* If the sliding indicator is behind, perhaps White or Black depends on contrast. 
+           User said "stays black, cannot see". This implies it's black on dark.
+           Let's set it to White (text-primary) or Accent if they want it 'highlighted'.
+           Standard usually means White or Accent. I'll use text-primary for high contrast 
+           if the indicator is the accent color. */
         color: #000;
-        /* background removal handled by omitting background property or setting transparent above */
+        /* Wait, if indicator IS working, black is correct for Neon Green. */
+        /* If user says "cannot see", maybe indicator is NOT working for their new routes? */
+        /* I will change it to 'var(--accent-primary)' and remove the sliding indicator dependency for text color 
+           OR assume indicator is broken. 
+           SAFEST bet: color: var(--accent-primary); background: rgba(...) like mobile. */
+        color: var(--accent-primary);
+        background: rgba(204, 255, 0, 0.1);
+        /* Matches mobile style roughly */
     }
 
     /* Sliding Active Indicator */
