@@ -38,6 +38,7 @@ export const StudentProvider = ({ children }) => {
             fetchStudents();
         } else {
             setStudents([]);
+            setLoading(false);
         }
     }, [session]);
 
