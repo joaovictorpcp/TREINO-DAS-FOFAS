@@ -15,57 +15,89 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     const fetchUserRole = async (userId) => {
+        if (!userId) return 'aluno';
         try {
+            console.log(`[Auth] Fetching role for user ${userId}...`);
             const { data, error } = await supabase
                 .from('profiles')
                 .select('role')
                 .eq('id', userId)
-                .single();
+                .maybeSingle();
 
             if (error) {
-                console.error('Error fetching role:', error);
-                return 'aluno'; // Fallback
+                console.error('[Auth] Error fetching role:', error);
+                return 'aluno';
             }
-            return data?.role || 'aluno';
+
+            if (!data) {
+                console.warn('[Auth] User has no profile. Attempting to create one...');
+                const { error: insertError } = await supabase
+                    .from('profiles')
+                    .insert([{ id: userId, role: 'aluno' }]);
+
+                if (insertError) {
+                    console.error('[Auth] Failed to create default profile:', insertError);
+                } else {
+                    console.log('[Auth] Default profile created successfully.');
+                }
+                return 'aluno';
+            }
+
+            console.log(`[Auth] Role fetched: ${data.role}`);
+            return data.role || 'aluno';
         } catch (error) {
-            console.error('Unexpected error fetching role:', error);
+            console.error('[Auth] Unexpected error fetching role:', error);
             return 'aluno';
         }
     };
 
     useEffect(() => {
-        // Check active sessions and sets the user
+        let mounted = true;
+
         const initSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            setSession(session);
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
 
-            if (session?.user) {
-                const userRole = await fetchUserRole(session.user.id);
-                setRole(userRole);
-            } else {
-                setRole(null);
+                if (mounted) {
+                    setSession(session);
+                    if (session?.user) {
+                        const userRole = await fetchUserRole(session.user.id);
+                        if (mounted) setRole(userRole);
+                    } else {
+                        if (mounted) setRole(null);
+                    }
+                }
+            } catch (error) {
+                console.error('[Auth] Session init error:', error);
+            } finally {
+                if (mounted) setLoading(false);
             }
-
-            setLoading(false);
         };
 
         initSession();
 
-        // Listen for changes on auth state (sign in, sign out, etc.)
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            setSession(session);
+            if (!mounted) return;
+            try {
+                setSession(session);
 
-            if (session?.user) {
-                const userRole = await fetchUserRole(session.user.id);
-                setRole(userRole);
-            } else {
-                setRole(null);
+                if (session?.user) {
+                    const userRole = await fetchUserRole(session.user.id);
+                    if (mounted) setRole(userRole);
+                } else {
+                    if (mounted) setRole(null);
+                }
+            } catch (error) {
+                console.error('[Auth] Auth state change error:', error);
+            } finally {
+                if (mounted) setLoading(false);
             }
-
-            setLoading(false);
         });
 
-        return () => subscription.unsubscribe();
+        return () => {
+            mounted = false;
+            subscription.unsubscribe();
+        };
     }, []);
 
     const signIn = async (email, password) => {
