@@ -86,8 +86,10 @@ export const AuthProvider = ({ children }) => {
 
         initSession();
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (!mounted) return;
+            console.log(`[Auth] Auth State Changed: ${event}`, session?.user?.id ? `User: ${session.user.id}` : 'No User');
+
             try {
                 setSession(session);
 
