@@ -31,16 +31,19 @@ export const AuthProvider = ({ children }) => {
 
             if (!data) {
                 console.warn('[Auth] User has no profile. Attempting to create one...');
+                // Try to get role from user metadata (set during sign-up)
+                const { data: { user: authUser } } = await supabase.auth.getUser();
+                const metaRole = authUser?.user_metadata?.role || 'aluno';
                 const { error: insertError } = await supabase
                     .from('profiles')
-                    .insert([{ id: userId, role: 'aluno' }]);
+                    .insert([{ id: userId, role: metaRole }]);
 
                 if (insertError) {
                     console.error('[Auth] Failed to create default profile:', insertError);
                 } else {
                     console.log('[Auth] Default profile created successfully.');
                 }
-                return 'aluno';
+                return metaRole;
             }
 
             console.log(`[Auth] Role fetched: ${data.role}`);
@@ -128,11 +131,15 @@ export const AuthProvider = ({ children }) => {
         role,
         loading,
         signIn,
-        signUp: (email, password) => supabase.auth.signUp({
+        signUp: (email, password, name, role = 'aluno') => supabase.auth.signUp({
             email,
             password,
             options: {
-                emailRedirectTo: window.location.origin
+                emailRedirectTo: window.location.origin,
+                data: {
+                    name,
+                    role
+                }
             }
         }),
         signOut

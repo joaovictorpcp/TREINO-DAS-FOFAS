@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { UserPlus, Mail, Lock, User, AlertCircle, ArrowRight } from 'lucide-react';
-import { supabase } from '../services/supabase';
+import { UserPlus, Mail, Lock, User, AlertCircle, ArrowRight, GraduationCap, Dumbbell } from 'lucide-react';
 
 const RegisterPage = () => {
     const { signUp } = useAuth();
@@ -11,6 +10,7 @@ const RegisterPage = () => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [role, setRole] = useState('aluno');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -20,27 +20,11 @@ const RegisterPage = () => {
         setError(null);
 
         try {
-            // 1. Create Auth User
-            const { data: authData, error: authError } = await signUp(email, password);
+            // 1. Create Auth User with role in metadata
+            const { data: authData, error: authError } = await signUp(email, password, name, role);
             if (authError) throw authError;
 
             if (authData?.user) {
-                // 2. Create Student Record
-                // We use the user's ID as the user_id foreign key
-                const { error: studentError } = await supabase
-                    .from('students')
-                    .insert([{
-                        user_id: authData.user.id,
-                        name: name,
-                        goal: 'Hipertrofia', // Default goal
-                        profile_data: {}
-                    }]);
-
-                if (studentError) {
-                    console.error("Error creating student profile:", studentError);
-                    // Continue anyway, user exists, maybe they can fix profile later
-                }
-
                 alert("Conta criada com sucesso! Faça login para continuar.");
                 navigate('/');
             } else {
@@ -69,7 +53,7 @@ const RegisterPage = () => {
             <div className="glass-panel" style={{
                 padding: '2.5rem',
                 width: '100%',
-                maxWidth: '400px',
+                maxWidth: '420px',
                 textAlign: 'center',
                 border: '1px solid var(--border-subtle)'
             }}>
@@ -103,6 +87,52 @@ const RegisterPage = () => {
                         {error}
                     </div>
                 )}
+
+                {/* Role Selector */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                    <button
+                        type="button"
+                        onClick={() => setRole('aluno')}
+                        style={{
+                            padding: '0.85rem 0.5rem',
+                            borderRadius: '10px',
+                            border: role === 'aluno' ? '2px solid #4ade80' : '1px solid var(--border-subtle)',
+                            background: role === 'aluno' ? 'rgba(74, 222, 128, 0.1)' : 'var(--bg-secondary)',
+                            color: role === 'aluno' ? '#4ade80' : 'var(--text-secondary)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontWeight: role === 'aluno' ? 700 : 400,
+                            transition: 'all 0.2s ease'
+                        }}
+                    >
+                        <Dumbbell size={22} />
+                        <span style={{ fontSize: '0.85rem' }}>Sou Aluno</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setRole('professor')}
+                        style={{
+                            padding: '0.85rem 0.5rem',
+                            borderRadius: '10px',
+                            border: role === 'professor' ? '2px solid #60a5fa' : '1px solid var(--border-subtle)',
+                            background: role === 'professor' ? 'rgba(96, 165, 250, 0.1)' : 'var(--bg-secondary)',
+                            color: role === 'professor' ? '#60a5fa' : 'var(--text-secondary)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontWeight: role === 'professor' ? 700 : 400,
+                            transition: 'all 0.2s ease'
+                        }}
+                    >
+                        <GraduationCap size={22} />
+                        <span style={{ fontSize: '0.85rem' }}>Sou Professor</span>
+                    </button>
+                </div>
 
                 <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
@@ -158,7 +188,7 @@ const RegisterPage = () => {
                     <button
                         type="submit"
                         className="btn btn-primary"
-                        style={{ width: '100%', marginTop: '0.5rem', justifyContent: 'center', background: '#4ade80', color: '#000' }}
+                        style={{ width: '100%', marginTop: '0.5rem', justifyContent: 'center', background: role === 'professor' ? '#60a5fa' : '#4ade80', color: '#000' }}
                         disabled={loading}
                     >
                         {loading ? 'Criando...' : (
