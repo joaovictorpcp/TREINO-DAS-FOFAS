@@ -21,41 +21,24 @@ export const AuthProvider = ({ children }) => {
      * The user object is passed directly from the session or auth event.
      */
     const fetchUserRole = async (userId, userMetadata = {}) => {
-        if (!userId) return 'aluno';
+        console.log(`[Auth] Fetching role for user ${userId}...`);
         try {
-            console.log(`[Auth] Fetching role for user ${userId}...`);
+            // Tenta buscar do banco de dados
             const { data, error } = await supabase
                 .from('profiles')
                 .select('role')
                 .eq('id', userId)
-                .maybeSingle();
+                .single();
 
             if (error) {
-                console.error('[Auth] Error fetching role:', error);
-                return 'aluno';
+                console.error('[Auth] Erro do Supabase ao buscar role:', error.message);
+                // Se der erro no banco, tenta usar o que está no metadata, ou assume 'aluno'
+                return userMetadata?.role || 'aluno';
             }
 
-            if (!data) {
-                // No profile yet — create one using role from user_metadata
-                // (the DB trigger handle_new_user should have already done this,
-                //  but as a safety fallback we do it here too)
-                const metaRole = userMetadata?.role || 'aluno';
-                console.warn(`[Auth] No profile found. Creating with role="${metaRole}"...`);
-                const { error: insertError } = await supabase
-                    .from('profiles')
-                    .insert([{ id: userId, role: metaRole }]);
+            console.log(`[Auth] Role fetched: ${data?.role}`);
+            return data?.role || 'aluno';
 
-                if (insertError && insertError.code !== '23505') {
-                    // 23505 = unique_violation (profile already exists — race condition, safe to ignore)
-                    console.error('[Auth] Failed to create default profile:', insertError);
-                } else {
-                    console.log('[Auth] Default profile created or already existed.');
-                }
-                return metaRole;
-            }
-
-            console.log(`[Auth] Role fetched: ${data.role}`);
-            return data.role || 'aluno';
         } catch (error) {
             console.error('[Auth] Unexpected error fetching role:', error);
             return 'aluno';
