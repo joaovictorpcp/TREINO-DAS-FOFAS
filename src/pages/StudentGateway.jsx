@@ -1,15 +1,40 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useStudent } from '../context/StudentContext';
 import { useWorkout } from '../context/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
-import { Plus, UserCircle, Trash2, Dumbbell } from 'lucide-react';
+import { UserCircle, Trash2 } from 'lucide-react';
+import { supabase } from '../services/supabase';
 
 const StudentGateway = () => {
-    const { students, setSelectedStudentId, addStudent, deleteStudent } = useStudent();
+    const { setSelectedStudentId, deleteStudent } = useStudent();
     const { workouts, clearWorkouts } = useWorkout();
     const navigate = useNavigate();
-    const [isCreating, setIsCreating] = useState(false);
-    const [data, setData] = useState({ name: '', birthDate: '', height: '', weight: '', gender: '' });
+
+    // Estados locais para buscar os alunos reais do banco
+    const [realStudents, setRealStudents] = useState([]);
+    const [loadingStudents, setLoadingStudents] = useState(true);
+
+    // Busca os alunos reais da tabela profiles
+    useEffect(() => {
+        const fetchRealStudents = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('role', 'aluno')
+                    .order('name');
+
+                if (error) throw error;
+                setRealStudents(data || []);
+            } catch (err) {
+                console.error('Erro ao buscar alunos:', err);
+            } finally {
+                setLoadingStudents(false);
+            }
+        };
+
+        fetchRealStudents();
+    }, []);
 
     // Clear selection on mount (when returning to Home)
     React.useEffect(() => {
@@ -31,31 +56,18 @@ const StudentGateway = () => {
 
     const handleCreate = (e) => {
         e.preventDefault();
-        if (!data.name.trim()) return;
-
-        // Clean up empty numbers
-        const profile = {
-            birthDate: data.birthDate || null,
-            height: data.height ? parseFloat(data.height) : null,
-            weight: data.weight ? parseFloat(data.weight) : null,
-            gender: data.gender || 'female'
-        };
-
-        addStudent(data.name, "Aluna", profile);
-
-        setData({ name: '', birthDate: '', height: '', weight: '', gender: '' });
-        setIsCreating(false);
+        // Temporarily empty until auto-registration or alternative logic is required
     };
 
     // Calculate basic stats for sorting or display
     const studentStats = useMemo(() => {
         const stats = {};
-        students.forEach(student => {
+        realStudents.forEach(student => {
             const count = workouts.filter(w => w.studentId === student.id).length;
             stats[student.id] = count;
         });
         return stats;
-    }, [students, workouts]);
+    }, [realStudents, workouts]);
 
     return (
         <div style={{
@@ -110,15 +122,21 @@ const StudentGateway = () => {
                     <span></span>
                 </div>
 
+                {/* Loading State or Empty State */}
+                {loadingStudents ? (
+                    <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>Carregando atletas...</div>
+                ) : realStudents.length === 0 ? (
+                    <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>
+                        Nenhuma atleta cadastrada. Peça para suas alunas criarem uma conta!
+                    </div>
+                ) : null}
+
                 {/* Student Rows */}
-                {students.map(student => {
+                {realStudents.map(student => {
                     const count = studentStats[student.id] || 0;
-                    const studentWorkouts = workouts.filter(w => w.studentId === student.id);
-                    let lastDate = '-';
-                    if (studentWorkouts.length > 0) {
-                        const maxDate = Math.max(...studentWorkouts.map(w => new Date(w.date).getTime()));
-                        lastDate = new Date(maxDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-                    }
+
+                    // Como ainda vamos desenvolver sessões e atividades reais futuramente, 
+                    // deixamos os placeholders ou apenas valores vazios conforme solicitado.
 
                     return (
                         <div
@@ -159,22 +177,22 @@ const StudentGateway = () => {
 
                             {/* Name */}
                             <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '1rem' }}>
-                                {student.name}
+                                {student.name || student.full_name || 'Aluna sem nome'}
                             </div>
 
-                            {/* Workouts Count */}
+                            {/* Workouts Count (Placeholder for now) */}
                             <div style={{ textAlign: 'center' }}>
                                 <span style={{
                                     background: '#18181B', padding: '4px 12px', borderRadius: '20px',
                                     fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-light)', border: '1px solid var(--border-subtle)'
                                 }}>
-                                    {count}
+                                    0
                                 </span>
                             </div>
 
-                            {/* Last Active */}
+                            {/* Atividade (Placeholder) */}
                             <div style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                {lastDate}
+                                -
                             </div>
 
                             {/* Delete */}
@@ -200,96 +218,7 @@ const StudentGateway = () => {
                 })}
             </div>
 
-            {/* Simple Modal */}
-            {isCreating && (
-                <div style={{
-                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)',
-                    backdropFilter: 'blur(4px)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    zIndex: 100
-                }} onClick={() => setIsCreating(false)}>
-                    <div className="glass-panel" style={{
-                        background: '#121212', padding: '2rem', borderRadius: '24px', width: '400px',
-                        border: '1px solid var(--border-subtle)'
-                    }} onClick={e => e.stopPropagation()}>
-                        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Nova Atleta</h2>
-                        <form onSubmit={handleCreate}>
-                            {/* Name */}
-                            <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>Nome</label>
-                                <input
-                                    autoFocus
-                                    type="text"
-                                    placeholder="Nome da atleta"
-                                    className="input"
-                                    value={data.name}
-                                    onChange={e => setData(prev => ({ ...prev, name: e.target.value }))}
-                                />
-                            </div>
-
-                            {/* Gender & DOB Row */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '1rem' }}>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>Gênero</label>
-                                    <select
-                                        className="input"
-                                        value={data.gender}
-                                        onChange={e => setData(prev => ({ ...prev, gender: e.target.value }))}
-                                        style={{ width: '100%' }}
-                                    >
-                                        <option value="">Selecione...</option>
-                                        <option value="female">Feminino</option>
-                                        <option value="male">Masculino</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>Data de Nascimento</label>
-                                    <input
-                                        type="date"
-                                        className="input"
-                                        value={data.birthDate}
-                                        onChange={e => setData(prev => ({ ...prev, birthDate: e.target.value }))}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Height & Weight Row */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '2rem' }}>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>Altura (cm)</label>
-                                    <input
-                                        type="number"
-                                        placeholder="165"
-                                        className="input"
-                                        value={data.height}
-                                        onChange={e => setData(prev => ({ ...prev, height: e.target.value }))}
-                                    />
-                                </div>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>Peso (kg)</label>
-                                    <input
-                                        type="number"
-                                        placeholder="60.5"
-                                        step="0.1"
-                                        className="input"
-                                        value={data.weight}
-                                        onChange={e => setData(prev => ({ ...prev, weight: e.target.value }))}
-                                    />
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'flex', gap: '12px' }}>
-                                <button type="button" onClick={() => setIsCreating(false)} className="btn" style={{ flex: 1, background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-subtle)' }}>
-                                    Cancelar
-                                </button>
-                                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
-                                    Adicionar
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+            {/* The old Simple Modal for creation was removed as athletes now register themselves via the RegisterPage */}
         </div>
     );
 };
