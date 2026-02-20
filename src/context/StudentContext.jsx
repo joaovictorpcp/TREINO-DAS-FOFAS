@@ -46,8 +46,9 @@ export const StudentProvider = ({ children }) => {
         try {
             setLoading(true);
             const { data, error } = await supabase
-                .from('students')
-                .select('*')
+                .from('profiles')
+                .select('id, name, role, email, profile_data')
+                .eq('role', 'aluno')
                 .order('name');
 
             if (error) throw error;
@@ -73,104 +74,28 @@ export const StudentProvider = ({ children }) => {
         }
     }, [selectedStudentId]);
 
-    const addStudent = async (name, goal, profileData = {}) => {
-        console.log('[StudentContext] addStudent called', { name, goal, profileData });
-
-        // STRENGTHENED CHECK: Fetch fresh user from Supabase to ensure token is valid for current project
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-        if (authError || !user) {
-            console.error('[StudentContext] Fresh Connection Check Failed:', authError);
-            console.log('Session context was:', session); // Log what the context thought it had
-            alert('Erro: Sessão inválida ou expirada. Por favor, faça login novamente.');
-            // Optional: You could trigger a logout here via a callback or window.location
-            return;
-        }
-
-        console.log('[StudentContext] Fresh User ID:', user.id);
-        const userId = user.id;
-
-        // Prepare new student object
-        // We'll store initial weight in profile_data.metrics if provided
-        let metrics = [];
-        if (profileData.weight) {
-            metrics.push({
-                id: crypto.randomUUID(),
-                weight: parseFloat(profileData.weight),
-                date: new Date().toISOString().split('T')[0],
-                created_at: new Date().toISOString()
-            });
-        }
-
-        const newStudentData = {
-            user_id: userId,
-            name,
-            goal,
-            profile_data: {
-                ...profileData,
-                metrics // Initialize with first metric
-            }
-        };
-
-        try {
-            console.log('[StudentContext] Sending to Supabase:', newStudentData);
-            const { data, error } = await supabase
-                .from('students')
-                .insert([newStudentData])
-                .select()
-                .single();
-
-            if (error) {
-                console.error('[StudentContext] Supabase Error:', error);
-                throw error;
-            }
-
-            console.log('[StudentContext] Success:', data);
-            const savedStudent = { ...data, ...(data.profile_data || {}) };
-            setStudents(prev => [...prev, savedStudent]);
-
-            // Auto select
-            if (students.length === 0) {
-                setSelectedStudentId(data.id);
-            }
-        } catch (error) {
-            console.error('Error adding student:', error);
-            alert(`Erro ao adicionar aluno: ${error.message || error.code}`);
-        }
-    };
+    // For now, if we still insert into 'students' for backward compatibility or if we are supposed to insert into 'profiles',
+    // However, the rule is new accounts (auth.users) automatically get profile via trigger.
+    // If the Coach can create accounts, they would need an Edge Function or trigger since inserting into auth.users from client without email/pwd is tricky.
+    // Assuming we just want to update the profile or the request implies the trigger handles creation.
+    // Let's keep the existing logic that tries to insert into 'students', OR if they want to insert directly to 'profiles':
+    console.log('[StudentContext] Note: Direct student creation from Gateway requires an Edge Function to create Auth user first.');
+    alert('Para adicionar um novo aluno, peça a ele(a) para criar uma conta na tela inicial (Criar Conta). O aluno aparecerá aqui automaticamente.');
 
     const deleteStudent = async (id) => {
-        try {
-            const { error } = await supabase
-                .from('students')
-                .delete()
-                .eq('id', id);
-
-            if (error) throw error;
-
-            setStudents(prev => prev.filter(s => s.id !== id));
-            if (selectedStudentId === id) {
-                setSelectedStudentId(null);
-            }
-        } catch (error) {
-            console.error('Error deleting student:', error);
-            alert('Erro ao apagar aluno.');
-        }
+        // Soft delete or just remove role? Usually we don't allow coaches to delete full auth users from client.
+        alert('A exclusão de usuários deve ser feita pelo painel administrativo do Supabase.');
     };
 
     const updateStudent = async (id, updatedData) => {
-        // We need to merge updatedData into the existing student
-        // Note: updatedData might contain top-level fields (name, goal) OR profile_data fields
-
         const student = students.find(s => s.id === id);
         if (!student) return;
 
         const { name, goal, ...profileUpdates } = updatedData;
 
-        // Prepare update object
+        // Prepare update object for profiles
         const updates = {};
         if (name) updates.name = name;
-        if (goal) updates.goal = goal;
 
         // Merge profile data
         if (Object.keys(profileUpdates).length > 0) {
@@ -182,7 +107,7 @@ export const StudentProvider = ({ children }) => {
 
         try {
             const { data, error } = await supabase
-                .from('students')
+                .from('profiles')
                 .update(updates)
                 .eq('id', id)
                 .select()

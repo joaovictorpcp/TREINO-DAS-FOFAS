@@ -110,39 +110,6 @@ const StudentGateway = () => {
                     <span></span>
                 </div>
 
-                {/* Add New Row */}
-                <div
-                    onClick={() => setIsCreating(true)}
-                    className="glass-panel"
-                    style={{
-                        background: 'rgba(255, 255, 255, 0.03)',
-                        borderRadius: '16px',
-                        border: '1px dashed var(--border-subtle)',
-                        padding: '1rem 1.5rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '12px',
-                        cursor: 'pointer',
-                        color: 'var(--text-secondary)',
-                        transition: 'all 0.2s',
-                        height: '72px'
-                    }}
-                    onMouseEnter={e => {
-                        e.currentTarget.style.borderColor = 'var(--accent-primary)';
-                        e.currentTarget.style.color = 'var(--text-primary)';
-                        e.currentTarget.style.background = 'rgba(0, 230, 118, 0.05)';
-                    }}
-                    onMouseLeave={e => {
-                        e.currentTarget.style.borderColor = 'var(--border-subtle)';
-                        e.currentTarget.style.color = 'var(--text-secondary)';
-                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
-                    }}
-                >
-                    <Plus size={20} />
-                    <span style={{ fontWeight: 600 }}>Nova Atleta</span>
-                </div>
-
                 {/* Student Rows */}
                 {students.map(student => {
                     const count = studentStats[student.id] || 0;

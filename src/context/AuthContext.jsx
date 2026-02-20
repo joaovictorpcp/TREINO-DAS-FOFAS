@@ -64,7 +64,7 @@ export const AuthProvider = ({ children }) => {
 
                 if (mounted) {
                     setSession(session);
-                    if (session?.user) {
+                    if (session?.user && !role) {
                         const userRole = await fetchUserRole(session.user.id, session.user.user_metadata);
                         if (mounted) setRole(userRole);
                     }
@@ -82,12 +82,16 @@ export const AuthProvider = ({ children }) => {
             console.log('[Auth] Evento recebido:', event);
 
             if (mounted) {
-                setSession(session);
-
-                // Silently update session on these events without showing loading screen or fetching role
+                // Ignore events that don't represent a true auth state change we care about re-rendering for
                 if (['TOKEN_REFRESHED', 'USER_UPDATED', 'INITIAL_SESSION'].includes(event)) {
+                    // Just silently update the session object if it changed
+                    if (session?.access_token !== session?.access_token) {
+                        setSession(session);
+                    }
                     return;
                 }
+
+                setSession(session);
 
                 if (event === 'SIGNED_IN' && session?.user && !role) {
                     setLoading(true);
