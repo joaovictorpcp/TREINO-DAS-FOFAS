@@ -64,13 +64,12 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         let mounted = true;
-        // Prevent multiple concurrent role fetches
-        let roleFetchController = null;
 
+        // Inicia o timeout de segurança
         const safetyTimeout = setTimeout(() => {
-            if (mounted && loading) {
+            if (mounted) {
                 console.warn('[Auth] Session check timed out. Forcing generic access.');
-                if (mounted) setLoading(false);
+                setLoading(false);
             }
         }, 6000);
 
@@ -86,58 +85,39 @@ export const AuthProvider = ({ children }) => {
                             session.user.user_metadata
                         );
                         if (mounted) setRole(userRole);
-                    } else {
-                        if (mounted) setRole(null);
                     }
                 }
             } catch (error) {
-                console.error('[Auth] Session init error:', error);
+                console.error('Erro ao iniciar sessão:', error);
             } finally {
-                if (mounted) setLoading(false);
-                clearTimeout(safetyTimeout);
+                if (mounted) {
+                    clearTimeout(safetyTimeout);
+                    setLoading(false);
+                }
             }
         };
 
         initSession();
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (!mounted) return;
-
-            // Skip INITIAL_SESSION — handled by initSession above to avoid double fetch
-            if (event === 'INITIAL_SESSION') return;
-
-            console.log(`[Auth] Auth State Changed: ${event}`, session?.user?.id ?? 'No User');
-
-            // Cancel any in-flight role fetch
-            if (roleFetchController) {
-                roleFetchController.cancelled = true;
-            }
-            const controller = { cancelled: false };
-            roleFetchController = controller;
-
-            try {
-                if (mounted) setSession(session);
-
-                if (session?.user) {
-                    const userRole = await fetchUserRole(
-                        session.user.id,
-                        session.user.user_metadata
-                    );
-                    if (mounted && !controller.cancelled) setRole(userRole);
-                } else {
-                    if (mounted && !controller.cancelled) setRole(null);
+        const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (mounted) {
+                setSession(session);
+                if (event === 'SIGNED_IN' && session?.user) {
+                    const userRole = await fetchUserRole(session.user.id, session.user.user_metadata);
+                    if (mounted) {
+                        setRole(userRole);
+                        setLoading(false);
+                    }
                 }
-            } catch (error) {
-                console.error('[Auth] Auth state change error:', error);
-            } finally {
-                if (mounted && !controller.cancelled) setLoading(false);
             }
         });
 
         return () => {
             mounted = false;
             clearTimeout(safetyTimeout);
-            subscription.unsubscribe();
+            if (authListener?.subscription) {
+                authListener.subscription.unsubscribe();
+            }
         };
     }, []);
 
