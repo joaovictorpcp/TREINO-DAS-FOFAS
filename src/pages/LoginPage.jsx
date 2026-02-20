@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Lock, LogIn, AlertCircle } from 'lucide-react';
 
 const LoginPage = () => {
-    const { signIn } = useAuth();
+    const { signIn, session, role } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -16,19 +16,28 @@ const LoginPage = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    // Efeito para observar session e role para redirecionar corretamente
+    useEffect(() => {
+        if (session && role) {
+            navigate(from, { replace: true });
+        }
+    }, [session, role, navigate, from]);
+
     const handleLogin = async (e) => {
         e.preventDefault();
+        // Não removemos o loading globalmente aqui para evitar que o botão volte
+        // a ficar clicável enquanto o useEffect redireciona.
         setLoading(true);
         setError(null);
 
         try {
             const { error } = await signIn(email, password);
             if (error) throw error;
-            navigate(from, { replace: true });
+            // O redirecionamento será feito pelo useEffect, 
+            // e o loading permanecerá true até desmontar.
         } catch (err) {
             setError(err.message || 'Falha ao fazer login');
-        } finally {
-            setLoading(false);
+            setLoading(false); // Retira o loading caso tenha dado erro
         }
     };
 

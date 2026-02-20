@@ -23,25 +23,34 @@ export const AuthProvider = ({ children }) => {
     const fetchUserRole = async (userId, userMetadata = {}) => {
         console.log(`[Auth] Fetching role for user ${userId}...`);
         try {
-            // Tenta buscar do banco de dados
-            const { data, error } = await supabase
+            const fetchPromise = supabase
                 .from('profiles')
                 .select('role')
                 .eq('id', userId)
                 .single();
 
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('TIMEOUT')), 3000)
+            );
+
+            console.log(`[Auth] Iniciando busca no DB com timeout de 3s...`);
+            const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
+
             if (error) {
                 console.error('[Auth] Erro do Supabase ao buscar role:', error.message);
-                // Se der erro no banco, tenta usar o que está no metadata, ou assume 'aluno'
                 return userMetadata?.role || 'aluno';
             }
 
-            console.log(`[Auth] Role fetched: ${data?.role}`);
+            console.log(`[Auth] DB Sucesso! Role fetched: ${data?.role}`);
             return data?.role || 'aluno';
 
         } catch (error) {
-            console.error('[Auth] Unexpected error fetching role:', error);
-            return 'aluno';
+            if (error.message === 'TIMEOUT') {
+                console.error('[Auth] ERRO DE TIMEOUT: O banco de dados (profiles) demorou mais de 3 segundos para responder. Abortando e retornando role fallback.');
+            } else {
+                console.error('[Auth] Unexpected error fetching role:', error);
+            }
+            return userMetadata?.role || 'aluno';
         }
     };
 
@@ -75,10 +84,14 @@ export const AuthProvider = ({ children }) => {
 
                 if (event === 'SIGNED_IN' && session?.user) {
                     setLoading(true);
-                    const userRole = await fetchUserRole(session.user.id, session.user.user_metadata);
-                    if (mounted) {
-                        setRole(userRole);
-                        setLoading(false);
+                    try {
+                        const userRole = await fetchUserRole(session.user.id, session.user.user_metadata);
+                        if (mounted) setRole(userRole);
+                    } catch (error) {
+                        console.error('[Auth] Erro não tratado no listener:', error);
+                        if (mounted) setRole('aluno');
+                    } finally {
+                        if (mounted) setLoading(false);
                     }
                 } else if (event === 'SIGNED_OUT') {
                     setRole(null);
