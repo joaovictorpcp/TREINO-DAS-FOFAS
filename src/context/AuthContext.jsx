@@ -79,10 +79,17 @@ export const AuthProvider = ({ children }) => {
         inicializarSessao();
 
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+            console.log('[Auth] Evento recebido:', event);
+
             if (mounted) {
                 setSession(session);
 
-                if (event === 'SIGNED_IN' && session?.user) {
+                // Silently update session on these events without showing loading screen or fetching role
+                if (['TOKEN_REFRESHED', 'USER_UPDATED', 'INITIAL_SESSION'].includes(event)) {
+                    return;
+                }
+
+                if (event === 'SIGNED_IN' && session?.user && !role) {
                     setLoading(true);
                     try {
                         const userRole = await fetchUserRole(session.user.id, session.user.user_metadata);
