@@ -14,7 +14,13 @@ export const AuthProvider = ({ children }) => {
     const [role, setRole] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    const fetchUserRole = async (userId) => {
+    /**
+     * Fetch the role from the profiles table.
+     * IMPORTANT: Do NOT call supabase.auth.getUser() here — it can re-trigger
+     * onAuthStateChange and cause an infinite loop.
+     * The user object is passed directly from the session or auth event.
+     */
+    const fetchUserRole = async (userId, userMetadata = {}) => {
         if (!userId) return 'aluno';
         try {
             console.log(`[Auth] Fetching role for user ${userId}...`);
@@ -30,18 +36,20 @@ export const AuthProvider = ({ children }) => {
             }
 
             if (!data) {
-                console.warn('[Auth] User has no profile. Attempting to create one...');
-                // Try to get role from user metadata (set during sign-up)
-                const { data: { user: authUser } } = await supabase.auth.getUser();
-                const metaRole = authUser?.user_metadata?.role || 'aluno';
+                // No profile yet — create one using role from user_metadata
+                // (the DB trigger handle_new_user should have already done this,
+                //  but as a safety fallback we do it here too)
+                const metaRole = userMetadata?.role || 'aluno';
+                console.warn(`[Auth] No profile found. Creating with role="${metaRole}"...`);
                 const { error: insertError } = await supabase
                     .from('profiles')
                     .insert([{ id: userId, role: metaRole }]);
 
-                if (insertError) {
+                if (insertError && insertError.code !== '23505') {
+                    // 23505 = unique_violation (profile already exists — race condition, safe to ignore)
                     console.error('[Auth] Failed to create default profile:', insertError);
                 } else {
-                    console.log('[Auth] Default profile created successfully.');
+                    console.log('[Auth] Default profile created or already existed.');
                 }
                 return metaRole;
             }
@@ -56,16 +64,15 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         let mounted = true;
+        // Prevent multiple concurrent role fetches
+        let roleFetchController = null;
 
-        // Safety Timeout: Force loading to false after 5 seconds if getting role hangs
         const safetyTimeout = setTimeout(() => {
             if (mounted && loading) {
                 console.warn('[Auth] Session check timed out. Forcing generic access.');
                 if (mounted) setLoading(false);
-                // We do NOT log out here anymore to avoid loops.
-                // If init fails, the user might see a broken state, but won't be in a loop.
             }
-        }, 5000);
+        }, 6000);
 
         const initSession = async () => {
             try {
@@ -74,7 +81,10 @@ export const AuthProvider = ({ children }) => {
                 if (mounted) {
                     setSession(session);
                     if (session?.user) {
-                        const userRole = await fetchUserRole(session.user.id);
+                        const userRole = await fetchUserRole(
+                            session.user.id,
+                            session.user.user_metadata
+                        );
                         if (mounted) setRole(userRole);
                     } else {
                         if (mounted) setRole(null);
@@ -84,6 +94,7 @@ export const AuthProvider = ({ children }) => {
                 console.error('[Auth] Session init error:', error);
             } finally {
                 if (mounted) setLoading(false);
+                clearTimeout(safetyTimeout);
             }
         };
 
@@ -91,21 +102,35 @@ export const AuthProvider = ({ children }) => {
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (!mounted) return;
-            console.log(`[Auth] Auth State Changed: ${event}`, session?.user?.id ? `User: ${session.user.id}` : 'No User');
+
+            // Skip INITIAL_SESSION — handled by initSession above to avoid double fetch
+            if (event === 'INITIAL_SESSION') return;
+
+            console.log(`[Auth] Auth State Changed: ${event}`, session?.user?.id ?? 'No User');
+
+            // Cancel any in-flight role fetch
+            if (roleFetchController) {
+                roleFetchController.cancelled = true;
+            }
+            const controller = { cancelled: false };
+            roleFetchController = controller;
 
             try {
-                setSession(session);
+                if (mounted) setSession(session);
 
                 if (session?.user) {
-                    const userRole = await fetchUserRole(session.user.id);
-                    if (mounted) setRole(userRole);
+                    const userRole = await fetchUserRole(
+                        session.user.id,
+                        session.user.user_metadata
+                    );
+                    if (mounted && !controller.cancelled) setRole(userRole);
                 } else {
-                    if (mounted) setRole(null);
+                    if (mounted && !controller.cancelled) setRole(null);
                 }
             } catch (error) {
                 console.error('[Auth] Auth state change error:', error);
             } finally {
-                if (mounted) setLoading(false);
+                if (mounted && !controller.cancelled) setLoading(false);
             }
         });
 
@@ -136,10 +161,7 @@ export const AuthProvider = ({ children }) => {
             password,
             options: {
                 emailRedirectTo: window.location.origin,
-                data: {
-                    name,
-                    role
-                }
+                data: { name, role }
             }
         }),
         signOut
