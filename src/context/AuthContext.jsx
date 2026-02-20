@@ -67,14 +67,11 @@ export const AuthProvider = ({ children }) => {
 
         const inicializarSessao = async () => {
             try {
-                // 1. Pega a sessão atual
                 const { data: { session }, error } = await supabase.auth.getSession();
                 if (error) throw error;
 
                 if (mounted) {
                     setSession(session);
-
-                    // 2. Se tiver usuário, busca a role dele de forma segura
                     if (session?.user) {
                         const userRole = await fetchUserRole(session.user.id, session.user.user_metadata);
                         if (mounted) setRole(userRole);
@@ -83,20 +80,18 @@ export const AuthProvider = ({ children }) => {
             } catch (error) {
                 console.error('[Auth] Erro ao inicializar a sessão:', error);
             } finally {
-                // 3. Independentemente de dar certo ou errado, tira o loading!
                 if (mounted) setLoading(false);
             }
         };
 
         inicializarSessao();
 
-        // 4. Escuta mudanças (ex: quando o usuário acaba de fazer o login na tela)
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (mounted) {
                 setSession(session);
 
                 if (event === 'SIGNED_IN' && session?.user) {
-                    setLoading(true); // Garante a tela de carregamento durante a busca
+                    setLoading(true);
                     const userRole = await fetchUserRole(session.user.id, session.user.user_metadata);
                     if (mounted) {
                         setRole(userRole);
@@ -109,14 +104,13 @@ export const AuthProvider = ({ children }) => {
             }
         });
 
-        // 5. Limpeza de segurança quando o componente for desmontado
         return () => {
             mounted = false;
             if (authListener?.subscription) {
                 authListener.subscription.unsubscribe();
             }
         };
-    }, []); // <-- O array vazio garante que isso rode apenas 1 vez ao carregar a página
+    }, []);
 
     const signIn = async (email, password) => {
         return supabase.auth.signInWithPassword({ email, password });
