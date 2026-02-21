@@ -56,6 +56,7 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         let mounted = true;
+        let jaBuscouCargo = false; // <-- Nossa trava mágica contra o recarregamento de abas
 
         const inicializarSessao = async () => {
             try {
@@ -64,9 +65,12 @@ export const AuthProvider = ({ children }) => {
 
                 if (mounted) {
                     setSession(session);
-                    if (session?.user && !role) {
+                    if (session?.user) {
                         const userRole = await fetchUserRole(session.user.id, session.user.user_metadata);
-                        if (mounted) setRole(userRole);
+                        if (mounted) {
+                            setRole(userRole);
+                            jaBuscouCargo = true; // Marca que já temos os dados
+                        }
                     }
                 }
             } catch (error) {
@@ -79,34 +83,36 @@ export const AuthProvider = ({ children }) => {
         inicializarSessao();
 
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log('[Auth] Evento recebido:', event);
+            if (!mounted) return;
 
-            if (mounted) {
-                // Ignore events that don't represent a true auth state change we care about re-rendering for
-                if (['TOKEN_REFRESHED', 'USER_UPDATED', 'INITIAL_SESSION'].includes(event)) {
-                    // Just silently update the session object if it changed
-                    if (session?.access_token !== session?.access_token) {
-                        setSession(session);
-                    }
-                    return;
-                }
+            // 1. IGNORA MUDANÇAS DE ABA (O "porteiro" do Supabase)
+            if (event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+                setSession(session); // Atualiza os dados por baixo dos panos silenciosamente
+                return;
+            }
 
+            // 2. SE FIZER LOGOUT DE VERDADE
+            if (event === 'SIGNED_OUT') {
+                setSession(null);
+                setRole(null);
+                jaBuscouCargo = false; // Zera a trava para o próximo login
+                setLoading(false);
+                return;
+            }
+
+            // 3. SE FIZER LOGIN DE VERDADE NA TELA
+            if (event === 'SIGNED_IN' && session?.user) {
                 setSession(session);
 
-                if (event === 'SIGNED_IN' && session?.user && !role) {
+                // Só aciona o "Carregando" se realmente for um login novo que ainda não puxou o cargo
+                if (!jaBuscouCargo) {
                     setLoading(true);
-                    try {
-                        const userRole = await fetchUserRole(session.user.id, session.user.user_metadata);
-                        if (mounted) setRole(userRole);
-                    } catch (error) {
-                        console.error('[Auth] Erro não tratado no listener:', error);
-                        if (mounted) setRole('aluno');
-                    } finally {
-                        if (mounted) setLoading(false);
+                    const userRole = await fetchUserRole(session.user.id, session.user.user_metadata);
+                    if (mounted) {
+                        setRole(userRole);
+                        jaBuscouCargo = true;
+                        setLoading(false);
                     }
-                } else if (event === 'SIGNED_OUT') {
-                    setRole(null);
-                    setLoading(false);
                 }
             }
         });
