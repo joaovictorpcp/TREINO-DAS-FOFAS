@@ -37,7 +37,7 @@ export const StudentProvider = ({ children }) => {
                 .from('profiles')
                 .select('*')
                 .eq('role', 'aluno')
-                .order('name');
+                .order('id', { ascending: false });
 
             if (error) throw error;
 
