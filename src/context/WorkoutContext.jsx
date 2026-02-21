@@ -60,8 +60,9 @@ export const WorkoutProvider = ({ children }) => {
   const addWorkout = async (workout) => {
     if (!session?.user) return;
 
-    // Ensure we have a studentId!
+    // Ação Exigida: Trava de Segurança
     if (!workout.studentId) {
+      alert('Nenhum aluno selecionado! Não é possível salvar o treino.');
       console.error("Cannot add workout without studentId");
       return;
     }
@@ -320,11 +321,8 @@ export const WorkoutProvider = ({ children }) => {
 
       // CRITICAL FIX: Ensure student_id is NEVER null for upserts that might act as inserts
       if (!dbData.student_id) {
+        alert('Nenhum aluno selecionado! Não é possível salvar o treino (Upsert).');
         console.error("Attempting to save workout without student_id! This will cause RLS issues or missing data.");
-        // Try to recover from context if available? 
-        // Since we are inside generic context, we might not have 'selectedStudentId' easily accessible without importing 'useStudent' inside 'useWorkout'?
-        // Actually, 'WorkoutProvider' does NOT consume 'StudentContext'. 
-        // So we must rely on the caller passing it.
         throw new Error("Erro Crítico: ID do Aluno não fornecido ao salvar treino. (student_id missing)");
       }
 
@@ -669,6 +667,12 @@ export const WorkoutProvider = ({ children }) => {
     // Ensure we have a valid session user
     if (!session?.user) {
       alert("Erro: Você precisa estar logado para criar um mesociclo.");
+      return;
+    }
+
+    // Ação Exigida: Trava de Segurança
+    if (!studentId) {
+      alert('Nenhum aluno selecionado! Escolha um aluno antes de salvar o mesociclo.');
       return;
     }
 

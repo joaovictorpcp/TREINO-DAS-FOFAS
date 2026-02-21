@@ -1,12 +1,14 @@
 import React, { useMemo } from 'react';
 import { useStudent } from '../context/StudentContext';
 import { useWorkout } from '../context/WorkoutContext';
+import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { UserCircle, Trash2, Plus } from 'lucide-react';
 
 const StudentGateway = () => {
     const { students, setSelectedStudentId, deleteStudent } = useStudent();
     const { workouts, clearWorkouts } = useWorkout();
+    const { logout } = useAuth();
     const navigate = useNavigate();
 
     // Clear selection on mount (when returning to Home)
@@ -70,6 +72,34 @@ const StudentGateway = () => {
                     </div>
                 </h1>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>Módulo de Gerenciamento de Atletas</p>
+
+                <div style={{ marginTop: '1.5rem' }}>
+                    <button
+                        onClick={logout}
+                        style={{
+                            background: 'transparent',
+                            color: 'var(--text-secondary)',
+                            border: '1px solid var(--border-subtle)',
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '0.9rem',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                        }}
+                        onMouseEnter={e => {
+                            e.currentTarget.style.color = 'var(--text-primary)';
+                            e.currentTarget.style.borderColor = 'var(--text-muted)';
+                        }}
+                        onMouseLeave={e => {
+                            e.currentTarget.style.color = 'var(--text-secondary)';
+                            e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                        }}
+                    >
+                        Sair da Conta
+                    </button>
+                </div>
             </header>
 
             <div style={{

@@ -134,6 +134,15 @@ export const AuthProvider = ({ children }) => {
         return supabase.auth.signOut();
     };
 
+    const logout = async () => {
+        try {
+            await supabase.auth.signOut();
+            window.location.href = '/'; // Força a volta para a tela inicial de Login
+        } catch (error) {
+            console.error("Erro ao sair:", error);
+        }
+    };
+
     const value = {
         session,
         user: session?.user ?? null,
@@ -148,7 +157,8 @@ export const AuthProvider = ({ children }) => {
                 data: { name, role }
             }
         }),
-        signOut
+        signOut,
+        logout
     };
 
     return (
