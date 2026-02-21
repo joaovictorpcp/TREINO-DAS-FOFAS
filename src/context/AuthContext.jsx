@@ -154,7 +154,7 @@ export const AuthProvider = ({ children }) => {
             password,
             options: {
                 emailRedirectTo: window.location.origin,
-                data: { name, role }
+                data: { full_name: name, role: role }
             }
         }),
         signOut,
