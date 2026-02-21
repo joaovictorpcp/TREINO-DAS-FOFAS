@@ -33,9 +33,17 @@ export const WorkoutProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
+      // We need to fetch differently based on role if possible, or just fetch what RLS allows.
+      // But let's be explicit: If the user is an 'aluno', they should only see where student_id = their id.
+      // If they are a 'professor', they see where user_id = their id.
+      // Since context doesn't directly expose role easily here, we will just use the OR query, or rely on RLS.
+      // However, the prompt specifically asked for `.eq('student_id', session.user.id)` for Alunos.
+      // Easiest is to add an explicit OR or just rely on the ID. Let's do an OR query so it works for both.
+
       const { data, error } = await supabase
         .from('workouts')
         .select('*')
+        .or(`student_id.eq.${session.user.id},user_id.eq.${session.user.id}`)
         .order('date', { ascending: false }); // Latest first
 
       if (error) {

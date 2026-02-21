@@ -2,25 +2,35 @@ import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 import { useStudent } from '../context/StudentContext';
+import { useAuth } from '../context/AuthContext';
 import { Trophy, Rocket, Bike, Footprints, Waves } from 'lucide-react';
 import styles from './Dashboard.module.css';
 
 const Dashboard = () => {
     const context = useWorkout();
     const navigate = useNavigate();
+    const { session, role } = useAuth();
     const workouts = useMemo(() => Array.isArray(context.workouts) ? context.workouts : [], [context.workouts]);
     const { selectedStudentId, students } = useStudent();
 
+    // Determine the active ID based on role
+    // If student, their own ID is the target. If professor, it is the selected one.
+    const activeId = role === 'aluno' ? session?.user?.id : selectedStudentId;
+
     // If no student selected, user should stick to "Select Student" or "Loading"
-    const currentStudent = students.find(s => s.id === selectedStudentId);
+    const currentStudent = role === 'aluno'
+        ? { name: session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.name || 'Aluno' }
+        : students.find(s => s.id === activeId);
 
     // --- MISSED WORKOUTS LOGIC ---
     const missedStats = useMemo(() => {
-        if (!selectedStudentId) return { count: 0, compliance: 100 };
+        if (!activeId) return { count: 0, compliance: 100 };
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const studentWorkouts = workouts.filter(w => w.studentId === selectedStudentId);
+        // For alunos, their workouts are already filtered by the context, but let's be safe.
+        // Or we can just use `w.studentId === activeId`
+        const studentWorkouts = role === 'aluno' ? workouts : workouts.filter(w => w.studentId === activeId);
 
         // Count missed
         const missed = studentWorkouts.filter(w => {
@@ -47,7 +57,7 @@ const Dashboard = () => {
 
     // --- WEEKLY STRIP LOGIC ---
     const weeklyStatus = useMemo(() => {
-        if (!selectedStudentId) return [];
+        if (!activeId) return [];
         const today = new Date();
         const dayOfWeek = today.getDay(); // 0 (Sun) - 6 (Sat)
         const startOfWeek = new Date(today);
@@ -66,7 +76,7 @@ const Dashboard = () => {
 
             // Find workouts for this day
             const dayWorkouts = workouts.filter(w =>
-                w.studentId === selectedStudentId &&
+                (role === 'aluno' || w.studentId === activeId) &&
                 new Date(w.date).toDateString() === d.toDateString()
             );
 
@@ -89,14 +99,14 @@ const Dashboard = () => {
 
     // --- HERO LOGIC ---
     const heroContent = useMemo(() => {
-        if (!selectedStudentId) return { type: 'empty' };
+        if (!activeId) return { type: 'empty' };
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
         // Filter valid workouts: Today or Future
         const validWorkouts = workouts
-            .filter(w => w.studentId === selectedStudentId)
+            .filter(w => role === 'aluno' ? true : w.studentId === activeId)
             .filter(w => {
                 const d = new Date(w.date);
                 d.setHours(0, 0, 0, 0);
@@ -118,7 +128,7 @@ const Dashboard = () => {
 
     // --- GAMIFICATION: RANKING SYSTEM (Optional - keep minimal badge?) ---
     const rankingData = useMemo(() => {
-        if (!workouts || !students || !selectedStudentId) return null;
+        if (!workouts || !activeId) return null;
         const scores = {};
         workouts.forEach(w => {
             const s = (w.status || '').toLowerCase();
@@ -130,14 +140,14 @@ const Dashboard = () => {
             .map(([sId, score]) => ({ studentId: sId, score }))
             .sort((a, b) => b.score - a.score);
 
-        const myRankIndex = rankedList.findIndex(x => x.studentId === selectedStudentId);
-        const myScore = scores[selectedStudentId] || 0;
+        const myRankIndex = rankedList.findIndex(x => x.studentId === activeId);
+        const myScore = scores[activeId] || 0;
 
         return {
             rank: myRankIndex !== -1 ? myRankIndex + 1 : '-',
             score: myScore
         };
-    }, [workouts, students, selectedStudentId]);
+    }, [workouts, activeId]);
 
 
     const renderHeroCard = (workout, label = "PRÓXIMO TREINO", isCompact = false) => (
@@ -270,7 +280,7 @@ const Dashboard = () => {
         </div>
     );
 
-    if (!selectedStudentId) {
+    if (!activeId) {
         return <div className="p-4" style={{ textAlign: 'center', marginTop: '2rem', color: 'var(--text-muted)' }}>Selecione um aluno para começar.</div>;
     }
 

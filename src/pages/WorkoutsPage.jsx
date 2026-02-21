@@ -3,13 +3,17 @@ import { useWorkout } from '../context/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, List, Download, X, StickyNote, CheckCircle, Circle, ArrowRight, Dumbbell, Bike, Footprints, Waves, Clock, MapPin, LayoutGrid, CheckSquare, Square, Trash2, Copy } from 'lucide-react';
 import { useStudent } from '../context/StudentContext';
+import { useAuth } from '../context/AuthContext';
 import styles from './WorkoutsPage.module.css';
 import AttendanceCalendar from '../components/Student/AttendanceCalendar';
 
 const WorkoutsPage = () => {
     const { workouts, clearWorkouts, importMesocycle, bulkDeleteWorkouts, bulkDuplicateWorkouts } = useWorkout();
     const { selectedStudentId, students } = useStudent();
+    const { session, role } = useAuth();
     const navigate = useNavigate();
+
+    const activeId = role === 'aluno' ? session?.user?.id : selectedStudentId;
 
     const [viewMode, setViewMode] = useState('calendar'); // 'calendar' | 'list'
 
@@ -40,13 +44,13 @@ const WorkoutsPage = () => {
     };
 
     // Filter by Student
-    const displayedWorkouts = selectedStudentId
-        ? workouts.filter(w => w.studentId === selectedStudentId)
+    const displayedWorkouts = activeId
+        ? workouts.filter(w => w.studentId === activeId)
         : workouts;
 
     const handleClearAll = () => {
         if (window.confirm("Tem certeza que deseja apagar TODOS os treinos exibidos?")) {
-            clearWorkouts(selectedStudentId);
+            clearWorkouts(activeId);
         }
     };
 
@@ -155,13 +159,15 @@ const WorkoutsPage = () => {
                             </>
                         ) : (
                             <>
-                                <button
-                                    onClick={() => setIsImportModalOpen(true)}
-                                    className="btn"
-                                    style={{ display: 'flex', alignItems: 'center', gap: '6px', border: '1px dashed var(--border-subtle)', color: 'var(--text-secondary)', fontSize: '0.9rem', background: 'transparent' }}
-                                >
-                                    <Download size={16} /> Importar Ciclo
-                                </button>
+                                {role !== 'aluno' && (
+                                    <button
+                                        onClick={() => setIsImportModalOpen(true)}
+                                        className="btn"
+                                        style={{ display: 'flex', alignItems: 'center', gap: '6px', border: '1px dashed var(--border-subtle)', color: 'var(--text-secondary)', fontSize: '0.9rem', background: 'transparent' }}
+                                    >
+                                        <Download size={16} /> Importar Ciclo
+                                    </button>
+                                )}
 
                                 {workouts.length > 0 && viewMode === 'list' && (
                                     <button onClick={handleClearAll} className="btn" style={{ color: '#ef4444', border: '1px solid #7f1d1d', background: 'rgba(239, 68, 68, 0.1)', fontSize: '0.9rem' }}>
