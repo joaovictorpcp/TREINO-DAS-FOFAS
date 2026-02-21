@@ -2,8 +2,6 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from './AuthContext';
 
-/* eslint-disable react-refresh/only-export-components */
-
 const StudentContext = createContext();
 
 export const useStudent = () => {
@@ -19,19 +17,9 @@ export const StudentProvider = ({ children }) => {
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // Selected Student State
     const [selectedStudentId, setSelectedStudentId] = useState(() => {
         return localStorage.getItem('selectedStudentId') || null;
     });
-
-    // Body Metrics are derived from student data now, but we keep this state for compatibility/caching if needed
-    // Actually, let's derive it on the fly or fetch it separately?
-    // For simplicity, we'll fetch students and their data (including profile_data which has metrics?)
-    // Wait, the schema has profile_data for static info.
-    // AND we decided to keep metrics inside profile_data for now based on previous context analysis?
-    // Let's check the schema again: "profile_data jsonb default '{}'::jsonb, -- Stores height, gender, birthDate, etc."
-    // It DOES NOT explicitly say metrics array.
-    // However, to avoid creating a new table mid-flight, let's store metrics in `profile_data.metrics`.
 
     useEffect(() => {
         if (session?.user) {
@@ -47,16 +35,18 @@ export const StudentProvider = ({ children }) => {
             setLoading(true);
             const { data, error } = await supabase
                 .from('profiles')
-                .select('id, name, role, email, profile_data')
+                .select('*')
                 .eq('role', 'aluno')
                 .order('name');
 
             if (error) throw error;
-            // Flatten profile_data for compatibility with components expecting student.birthDate etc.
+
+            // Unificando profile_data. As vezes os dados vêm dentro de profile_data ou root.
             const mapped = (data || []).map(s => ({
                 ...s,
                 ...(s.profile_data || {})
             }));
+
             setStudents(mapped);
         } catch (error) {
             console.error('Error fetching students:', error);
@@ -65,7 +55,6 @@ export const StudentProvider = ({ children }) => {
         }
     };
 
-    // Persist Selection Locally
     useEffect(() => {
         if (selectedStudentId) {
             localStorage.setItem('selectedStudentId', selectedStudentId);
@@ -74,16 +63,7 @@ export const StudentProvider = ({ children }) => {
         }
     }, [selectedStudentId]);
 
-    // For now, if we still insert into 'students' for backward compatibility or if we are supposed to insert into 'profiles',
-    // However, the rule is new accounts (auth.users) automatically get profile via trigger.
-    // If the Coach can create accounts, they would need an Edge Function or trigger since inserting into auth.users from client without email/pwd is tricky.
-    // Assuming we just want to update the profile or the request implies the trigger handles creation.
-    // Let's keep the existing logic that tries to insert into 'students', OR if they want to insert directly to 'profiles':
-    console.log('[StudentContext] Note: Direct student creation from Gateway requires an Edge Function to create Auth user first.');
-    alert('Para adicionar um novo aluno, peça a ele(a) para criar uma conta na tela inicial (Criar Conta). O aluno aparecerá aqui automaticamente.');
-
     const deleteStudent = async (id) => {
-        // Soft delete or just remove role? Usually we don't allow coaches to delete full auth users from client.
         alert('A exclusão de usuários deve ser feita pelo painel administrativo do Supabase.');
     };
 
@@ -92,12 +72,9 @@ export const StudentProvider = ({ children }) => {
         if (!student) return;
 
         const { name, goal, ...profileUpdates } = updatedData;
-
-        // Prepare update object for profiles
         const updates = {};
         if (name) updates.name = name;
 
-        // Merge profile data
         if (Object.keys(profileUpdates).length > 0) {
             updates.profile_data = {
                 ...student.profile_data,
@@ -122,11 +99,10 @@ export const StudentProvider = ({ children }) => {
         }
     };
 
-    // Body Metrics Helpers - Now working on profile_data.metrics array
+    // --- Body Metrics (Working on profile_data.metrics array) ---
     const getBodyMetrics = (studentId) => {
         const student = students.find(s => s.id === studentId);
         if (!student || !student.profile_data?.metrics) return [];
-
         return student.profile_data.metrics.sort((a, b) => new Date(a.date) - new Date(b.date));
     };
 
@@ -134,11 +110,10 @@ export const StudentProvider = ({ children }) => {
         const student = students.find(s => s.id === studentId);
         if (!student) return;
 
-        const currentMetrics = student.profile_data.metrics || [];
-
+        const currentMetrics = student.profile_data?.metrics || [];
         const newMetric = {
             id: crypto.randomUUID(),
-            studentId, // redundant but useful for compatibility
+            studentId,
             weight: parseFloat(weight),
             date,
             skinfolds,
@@ -148,20 +123,11 @@ export const StudentProvider = ({ children }) => {
         };
 
         const updatedMetrics = [...currentMetrics, newMetric];
-
-        // Update via updateStudent which handles the profile_data merge
         await updateStudent(studentId, { metrics: updatedMetrics });
     };
 
     const deleteBodyMetric = async (id) => {
-        // Need to find which student has this metric
-        // Inefficient search, but safe enough for small data
-        // Ideally we pass studentId, but the interface is deleteBodyMetric(id)
-
-        // Actually, we can use selectedStudentId as usage is typically in context of a student
-        // Or find the student
         let targetStudent = students.find(s => s.profile_data?.metrics?.some(m => m.id === id));
-
         if (targetStudent) {
             const currentMetrics = targetStudent.profile_data.metrics || [];
             const updatedMetrics = currentMetrics.filter(m => m.id !== id);
@@ -171,7 +137,6 @@ export const StudentProvider = ({ children }) => {
 
     const updateBodyMetric = async (id, weight, date, skinfolds = null, bodyFat = null, circumferences = null) => {
         let targetStudent = students.find(s => s.profile_data?.metrics?.some(m => m.id === id));
-
         if (targetStudent) {
             const currentMetrics = targetStudent.profile_data.metrics || [];
             const updatedMetrics = currentMetrics.map(m => {
@@ -191,7 +156,6 @@ export const StudentProvider = ({ children }) => {
         }
     };
 
-    // Derived body metrics from all students (Restores compatibility with WeightTrackerPage consumption)
     const bodyMetrics = React.useMemo(() => {
         return students.flatMap(s => s.profile_data?.metrics || []);
     }, [students]);
@@ -202,10 +166,9 @@ export const StudentProvider = ({ children }) => {
             loading,
             selectedStudentId,
             setSelectedStudentId,
-            addStudent,
             deleteStudent,
             updateStudent,
-            bodyMetrics, // Deprecated but exposed to avoid breaking destructuring
+            bodyMetrics,
             addBodyMetric,
             getBodyMetrics,
             deleteBodyMetric,

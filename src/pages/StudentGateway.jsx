@@ -1,40 +1,13 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { useStudent } from '../context/StudentContext';
 import { useWorkout } from '../context/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
-import { UserCircle, Trash2 } from 'lucide-react';
-import { supabase } from '../services/supabase';
+import { UserCircle, Trash2, Plus } from 'lucide-react';
 
 const StudentGateway = () => {
-    const { setSelectedStudentId, deleteStudent } = useStudent();
+    const { students, setSelectedStudentId, deleteStudent } = useStudent();
     const { workouts, clearWorkouts } = useWorkout();
     const navigate = useNavigate();
-
-    // Estados locais para buscar os alunos reais do banco
-    const [realStudents, setRealStudents] = useState([]);
-    const [loadingStudents, setLoadingStudents] = useState(true);
-
-    // Busca os alunos reais da tabela profiles
-    useEffect(() => {
-        const fetchRealStudents = async () => {
-            try {
-                const { data, error } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('role', 'aluno')
-                    .order('name');
-
-                if (error) throw error;
-                setRealStudents(data || []);
-            } catch (err) {
-                console.error('Erro ao buscar alunos:', err);
-            } finally {
-                setLoadingStudents(false);
-            }
-        };
-
-        fetchRealStudents();
-    }, []);
 
     // Clear selection on mount (when returning to Home)
     React.useEffect(() => {
@@ -54,20 +27,16 @@ const StudentGateway = () => {
         }
     };
 
-    const handleCreate = (e) => {
-        e.preventDefault();
-        // Temporarily empty until auto-registration or alternative logic is required
-    };
 
     // Calculate basic stats for sorting or display
     const studentStats = useMemo(() => {
         const stats = {};
-        realStudents.forEach(student => {
+        (students || []).forEach(student => {
             const count = workouts.filter(w => w.studentId === student.id).length;
             stats[student.id] = count;
         });
         return stats;
-    }, [realStudents, workouts]);
+    }, [students, workouts]);
 
     return (
         <div style={{
@@ -122,17 +91,48 @@ const StudentGateway = () => {
                     <span></span>
                 </div>
 
-                {/* Loading State or Empty State */}
-                {loadingStudents ? (
-                    <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>Carregando atletas...</div>
-                ) : realStudents.length === 0 ? (
+                {/* Add New Row */}
+                <div
+                    onClick={() => alert('Para adicionar atletas, peça para criarem uma conta no app.')}
+                    className="glass-panel"
+                    style={{
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        borderRadius: '16px',
+                        border: '1px dashed var(--border-subtle)',
+                        padding: '1rem 1.5rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '12px',
+                        cursor: 'pointer',
+                        color: 'var(--text-secondary)',
+                        transition: 'all 0.2s',
+                        height: '72px'
+                    }}
+                    onMouseEnter={e => {
+                        e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                        e.currentTarget.style.color = 'var(--text-primary)';
+                        e.currentTarget.style.background = 'rgba(0, 230, 118, 0.05)';
+                    }}
+                    onMouseLeave={e => {
+                        e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                        e.currentTarget.style.color = 'var(--text-secondary)';
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                    }}
+                >
+                    <Plus size={20} />
+                    <span style={{ fontWeight: 600 }}>Nova Atleta</span>
+                </div>
+
+                {/* Empty State */}
+                {(!students || students.length === 0) && (
                     <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>
                         Nenhuma atleta cadastrada. Peça para suas alunas criarem uma conta!
                     </div>
-                ) : null}
+                )}
 
                 {/* Student Rows */}
-                {realStudents.map(student => {
+                {(students || []).map(student => {
                     const count = studentStats[student.id] || 0;
 
                     // Como ainda vamos desenvolver sessões e atividades reais futuramente, 
