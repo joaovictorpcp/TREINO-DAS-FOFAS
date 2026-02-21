@@ -177,7 +177,7 @@ const StudentGateway = () => {
 
                             {/* Name */}
                             <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '1rem' }}>
-                                {student.name || student.full_name || 'Aluna sem nome'}
+                                {student.name || student.full_name || student.email || 'Aluna sem email'}
                             </div>
 
                             {/* Workouts Count (Placeholder for now) */}

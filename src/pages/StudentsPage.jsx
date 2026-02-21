@@ -37,11 +37,11 @@ const StudentsPage = () => {
                                         fontWeight: 'bold',
                                         border: '1px solid rgba(74, 222, 128, 0.2)'
                                     }}>
-                                        {(student.name || student.full_name || 'A').charAt(0).toUpperCase()}
+                                        {(student.name || student.full_name || student.email || 'A').charAt(0).toUpperCase()}
                                     </div>
                                     <div>
                                         <h4 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-primary)' }}>
-                                            {student.name || student.full_name || 'Atleta sem nome'}
+                                            {student.name || student.full_name || student.email || 'Aluna sem email'}
                                         </h4>
                                         <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                                             {student.email || 'Email não informado'}
