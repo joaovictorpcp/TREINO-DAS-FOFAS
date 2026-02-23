@@ -21,11 +21,27 @@ export const WorkoutProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    let channel;
     if (session?.user) {
       fetchWorkouts();
+
+      // Real-time synchronization
+      channel = supabase
+        .channel('public:workouts')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'workouts' }, (payload) => {
+          console.log('Realtime update on workouts:', payload);
+          fetchWorkouts(); // Re-fetch all to re-calculate stats cleanly
+        })
+        .subscribe();
     } else {
       setWorkouts([]);
     }
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, [session]);
 
   const fetchWorkouts = async () => {

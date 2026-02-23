@@ -29,12 +29,28 @@ export const StudentProvider = ({ children }) => {
     }, [session]);
 
     useEffect(() => {
+        let channel;
         if (session?.user) {
             fetchStudents();
+
+            // Real-time synchronization
+            channel = supabase
+                .channel('public:profiles')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload) => {
+                    console.log('Realtime update on profiles:', payload);
+                    fetchStudents();
+                })
+                .subscribe();
         } else {
             setStudents([]);
             setLoading(false);
         }
+
+        return () => {
+            if (channel) {
+                supabase.removeChannel(channel);
+            }
+        };
     }, [session]);
 
     const fetchStudents = async () => {
