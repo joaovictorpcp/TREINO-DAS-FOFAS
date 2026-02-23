@@ -49,7 +49,10 @@ const StudentArea = () => {
             </header>
 
             <div className="glass-panel" style={{ padding: '1rem' }}>
-                <AttendanceCalendar fullPageMode={true} />
+                <AttendanceCalendar
+                    fullPageMode={true}
+                    onDayClick={(id) => navigate(`/edit/${id}`)}
+                />
             </div>
         </div>
     );

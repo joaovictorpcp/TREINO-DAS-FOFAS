@@ -151,13 +151,16 @@ const Dashboard = () => {
 
 
     const renderHeroCard = (workout, label = "PRÓXIMO TREINO", isCompact = false) => (
-        <div key={workout.id} className={`${styles.heroCard} glass-panel`} style={{
-            marginBottom: '1rem',
-            position: 'relative',
-            overflow: 'hidden',
-            border: workout.status === 'completed' ? '1px solid var(--accent-success)' : '1px solid var(--accent-primary)',
-            padding: isCompact ? '1.5rem' : '2rem'
-        }}>
+        <div key={workout.id} className={`${styles.heroCard} glass-panel`}
+            onClick={() => navigate(`/edit/${workout.id}`)}
+            style={{
+                marginBottom: '1rem',
+                position: 'relative',
+                overflow: 'hidden',
+                cursor: 'pointer',
+                border: workout.status === 'completed' ? '1px solid var(--accent-success)' : '1px solid var(--accent-primary)',
+                padding: isCompact ? '1.5rem' : '2rem'
+            }}>
             <div style={{ flex: 1, zIndex: 2 }}>
                 <div style={{
                     fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px'

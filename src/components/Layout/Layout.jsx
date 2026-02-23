@@ -78,6 +78,10 @@ const Layout = ({ children }) => {
                                     <NavLink to="/performance" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)} title="Performance">
                                         <TrendingUp size={24} />
                                     </NavLink>
+                                    {/* Perfil / Medidas Corporais */}
+                                    <NavLink to="/weight" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)} title="Meu Perfil / Medidas">
+                                        <Scale size={24} />
+                                    </NavLink>
                                 </>
                             )}
 
@@ -141,6 +145,10 @@ const Layout = ({ children }) => {
                             <NavLink to="/performance" onClick={handleNavClick} className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}>
                                 <TrendingUp size={20} />
                                 <span>Perf.</span>
+                            </NavLink>
+                            <NavLink to="/weight" onClick={handleNavClick} className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}>
+                                <Scale size={20} />
+                                <span>Perfil</span>
                             </NavLink>
                             <button
                                 onClick={() => {

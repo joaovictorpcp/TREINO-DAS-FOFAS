@@ -22,6 +22,13 @@ export const StudentProvider = ({ children }) => {
     });
 
     useEffect(() => {
+        // Se for aluno logado, o ID selecionado deve ser sempre o dele mesmo
+        if (session?.user && session?.user?.user_metadata?.role === 'aluno') {
+            setSelectedStudentId(session.user.id);
+        }
+    }, [session]);
+
+    useEffect(() => {
         if (session?.user) {
             fetchStudents();
         } else {

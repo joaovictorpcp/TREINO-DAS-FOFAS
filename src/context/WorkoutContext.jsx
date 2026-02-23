@@ -317,9 +317,10 @@ export const WorkoutProvider = ({ children }) => {
         delete dbData.studentId;
       }
 
+      const existing = workouts.find(w => w.id === id);
+
       // Auto-fill student_id from existing state if missing (Common in partial updates like Drag & Drop)
       if (!dbData.student_id) {
-        const existing = workouts.find(w => w.id === id);
         if (existing) {
           dbData.student_id = existing.studentId || existing.student_id;
           // We might also want to fill other non-nullable fields if this is strictly an upsert that acts like insert
@@ -342,8 +343,12 @@ export const WorkoutProvider = ({ children }) => {
       // Ideally we ensure user_id is present if it's an insert? 
       // But for update existing logic, it might not fail if RLS forces it?
       // Actually, for upsert to work as INSERT, we MUST provide user_id if it's not default.
-      if (!dbData.user_id && session?.user?.id) {
-        dbData.user_id = session.user.id;
+      if (!dbData.user_id) {
+        if (existing && existing.user_id) {
+          dbData.user_id = existing.user_id; // Preserve original creator
+        } else if (session?.user?.id) {
+          dbData.user_id = session.user.id;
+        }
       }
 
       // Use UPSERT instead of UPDATE
