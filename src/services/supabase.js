@@ -1,7 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+let supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Force HTTPS to avoid "websocket not available: the operation is insecure" errors
+// This is common if the environment variable was accidentally set as http:// instead of https://
+if (supabaseUrl && supabaseUrl.startsWith('http://') && !supabaseUrl.includes('localhost') && !supabaseUrl.includes('127.0.0.1')) {
+    supabaseUrl = supabaseUrl.replace('http://', 'https://');
+}
 
 // Fail gracefully if env vars are missing to allow the app to render an error screen
 let supabaseClient;

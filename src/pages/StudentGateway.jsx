@@ -210,13 +210,13 @@ const StudentGateway = () => {
                                 {student.name || student.full_name || student.email || 'Aluna sem email'}
                             </div>
 
-                            {/* Workouts Count (Placeholder for now) */}
+                            {/* Workouts Count */}
                             <div style={{ textAlign: 'center' }}>
                                 <span style={{
                                     background: '#18181B', padding: '4px 12px', borderRadius: '20px',
                                     fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-light)', border: '1px solid var(--border-subtle)'
                                 }}>
-                                    0
+                                    {count}
                                 </span>
                             </div>
 
