@@ -32,7 +32,7 @@ const StudentArea = () => {
                         Área do Aluno
                     </h1>
                     <p style={{ color: 'var(--text-secondary)' }}>
-                        Bem-vindo, {user?.email}
+                        Bem-vindo, {user?.user_metadata?.full_name || user?.email}
                     </p>
                 </div>
                 <button
