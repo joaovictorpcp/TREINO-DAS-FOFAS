@@ -22,6 +22,8 @@ export const WorkoutProvider = ({ children }) => {
 
   useEffect(() => {
     let channel;
+    let fetchTimeout;
+
     if (session?.user) {
       fetchWorkouts();
 
@@ -30,7 +32,11 @@ export const WorkoutProvider = ({ children }) => {
         .channel('public:workouts')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'workouts' }, (payload) => {
           console.log('Realtime update on workouts:', payload);
-          fetchWorkouts(); // Re-fetch all to re-calculate stats cleanly
+          // Debounce the fetch to prevent overload during bulk inserts (e.g Mesocycle Generation)
+          clearTimeout(fetchTimeout);
+          fetchTimeout = setTimeout(() => {
+            fetchWorkouts(); // Re-fetch all to re-calculate stats cleanly
+          }, 500);
         })
         .subscribe();
     } else {
@@ -38,6 +44,7 @@ export const WorkoutProvider = ({ children }) => {
     }
 
     return () => {
+      clearTimeout(fetchTimeout);
       if (channel) {
         supabase.removeChannel(channel);
       }
@@ -328,8 +335,10 @@ export const WorkoutProvider = ({ children }) => {
         if (dbData[field] === "") dbData[field] = null;
       });
 
-      if (dbData.studentId) {
-        dbData.student_id = dbData.studentId;
+      if ('studentId' in dbData) {
+        if (dbData.studentId) {
+          dbData.student_id = dbData.studentId;
+        }
         delete dbData.studentId;
       }
 
