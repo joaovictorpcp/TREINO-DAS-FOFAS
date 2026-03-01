@@ -186,25 +186,44 @@ export const WorkoutProvider = ({ children }) => {
       return rpe * duration;
     }
 
-    // Scenario B: Fallback / Estimation
-    if (!workout.exercises || workout.exercises.length === 0) return 0;
+    // Scenario B: Fallback / Estimation for Weightlifting without clear RPE
+    if (!workout.exercises || workout.exercises.length === 0) {
+      // Se não tem exercícios e não tem duração definida, checa se tem RPE e estima duração
+      if (!isNaN(rpe) && rpe > 0) return rpe * 45; // Assuma 45 min se tiver apenas RPE
+      return 0;
+    }
 
-    // 1. Estimate Duration: Sets * 3 mins
+    // 1. Estimate Duration: Sets * 3 mins (Se não tiver duração)
     const totalSets = workout.exercises.reduce((acc, ex) => acc + (parseInt(ex.sets) || 0), 0);
-    const estimatedDuration = totalSets * 3;
+    const estimatedDuration = !isNaN(duration) && duration > 0 ? duration : Math.max(totalSets * 3, 30);
 
-    // 2. Estimate RPE: Avg of exercises or 6
+    // 2. Estimate RPE: Avg of exercises RPE, or estimate by Volume
     let rpeSum = 0;
     let rpeCount = 0;
+    let fallbackVolumeStress = 0;
+
     workout.exercises.forEach(ex => {
       const val = parseFloat(ex.rpe);
       if (!isNaN(val) && val > 0) {
         rpeSum += val;
         rpeCount++;
       }
+
+      // Fallback RPE estimation via reps/load if RPE is not filled in exercises
+      if (parseInt(ex.sets) > 0 && parseFloat(ex.load) > 0) {
+        fallbackVolumeStress += 1; // Increment based on filled lifting actions
+      }
     });
 
-    const estimatedRpe = rpeCount > 0 ? (rpeSum / rpeCount) : 6;
+    let estimatedRpe;
+    if (rpeCount > 0) {
+      estimatedRpe = rpeSum / rpeCount;
+    } else if (!isNaN(rpe) && rpe > 0) {
+      estimatedRpe = rpe; // Uso RPE global caso os exercícios venham sem RPE
+    } else {
+      // Se aluno apenas preencheu (kg) e séries, estima RPE entre 6-8 dependendo da robustez do preenchimento
+      estimatedRpe = fallbackVolumeStress > 3 ? 7.5 : 6;
+    }
 
     return Math.round(estimatedDuration * estimatedRpe);
   };
@@ -238,7 +257,12 @@ export const WorkoutProvider = ({ children }) => {
     // Create map of date -> normalized load
     const loadMap = {};
     studentWorkouts.forEach(w => {
-      const dKey = new Date(w.date).toISOString().split('T')[0];
+      // FIX FUSO HORÁRIO: Usa a data do treino sem sofrer shift de UTC
+      // Considerando que w.date vem como ISO string ou data normal do banco
+      const d = new Date(w.date);
+      // Extrair 'YYYY-MM-DD' direto dos anos/meses locais, prevenindo que 21:00 UTC-3 vire o dia anterior
+      const dKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
       const load = calculateNormalizedLoad(w);
 
       // Sum load if multiple workouts in one day
@@ -264,13 +288,15 @@ export const WorkoutProvider = ({ children }) => {
     // Safety break
     let limit = 0;
     while (iterDate <= endDate && limit < 10000) {
-      const dKey = iterDate.toISOString().split('T')[0];
+      // Extrair YYYY-MM-DD local
+      const dKey = `${iterDate.getFullYear()}-${String(iterDate.getMonth() + 1).padStart(2, '0')}-${String(iterDate.getDate()).padStart(2, '0')}`;
       const dailyLoad = loadMap[dKey] || 0;
 
       // Handle initialization to avoid slow ramp up?
       if (limit === 0 && dailyLoad > 0) {
-        currentATL = dailyLoad;
-        currentCTL = dailyLoad;
+        // Inicialização suave (não joga 100% da carga como Fitness)
+        currentATL = dailyLoad * k_atl;
+        currentCTL = dailyLoad * k_ctl;
       } else {
         currentATL = (dailyLoad * k_atl) + (currentATL * (1 - k_atl));
         currentCTL = (dailyLoad * k_ctl) + (currentCTL * (1 - k_ctl));
@@ -286,7 +312,7 @@ export const WorkoutProvider = ({ children }) => {
         form: Math.round(tsb)            // TSB
       });
 
-      // Next Day
+      // Next Day (Fix timezone increment issue)
       iterDate.setDate(iterDate.getDate() + 1);
       limit++;
     }
