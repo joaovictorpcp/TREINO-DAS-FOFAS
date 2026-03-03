@@ -1,59 +1,405 @@
-import React, { useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useStudent } from '../context/StudentContext';
-import AttendanceCalendar from '../components/Student/AttendanceCalendar';
+import { useWorkout } from '../context/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
-import { LogOut } from 'lucide-react';
+import { LogOut, Trophy, Rocket, Bike, Footprints, Waves } from 'lucide-react';
+import styles from './Dashboard.module.css';
 
 const StudentArea = () => {
-    const { user, signOut } = useAuth();
-    const { students, setSelectedStudentId } = useStudent();
+    const { user, session, signOut } = useAuth();
+    const { students } = useStudent();
+    const context = useWorkout();
     const navigate = useNavigate();
+    const workouts = useMemo(() => Array.isArray(context.workouts) ? context.workouts : [], [context.workouts]);
 
-    // Auto-select student profile linked to this user (if we had that link)
-    // For now, since we might not have a direct link in context yet, 
-    // we can rely on the fact that if they are an 'aluno', they might see everything or we need to filter?
-    // Assumption: For this task, we just show the calendar. 
-    // TODO: Ideally 'students' table has 'user_id' to match 'auth.uid'.
+    const activeId = session?.user?.id;
+    const currentStudent = { name: session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.name || 'Aluno' };
 
     const handleLogout = async () => {
         await signOut();
         navigate('/');
     };
 
-    return (
-        <div className="page-container animate-fade-in">
-            <header style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                marginBottom: '2rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border-subtle)'
+    // --- MISSED WORKOUTS LOGIC ---
+    const missedStats = useMemo(() => {
+        if (!activeId) return { count: 0, compliance: 100 };
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const studentWorkouts = workouts;
+
+        const missed = studentWorkouts.filter(w => {
+            const d = new Date(w.date);
+            d.setHours(0, 0, 0, 0);
+            return d < today && (w.status || '').toLowerCase() !== 'completed';
+        });
+
+        const pastWorkouts = studentWorkouts.filter(w => {
+            const d = new Date(w.date);
+            d.setHours(0, 0, 0, 0);
+            return d < today;
+        });
+
+        const completedCount = pastWorkouts.filter(w => (w.status || '').toLowerCase() === 'completed').length;
+        const totalPast = pastWorkouts.length;
+        const compliance = totalPast > 0 ? Math.round((completedCount / totalPast) * 100) : 100;
+
+        return { count: missed.length, compliance };
+    }, [workouts, activeId]);
+
+    // --- WEEKLY STRIP LOGIC ---
+    const weeklyStatus = useMemo(() => {
+        if (!activeId) return [];
+        const today = new Date();
+        const dayOfWeek = today.getDay();
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - dayOfWeek);
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        const days = [];
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(startOfWeek);
+            d.setDate(startOfWeek.getDate() + i);
+
+            const isToday = d.toDateString() === today.toDateString();
+            const dTime = d.getTime();
+            const todayTime = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+            const isPast = dTime < todayTime;
+
+            const dayWorkouts = workouts.filter(w =>
+                new Date(w.date).toDateString() === d.toDateString()
+            );
+
+            let status = 'neutral';
+            const hasCompleted = dayWorkouts.some(w => (w.status || '').toLowerCase() === 'completed');
+
+            if (hasCompleted) {
+                status = 'completed';
+            } else if (dayWorkouts.length > 0) {
+                if (isPast) status = 'missed';
+                else status = 'planned';
+            } else {
+                status = 'neutral';
+            }
+
+            days.push({ date: d, status, isToday });
+        }
+        return days;
+    }, [workouts, activeId]);
+
+    // --- HERO LOGIC ---
+    const heroContent = useMemo(() => {
+        if (!activeId) return { type: 'empty' };
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const validWorkouts = workouts
+            .filter(w => {
+                const d = new Date(w.date);
+                d.setHours(0, 0, 0, 0);
+                return d >= today;
+            })
+            .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        if (validWorkouts.length === 0) return { type: 'empty' };
+
+        const todays = validWorkouts.filter(w => new Date(w.date).toDateString() === today.toDateString());
+
+        if (todays.length > 0) {
+            return { type: 'today', items: todays };
+        } else {
+            return { type: 'next', item: validWorkouts[0] };
+        }
+    }, [workouts, activeId]);
+
+    // --- RANKING ---
+    const rankingData = useMemo(() => {
+        if (!workouts || !activeId) return null;
+        const scores = {};
+        workouts.forEach(w => {
+            const s = (w.status || '').toLowerCase();
+            if (s === 'completed' || s === 'done' || s === 'finished' || w.isCompleted) {
+                scores[w.studentId] = (scores[w.studentId] || 0) + 1;
+            }
+        });
+        const rankedList = Object.entries(scores)
+            .map(([sId, score]) => ({ studentId: sId, score }))
+            .sort((a, b) => b.score - a.score);
+
+        const myRankIndex = rankedList.findIndex(x => x.studentId === activeId);
+        const myScore = scores[activeId] || 0;
+
+        return {
+            rank: myRankIndex !== -1 ? myRankIndex + 1 : '-',
+            score: myScore
+        };
+    }, [workouts, activeId]);
+
+    const renderHeroCard = (workout, label = "PRÓXIMO TREINO", isCompact = false) => (
+        <div key={workout.id} className={`${styles.heroCard} glass-panel`}
+            onClick={() => navigate(`/edit/${workout.id}`)}
+            style={{
+                marginBottom: '1rem',
+                position: 'relative',
+                overflow: 'hidden',
+                cursor: 'pointer',
+                border: workout.status === 'completed' ? '1px solid var(--accent-success)' : '1px solid var(--accent-primary)',
+                padding: isCompact ? '1.5rem' : '2rem'
             }}>
-                <div>
-                    <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                        Área do Aluno
-                    </h1>
-                    <p style={{ color: 'var(--text-secondary)' }}>
-                        Bem-vindo, {user?.user_metadata?.full_name || user?.email}
-                    </p>
+            <div style={{ flex: 1, zIndex: 2 }}>
+                <div style={{
+                    fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px'
+                }}>
+                    {label}
                 </div>
+                <h2 style={{
+                    fontSize: isCompact ? '1.5rem' : '2rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.1, margin: 0, letterSpacing: '-0.02em',
+                    display: 'flex', alignItems: 'center', gap: '10px'
+                }}>
+                    {workout.name || workout.category || 'Treino do Dia'}
+                    {workout.status === 'completed' && <Trophy size={24} color="var(--accent-success)" />}
+                </h2>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '12px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--bg-primary)', padding: '4px 10px', borderRadius: '8px' }}>
+                        {(!workout.activity_type || workout.activity_type === 'weightlifting') && <Trophy size={14} color="var(--accent-primary)" />}
+                        {workout.activity_type === 'running' && <Footprints size={14} color="var(--accent-primary)" />}
+                        {workout.activity_type === 'cycling' && <Bike size={14} color="var(--accent-primary)" />}
+                        {workout.activity_type === 'swimming' && <Waves size={14} color="var(--accent-primary)" />}
+
+                        <span style={{ fontWeight: 600 }}>
+                            {workout.activity_type && workout.activity_type !== 'weightlifting' ? (
+                                <>
+                                    {workout.activity_type === 'running' && 'Corrida'}
+                                    {workout.activity_type === 'cycling' && 'Ciclismo'}
+                                    {workout.activity_type === 'swimming' && 'Natação'}
+                                </>
+                            ) : (
+                                workout.exercises && workout.exercises.some(e => (e.muscleGroup || '').includes('Legs')) ? 'Inferiores' : (workout.exercises && workout.exercises.some(e => (e.muscleGroup || '').includes('Chest')) ? 'Peitoral' : 'Geral')
+                            )}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Compact Exercise List */}
+            {workout.exercises && workout.exercises.length > 0 && (
+                <div style={{
+                    marginTop: '1.5rem',
+                    marginBottom: '1.5rem',
+                    background: 'rgba(0,0,0,0.2)',
+                    borderRadius: '12px',
+                    padding: '12px',
+                    maxHeight: '220px',
+                    overflowY: 'auto'
+                }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', fontWeight: 700 }}>
+                        Resumo da Sessão
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {workout.exercises.map((ex, idx) => {
+                            const isSuperset = !!ex.supersetId;
+                            const prevIsSame = idx > 0 && workout.exercises[idx - 1].supersetId === ex.supersetId;
+                            const nextIsSame = idx < workout.exercises.length - 1 && workout.exercises[idx + 1].supersetId === ex.supersetId;
+
+                            return (
+                                <div key={idx} style={{
+                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                    padding: '8px 12px',
+                                    background: 'var(--bg-secondary)',
+                                    borderRadius: '8px',
+                                    borderLeft: isSuperset ? '3px solid var(--accent-primary)' : '3px solid transparent',
+                                    marginLeft: isSuperset ? (prevIsSame ? '12px' : '0') : '0',
+                                    marginBottom: (isSuperset && nextIsSame) ? '-4px' : '0'
+                                }}>
+                                    <span style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 500, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        {ex.name || 'Exercício sem nome'}
+                                    </span>
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600, marginLeft: '12px' }}>
+                                        {ex.sets}x{ex.reps}
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            <div style={{ zIndex: 2, marginTop: isCompact ? '0' : '1.5rem' }}>
                 <button
-                    onClick={handleLogout}
-                    className="btn"
+                    onClick={() => navigate(`/edit/${workout.id}`)}
+                    className="btn-primary"
                     style={{
-                        background: 'rgba(255, 61, 0, 0.1)',
-                        color: 'var(--accent-danger)',
-                        border: '1px solid var(--accent-danger)'
+                        padding: isCompact ? '12px 24px' : '16px 32px',
+                        borderRadius: '16px',
+                        fontSize: '0.95rem',
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
+                        transition: 'all 0.2s',
+                        width: isCompact ? '100%' : 'auto',
+                        justifyContent: 'center',
+                        background: workout.status === 'completed' ? 'var(--bg-secondary)' : 'var(--accent-primary)',
+                        color: workout.status === 'completed' ? 'var(--text-primary)' : 'var(--text-on-accent)',
+                        border: workout.status === 'completed' ? '1px solid var(--border-subtle)' : 'none'
                     }}
                 >
-                    <LogOut size={16} /> Sair
+                    {workout.status === 'completed' ? 'VER DETALHES' : (
+                        <>
+                            <Rocket size={18} />
+                            INICIAR
+                        </>
+                    )}
                 </button>
+            </div>
+
+            {/* Decorative BG */}
+            <div style={{
+                position: 'absolute', right: -20, top: -20,
+                width: '150px', height: '150px',
+                background: workout.status === 'completed' ? 'var(--accent-success)' : 'var(--neon-glow)',
+                opacity: 0.1,
+                borderRadius: '50%', pointerEvents: 'none',
+                filter: 'blur(40px)'
+            }} />
+        </div>
+    );
+
+    return (
+        <div className="page-container animate-fade-in">
+            {/* HEADER */}
+            <header className={styles.header} style={{ marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                    <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <h1 className={styles.title} style={{ color: 'var(--text-primary)' }}>
+                                {currentStudent ? `Olá, ${currentStudent.name}` : 'Bem-vindo'}
+                            </h1>
+                            {rankingData && (
+                                <div style={{
+                                    background: 'rgba(234, 179, 8, 0.2)', color: '#facc15',
+                                    padding: '4px 12px', borderRadius: '20px',
+                                    fontSize: '0.8rem', fontWeight: 700,
+                                    display: 'flex', alignItems: 'center', gap: '6px',
+                                    border: '1px solid rgba(234, 179, 8, 0.3)'
+                                }}>
+                                    <Trophy size={12} />
+                                    #{rankingData.rank}
+                                </div>
+                            )}
+                        </div>
+                        <div className={styles.subtitle} style={{ marginTop: '4px', color: 'var(--text-secondary)' }}>
+                            Foco na execução hoje.
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleLogout}
+                        className="btn"
+                        style={{
+                            background: 'rgba(255, 61, 0, 0.1)',
+                            color: 'var(--accent-danger)',
+                            border: '1px solid var(--accent-danger)'
+                        }}
+                    >
+                        <LogOut size={16} /> Sair
+                    </button>
+                </div>
             </header>
 
-            <div className="glass-panel" style={{ padding: '1rem' }}>
-                <AttendanceCalendar
-                    fullPageMode={true}
-                    onDayClick={(id) => navigate(`/edit/${id}`)}
-                />
-            </div>
+            <section style={{ maxWidth: '800px', margin: '0 auto' }}>
+
+                {/* MISSED WORKOUT ALERT */}
+                {missedStats.count > 0 && (
+                    <div className="glass-panel" style={{
+                        padding: '1rem', marginBottom: '1.5rem',
+                        borderLeft: '4px solid #f87171',
+                        background: 'rgba(248, 113, 113, 0.05)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        animation: 'fadeIn 0.5s ease-out'
+                    }}>
+                        <div>
+                            <div style={{ fontWeight: 700, color: '#f87171', marginBottom: '4px', fontSize: '0.9rem' }}>
+                                AVISO DE CONSISTÊNCIA
+                            </div>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                Você possui <strong>{missedStats.count} treino(s)</strong> pendente(s).
+                                <br />Sua consistência atual é de <strong>{missedStats.compliance}%</strong>.
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => navigate('/workouts')}
+                            style={{
+                                background: 'transparent', border: '1px solid var(--border-subtle)',
+                                color: 'var(--text-primary)', padding: '8px 16px', borderRadius: '12px',
+                                fontSize: '0.8rem', cursor: 'pointer'
+                            }}>
+                            Ver
+                        </button>
+                    </div>
+                )}
+
+                {/* 1. WEEKLY STRIP */}
+                <div style={{ marginBottom: '2rem' }}>
+                    <div style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        marginBottom: '0.75rem', padding: '0 4px'
+                    }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            Resumo da Semana
+                        </span>
+                    </div>
+                    <div className="glass-panel" style={{
+                        display: 'flex', justifyContent: 'space-between', gap: '8px',
+                        padding: '16px', borderRadius: '16px',
+                        border: '1px solid var(--border-subtle)'
+                    }}>
+                        {weeklyStatus.map((day, idx) => (
+                            <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flex: 1 }}>
+                                <div style={{
+                                    width: '32px', height: '32px', borderRadius: '50%',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    background: day.status === 'completed' ? 'rgba(74, 222, 128, 0.2)' : (day.status === 'missed' ? 'rgba(248, 113, 113, 0.2)' : (day.isToday ? 'var(--bg-secondary)' : 'transparent')),
+                                    border: day.isToday ? '2px solid var(--accent-primary)' : (day.status === 'neutral' ? '1px dashed var(--border-subtle)' : '1px solid var(--border-subtle)'),
+                                    color: day.status === 'completed' ? 'var(--accent-success)' : (day.status === 'missed' ? '#f87171' : 'var(--text-muted)'),
+                                    fontWeight: 700, fontSize: '0.8rem'
+                                }}>
+                                    {day.status === 'completed' ? '✓' : (day.status === 'missed' ? '✕' : (day.date.getDate()))}
+                                </div>
+                                <span style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                                    {day.date.toLocaleDateString('pt-BR', { weekday: 'short' }).substring(0, 3)}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* 2. HERO SECTION */}
+                <div style={{ marginBottom: '2rem' }}>
+                    {heroContent.type === 'today' ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
+                                HOJE • {heroContent.items.length} SESSÕES
+                            </div>
+                            {heroContent.items.map(w => renderHeroCard(w, "TREINO DE HOJE", true))}
+                        </div>
+                    ) : heroContent.type === 'next' ? (
+                        renderHeroCard(heroContent.item, "SUA PRÓXIMA MISSÃO")
+                    ) : (
+                        <div className="glass-panel" style={{ padding: '4rem', textAlign: 'center', borderRadius: '24px' }}>
+                            <div style={{ marginBottom: '1rem', background: 'var(--bg-secondary)', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+                                <Trophy size={32} color="var(--text-muted)" />
+                            </div>
+                            <h3 style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-primary)' }}>Tudo em dia!</h3>
+                            <p style={{ color: 'var(--text-secondary)', maxWidth: '300px', margin: '8px auto' }}>Aproveite o descanso ou registre uma atividade extra.</p>
+                        </div>
+                    )}
+                </div>
+
+            </section>
         </div>
     );
 };

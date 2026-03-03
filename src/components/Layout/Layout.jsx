@@ -70,8 +70,8 @@ const Layout = ({ children }) => {
                                     <NavLink to="/area-do-aluno" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)} title="Página Inicial">
                                         <Home size={24} />
                                     </NavLink>
-                                    {/* Meus Treinos -> Workouts List */}
-                                    <NavLink to="/workouts" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)} title="Meus Treinos">
+                                    {/* Planejamento -> Calendário */}
+                                    <NavLink to="/aluno-planejamento" onClick={handleNavClick} className={({ isActive }) => clsx(styles.navLink, isActive && styles.active)} title="Planejamento">
                                         <Activity size={24} />
                                     </NavLink>
                                     {/* Performance */}
@@ -138,9 +138,9 @@ const Layout = ({ children }) => {
                                 <Home size={20} />
                                 <span>Início</span>
                             </NavLink>
-                            <NavLink to="/workouts" onClick={handleNavClick} className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}>
+                            <NavLink to="/aluno-planejamento" onClick={handleNavClick} className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}>
                                 <Activity size={20} />
-                                <span>Treinos</span>
+                                <span>Planejamento</span>
                             </NavLink>
                             <NavLink to="/performance" onClick={handleNavClick} className={({ isActive }) => clsx(styles.mobileNavItem, isActive && styles.active)}>
                                 <TrendingUp size={20} />

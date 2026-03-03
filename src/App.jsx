@@ -21,6 +21,7 @@ import ProtectedRoute from './components/Auth/ProtectedRoute';
 import AdminRoute from './components/Auth/AdminRoute';
 import NotFoundPage from './pages/NotFoundPage';
 import StudentArea from './pages/StudentArea';
+import StudentPlanningPage from './pages/StudentPlanningPage';
 
 function App() {
   return (
@@ -49,6 +50,7 @@ const MainContent = () => {
 
         {/* ALUNO AREA */}
         <Route path="/area-do-aluno" element={<ProtectedRoute><StudentArea /></ProtectedRoute>} />
+        <Route path="/aluno-planejamento" element={<ProtectedRoute><StudentPlanningPage /></ProtectedRoute>} />
 
         {/* Protected COACH Routes */}
         <Route path="/dashboard" element={<AdminRoute><Dashboard /></AdminRoute>} />
