@@ -10,6 +10,7 @@ const BiometricCard = () => {
 
     const [height, setHeight] = useState('');
     const [birthDate, setBirthDate] = useState('');
+    const [gender, setGender] = useState('');
     const [age, setAge] = useState(null);
 
     // Modal State
@@ -39,19 +40,22 @@ const BiometricCard = () => {
             // Only update if values differ to avoid loops/warnings
             const newHeight = student.height || '';
             const newDob = student.birthDate || student.birth_date || '';
+            const newGender = student.gender || '';
 
             setHeight(h => h !== newHeight ? newHeight : h); // eslint-disable-line react-hooks/set-state-in-effect
             setBirthDate(d => d !== newDob ? newDob : d);
+            setGender(g => g !== newGender ? newGender : g);
 
             if (newDob) calculateAge(newDob);
         }
-    }, [student?.height, student?.birthDate, student?.birth_date]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [student?.height, student?.birthDate, student?.birth_date, student?.gender]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleUpdate = () => {
         if (!selectedStudentId) return;
         updateStudent(selectedStudentId, {
             height: parseFloat(height),
-            birthDate: birthDate // Save as camelCase
+            birthDate: birthDate, // Save as camelCase
+            gender: gender
         });
         calculateAge(birthDate);
     };
@@ -219,6 +223,24 @@ const BiometricCard = () => {
                             onBlur={handleUpdate}
                             style={inputStyle}
                         />
+                    </div>
+
+                    {/* Gender Select */}
+                    <div>
+                        <label style={labelStyle}>
+                            <AlertCircle size={14} />
+                            Sexo Biológico
+                        </label>
+                        <select
+                            value={gender}
+                            onChange={(e) => setGender(e.target.value)}
+                            onBlur={handleUpdate}
+                            style={inputStyle}
+                        >
+                            <option value="">Não informado</option>
+                            <option value="male">Masculino</option>
+                            <option value="female">Feminino</option>
+                        </select>
                     </div>
                 </div>
             </div>

@@ -97,7 +97,7 @@ const WeightTrackerPage = () => {
 
     // Calculate age helper
     const getAge = (birthDateString) => {
-        if (!birthDateString) return 25; // Default fallback
+        if (!birthDateString) return null; // Default fallback to null
         const today = new Date();
         const birthDate = new Date(birthDateString);
         let age = today.getFullYear() - birthDate.getFullYear();
@@ -221,8 +221,8 @@ const WeightTrackerPage = () => {
                 </h1>
                 <p style={{ color: 'var(--text-secondary)' }}>
                     Atleta: <strong>{currentStudent?.name}</strong> •
-                    Idade: {getAge(currentStudent?.birthDate)} •
-                    Sexo: {currentStudent?.gender === 'female' ? 'Feminino' : 'Masculino'}
+                    Idade: {getAge(currentStudent?.birthDate) ?? 'Não informada'} •
+                    Sexo: {currentStudent?.gender === 'female' ? 'Feminino' : currentStudent?.gender === 'male' ? 'Masculino' : 'Não informado'}
                 </p>
             </header>
 

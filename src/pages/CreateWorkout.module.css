@@ -67,6 +67,18 @@
     gap: 1rem;
 }
 
+/* Superset Container */
+.supersetGroup {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(74, 222, 128, 0.2);
+    border-radius: var(--radius-lg);
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 0.5rem;
+}
+
 .gridRow {
     display: grid;
     grid-template-columns: 3fr 1fr 1fr 1fr 1fr 1fr 1.2fr 40px;

@@ -472,84 +472,190 @@ const TrainingLog = () => {
 
                         {/* Rows */}
                         <div className={styles.rowsContainer}>
-                            {exercises.map((ex, index) => {
-                                const vtt = calculateVTT(ex.sets, ex.reps, ex.load);
-                                const highStress = isHighStress(ex.rpe, ex.rir);
-                                const isSuperset = !!ex.supersetId;
-                                const prevIsSame = index > 0 && exercises[index - 1].supersetId === ex.supersetId;
-                                const nextIsSame = index < exercises.length - 1 && exercises[index + 1].supersetId === ex.supersetId;
-                                const isStart = isSuperset && !prevIsSame;
-                                const isEnd = isSuperset && !nextIsSame;
-                                const isLinked = isSuperset && (prevIsSame || nextIsSame);
+                            {(() => {
+                                // Group exercises by supersetId if adjacent
+                                const blocks = [];
+                                let currentBlock = null;
 
-                                return (
-                                    <div
-                                        key={ex.id}
-                                        className={clsx(styles.gridRow, highStress && styles.highStressRow)}
-                                        style={{
-                                            animation: `fadeIn 0.3s ease forwards`,
-                                            animationDelay: `${index * 50}ms`,
-                                            marginLeft: isLinked ? '12px' : '0',
-                                            borderLeft: isLinked ? '4px solid var(--accent-primary)' : 'none',
-                                            borderRadius: isLinked ? (isStart ? '8px 8px 0 0' : (isEnd ? '0 0 8px 8px' : '0')) : '0',
-                                            marginBottom: isLinked && !isEnd ? '0' : '1px',
-                                            background: 'var(--bg-secondary)',
-                                            borderBottom: '1px solid var(--border-subtle)'
-                                        }}
-                                    >
-                                        <div className={styles.colName}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
-                                                {isLinked && (
-                                                    <div title="Conjugado" style={{ color: 'var(--accent-primary)' }}>
-                                                        <LinkIcon size={14} />
+                                exercises.forEach((ex, i) => {
+                                    if (ex.supersetId) {
+                                        if (currentBlock && currentBlock.isSuperset && currentBlock.supersetId === ex.supersetId) {
+                                            currentBlock.items.push({ ex, index: i });
+                                        } else {
+                                            if (currentBlock) blocks.push(currentBlock);
+                                            currentBlock = {
+                                                isSuperset: true,
+                                                supersetId: ex.supersetId,
+                                                items: [{ ex, index: i }]
+                                            };
+                                        }
+                                    } else {
+                                        if (currentBlock) blocks.push(currentBlock);
+                                        currentBlock = {
+                                            isSuperset: false,
+                                            supersetId: null,
+                                            items: [{ ex, index: i }]
+                                        };
+                                        blocks.push(currentBlock);
+                                        currentBlock = null;
+                                    }
+                                });
+                                if (currentBlock) blocks.push(currentBlock);
+
+                                return blocks.map((block, bIndex) => {
+                                    if (block.isSuperset && block.items.length > 1) {
+                                        // Render as a Superset Block
+                                        return (
+                                            <div key={`ss-${block.supersetId}-${bIndex}`} className={styles.supersetGroup}>
+                                                {block.items.map(({ ex, index }, itemIndex) => {
+                                                    const vtt = calculateVTT(ex.sets, ex.reps, ex.load);
+                                                    const highStress = isHighStress(ex.rpe, ex.rir);
+                                                    const isStart = itemIndex === 0;
+                                                    const isEnd = itemIndex === block.items.length - 1;
+
+                                                    return (
+                                                        <div
+                                                            key={ex.id}
+                                                            className={clsx(styles.gridRow, highStress && styles.highStressRow)}
+                                                            style={{
+                                                                animation: `fadeIn 0.3s ease forwards`,
+                                                                animationDelay: `${index * 50}ms`,
+                                                                marginLeft: '12px',
+                                                                borderLeft: '4px solid var(--accent-primary)',
+                                                                borderRadius: isStart ? '8px 8px 0 0' : (isEnd ? '0 0 8px 8px' : '0'),
+                                                                marginBottom: isEnd ? '0' : '1px',
+                                                                background: 'var(--bg-secondary)',
+                                                                borderBottom: isEnd ? 'none' : '1px solid var(--border-subtle)'
+                                                            }}
+                                                        >
+                                                            {/* Render Single Exercise Content */}
+                                                            <div className={styles.colName}>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+                                                                    <div title="Conjugado" style={{ color: 'var(--accent-primary)' }}>
+                                                                        <LinkIcon size={14} />
+                                                                    </div>
+                                                                    <div style={{ flex: 1 }}>
+                                                                        <span className={styles.mobileLabel} style={{ color: 'var(--text-muted)' }}>Exercício</span>
+                                                                        <input
+                                                                            type="text"
+                                                                            className="input"
+                                                                            placeholder={isStart ? "Exercício 1 (Conjugado)" : "Exercício + (Conjugado)"}
+                                                                            value={ex.name}
+                                                                            onChange={(e) => updateExercise(ex.id, 'name', e.target.value)}
+                                                                            style={{ fontWeight: '500', width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)' }}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className={styles.colNum}>
+                                                                <span className={styles.mobileLabel} style={{ color: 'var(--text-muted)' }}>Séries</span>
+                                                                <input type="number" className="input" placeholder="0" value={ex.sets} onChange={(e) => updateExercise(ex.id, 'sets', e.target.value)} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }} />
+                                                            </div>
+                                                            <div className={styles.colNum}>
+                                                                <span className={styles.mobileLabel} style={{ color: 'var(--text-muted)' }}>Reps</span>
+                                                                <input type="text" inputMode="numeric" className="input" placeholder="ex: 8-12" value={ex.reps} onChange={(e) => updateExercise(ex.id, 'reps', e.target.value)} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }} />
+                                                            </div>
+                                                            <div className={styles.colNum}>
+                                                                <span className={styles.mobileLabel} style={{ color: 'var(--text-muted)' }}>Carga</span>
+                                                                <input type="number" className={clsx("input", ex.suggestProgression && styles.suggestedLoad)} placeholder="kg" value={ex.load} onChange={(e) => updateExercise(ex.id, 'load', e.target.value)} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }} />
+                                                            </div>
+                                                            <div className={styles.colNum}>
+                                                                <span className={styles.mobileLabel} style={{ color: 'var(--text-muted)' }}>RPE</span>
+                                                                <input type="number" min="1" max="10" className="input" placeholder="-" value={ex.rpe} onChange={(e) => updateExercise(ex.id, 'rpe', e.target.value)} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', borderColor: ex.rpe > 9 ? '#fca5a5' : 'var(--border-subtle)' }} />
+                                                            </div>
+                                                            <div className={styles.colNum}>
+                                                                <span className={styles.mobileLabel} style={{ color: 'var(--text-muted)' }}>RIR</span>
+                                                                <input type="number" min="0" className="input" placeholder="-" value={ex.rir} onChange={(e) => updateExercise(ex.id, 'rir', e.target.value)} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }} />
+                                                            </div>
+                                                            <div className={styles.colVtt}>
+                                                                <span className={styles.mobileLabel} style={{ color: 'var(--text-muted)' }}>Volume Total</span>
+                                                                <span style={{ fontWeight: '700', color: 'var(--text-muted)' }}>{vtt > 0 ? vtt.toLocaleString() : '-'}</span>
+                                                            </div>
+                                                            <div className={styles.colAction}>
+                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                                    <button onClick={() => removeRow(ex.id)} className={styles.iconBtn} title="Remover" style={{ color: 'var(--text-muted)' }}><Trash2 size={18} /></button>
+                                                                    <button onClick={() => addSuperset(index)} className={styles.iconBtn} style={{ color: 'var(--accent-primary)', borderColor: 'rgba(74, 222, 128, 0.3)' }} title="Conjulgar"><Plus size={18} /></button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        );
+                                    } else {
+                                        // Render as Single Exercise
+                                        // It could be an array of length 1 if it's a stand-alone item (isSuperset=false)
+                                        // or if it's the only remaining item in a superset that had others removed.
+                                        return block.items.map(({ ex, index }) => {
+                                            const vtt = calculateVTT(ex.sets, ex.reps, ex.load);
+                                            const highStress = isHighStress(ex.rpe, ex.rir);
+
+                                            return (
+                                                <div
+                                                    key={ex.id}
+                                                    className={clsx(styles.gridRow, highStress && styles.highStressRow)}
+                                                    style={{
+                                                        animation: `fadeIn 0.3s ease forwards`,
+                                                        animationDelay: `${index * 50}ms`,
+                                                        marginLeft: '0',
+                                                        borderLeft: 'none',
+                                                        borderRadius: '8px',
+                                                        marginBottom: '1px',
+                                                        background: 'var(--bg-secondary)',
+                                                        borderBottom: '1px solid var(--border-subtle)'
+                                                    }}
+                                                >
+                                                    <div className={styles.colName}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+                                                            <div style={{ flex: 1 }}>
+                                                                <span className={styles.mobileLabel} style={{ color: 'var(--text-muted)' }}>Exercício</span>
+                                                                <input
+                                                                    type="text"
+                                                                    className="input"
+                                                                    placeholder="Nome do exercício..."
+                                                                    value={ex.name}
+                                                                    onChange={(e) => updateExercise(ex.id, 'name', e.target.value)}
+                                                                    style={{ fontWeight: '500', width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)' }}
+                                                                />
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                )}
-                                                <div style={{ flex: 1 }}>
-                                                    <span className={styles.mobileLabel} style={{ color: 'var(--text-muted)' }}>Exercício</span>
-                                                    <input
-                                                        type="text"
-                                                        className="input"
-                                                        placeholder={isLinked ? (isStart ? "Exercício 1 (Conjugado)" : "Exercício + (Conjugado)") : "Nome do exercício..."}
-                                                        value={ex.name}
-                                                        onChange={(e) => updateExercise(ex.id, 'name', e.target.value)}
-                                                        style={{ fontWeight: '500', width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)' }}
-                                                    />
+                                                    <div className={styles.colNum}>
+                                                        <span className={styles.mobileLabel} style={{ color: 'var(--text-muted)' }}>Séries</span>
+                                                        <input type="number" className="input" placeholder="0" value={ex.sets} onChange={(e) => updateExercise(ex.id, 'sets', e.target.value)} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }} />
+                                                    </div>
+                                                    <div className={styles.colNum}>
+                                                        <span className={styles.mobileLabel} style={{ color: 'var(--text-muted)' }}>Reps</span>
+                                                        <input type="text" inputMode="numeric" className="input" placeholder="ex: 8-12" value={ex.reps} onChange={(e) => updateExercise(ex.id, 'reps', e.target.value)} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }} />
+                                                    </div>
+                                                    <div className={styles.colNum}>
+                                                        <span className={styles.mobileLabel} style={{ color: 'var(--text-muted)' }}>Carga</span>
+                                                        <input type="number" className={clsx("input", ex.suggestProgression && styles.suggestedLoad)} placeholder="kg" value={ex.load} onChange={(e) => updateExercise(ex.id, 'load', e.target.value)} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }} />
+                                                    </div>
+                                                    <div className={styles.colNum}>
+                                                        <span className={styles.mobileLabel} style={{ color: 'var(--text-muted)' }}>RPE</span>
+                                                        <input type="number" min="1" max="10" className="input" placeholder="-" value={ex.rpe} onChange={(e) => updateExercise(ex.id, 'rpe', e.target.value)} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', borderColor: ex.rpe > 9 ? '#fca5a5' : 'var(--border-subtle)' }} />
+                                                    </div>
+                                                    <div className={styles.colNum}>
+                                                        <span className={styles.mobileLabel} style={{ color: 'var(--text-muted)' }}>RIR</span>
+                                                        <input type="number" min="0" className="input" placeholder="-" value={ex.rir} onChange={(e) => updateExercise(ex.id, 'rir', e.target.value)} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }} />
+                                                    </div>
+                                                    <div className={styles.colVtt}>
+                                                        <span className={styles.mobileLabel} style={{ color: 'var(--text-muted)' }}>Volume Total</span>
+                                                        <span style={{ fontWeight: '700', color: 'var(--text-muted)' }}>{vtt > 0 ? vtt.toLocaleString() : '-'}</span>
+                                                    </div>
+                                                    <div className={styles.colAction}>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                            <button onClick={() => removeRow(ex.id)} className={styles.iconBtn} title="Remover" style={{ color: 'var(--text-muted)' }}><Trash2 size={18} /></button>
+                                                            <button onClick={() => addSuperset(index)} className={styles.iconBtn} style={{ color: 'var(--accent-primary)', borderColor: 'rgba(74, 222, 128, 0.3)' }} title="Conjulgar"><Plus size={18} /></button>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </div>
-                                        <div className={styles.colNum}>
-                                            <span className={styles.mobileLabel} style={{ color: 'var(--text-muted)' }}>Séries</span>
-                                            <input type="number" className="input" placeholder="0" value={ex.sets} onChange={(e) => updateExercise(ex.id, 'sets', e.target.value)} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }} />
-                                        </div>
-                                        <div className={styles.colNum}>
-                                            <span className={styles.mobileLabel} style={{ color: 'var(--text-muted)' }}>Reps</span>
-                                            <input type="text" inputMode="numeric" className="input" placeholder="ex: 8-12" value={ex.reps} onChange={(e) => updateExercise(ex.id, 'reps', e.target.value)} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }} />
-                                        </div>
-                                        <div className={styles.colNum}>
-                                            <span className={styles.mobileLabel} style={{ color: 'var(--text-muted)' }}>Carga</span>
-                                            <input type="number" className={clsx("input", ex.suggestProgression && styles.suggestedLoad)} placeholder="kg" value={ex.load} onChange={(e) => updateExercise(ex.id, 'load', e.target.value)} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }} />
-                                        </div>
-                                        <div className={styles.colNum}>
-                                            <span className={styles.mobileLabel} style={{ color: 'var(--text-muted)' }}>RPE</span>
-                                            <input type="number" min="1" max="10" className="input" placeholder="-" value={ex.rpe} onChange={(e) => updateExercise(ex.id, 'rpe', e.target.value)} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', borderColor: ex.rpe > 9 ? '#fca5a5' : 'var(--border-subtle)' }} />
-                                        </div>
-                                        <div className={styles.colNum}>
-                                            <span className={styles.mobileLabel} style={{ color: 'var(--text-muted)' }}>RIR</span>
-                                            <input type="number" min="0" className="input" placeholder="-" value={ex.rir} onChange={(e) => updateExercise(ex.id, 'rir', e.target.value)} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }} />
-                                        </div>
-                                        <div className={styles.colVtt}>
-                                            <span className={styles.mobileLabel} style={{ color: 'var(--text-muted)' }}>Volume Total</span>
-                                            <span style={{ fontWeight: '700', color: 'var(--text-muted)' }}>{vtt > 0 ? vtt.toLocaleString() : '-'}</span>
-                                        </div>
-                                        <div className={styles.colAction}>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                                <button onClick={() => removeRow(ex.id)} className={styles.iconBtn} title="Remover" style={{ color: 'var(--text-muted)' }}><Trash2 size={18} /></button>
-                                                <button onClick={() => addSuperset(index)} className={styles.iconBtn} style={{ color: 'var(--accent-primary)', borderColor: 'rgba(74, 222, 128, 0.3)' }} title="Conjulgar"><Plus size={18} /></button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                                            );
+                                        });
+                                    }
+                                });
+                            })()}
                         </div>
                         {/* Footer Actions */}
                         <div className={styles.footerActions} style={{ padding: '1rem', borderTop: '1px solid var(--border-subtle)' }}>
