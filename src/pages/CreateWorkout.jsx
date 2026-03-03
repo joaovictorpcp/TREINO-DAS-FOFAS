@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useWorkout } from '../context/WorkoutContext';
+import { useAuth } from '../context/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Plus, Trash2, Save, AlertTriangle, BookOpen, HelpCircle, Layers, Link as LinkIcon, Activity, Dumbbell, Bike, Footprints, Waves } from 'lucide-react';
 import clsx from 'clsx';
@@ -13,6 +14,7 @@ const TrainingLog = () => {
     const navigate = useNavigate();
     const { id } = useParams(); // Get ID from URL if editing
     const { addWorkout, updateWorkout, getWorkoutById, generateFullMesocycle } = useWorkout();
+    const { role } = useAuth();
     const { selectedStudentId } = useStudent();
 
     // const [showSafetyToast, setShowSafetyToast] = useState(false);
@@ -263,7 +265,13 @@ const TrainingLog = () => {
                 generateFullMesocycle(data);
             }
         }
-        navigate('/dashboard');
+
+        // Se for aluno logado, volta para a área do aluno ao invés do dashboard do prof.
+        if (role === 'aluno') {
+            navigate('/area-do-aluno');
+        } else {
+            navigate('/dashboard');
+        }
     };
 
     return (
