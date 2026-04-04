@@ -389,31 +389,25 @@ export const WorkoutProvider = ({ children }) => {
       // Ensure ID is part of the payload for upsert
       dbData.id = id;
 
-      // Remove any undefined/null fields if they might cause issues, 
-      // but upsert usually handles them. 
-      // Ideally we ensure user_id is present if it's an insert? 
-      // But for update existing logic, it might not fail if RLS forces it?
-      // Actually, for upsert to work as INSERT, we MUST provide user_id if it's not default.
-      if (!dbData.user_id) {
-        if (existing && existing.user_id) {
-          dbData.user_id = existing.user_id; // Preserve original creator
-        } else if (session?.user?.id) {
-          dbData.user_id = session.user.id;
-        }
-      }
+      // STRATEGY: Use an explicit UPDATE (not upsert) so that Supabase RLS policies
+      // keyed on student_id = auth.uid() can allow students to update their own workouts,
+      // even when the original creator (user_id) was the professor.
+      // Remove the 'id' field from the payload for the UPDATE (it's in the .eq() filter).
+      const { id: _removeId, ...updatePayload } = dbData;
 
-      // Use UPSERT instead of UPDATE
       const { data, error } = await supabase
         .from('workouts')
-        .upsert(dbData) // Upsert handles both insert and update based on PK (id)
+        .update(updatePayload)
+        .eq('id', id)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[updateWorkout] Update failed:', error);
+        throw error;
+      }
 
-      // FIX: Ensure studentId is properly mapped back for local state!
-      // We also need to handle the case where we are 'adding' via this function now (if ID didn't exist)
-      // So we check if it exists in state to update, or add it.
+      // Update local state
       setWorkouts(prev => {
         const exists = prev.find(w => w.id === id);
         if (exists) {
@@ -423,8 +417,8 @@ export const WorkoutProvider = ({ children }) => {
         }
       });
     } catch (error) {
-      console.error('Error updating/upserting workout:', error);
-      alert('Erro ao salvar (Upsert): ' + (error.message || JSON.stringify(error)));
+      console.error('Error updating workout:', error);
+      alert('Erro ao salvar treino: ' + (error.message || JSON.stringify(error)));
     }
   };
 

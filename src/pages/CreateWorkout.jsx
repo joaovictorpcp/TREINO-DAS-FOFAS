@@ -14,7 +14,7 @@ const TrainingLog = () => {
     const navigate = useNavigate();
     const { id } = useParams(); // Get ID from URL if editing
     const { addWorkout, updateWorkout, getWorkoutById, generateFullMesocycle } = useWorkout();
-    const { role } = useAuth();
+    const { role, session } = useAuth();
     const { selectedStudentId } = useStudent();
 
     // const [showSafetyToast, setShowSafetyToast] = useState(false);
@@ -195,6 +195,16 @@ const TrainingLog = () => {
                     normalizedLoad = Math.round(estDur * estRpe);
                 }
 
+                // Para alunos: selectedStudentId é setado via useEffect no StudentContext.
+                // Se ainda não tiver sido setado (race condition), usa session.user.id como fallback.
+                // Em modo edição, também lê o studentId do treino existente.
+                const existingWorkout = isEditing ? getWorkoutById(id) : null;
+                const resolvedStudentId =
+                    selectedStudentId ||
+                    existingWorkout?.studentId ||
+                    existingWorkout?.student_id ||
+                    (role === 'aluno' ? session?.user?.id : null);
+
                 const workoutData = {
                     id: isEditing ? id : undefined,
                     activity_type: 'weightlifting',
@@ -207,7 +217,7 @@ const TrainingLog = () => {
                     normalized_load: normalizedLoad,
                     volume_load_kg: validExercises.reduce((acc, ex) => acc + (calculateVTT(ex.sets, ex.reps, ex.load)), 0),
                     meta: { mesocycle, week },
-                    studentId: selectedStudentId ? selectedStudentId : null,
+                    studentId: resolvedStudentId,
                     exercises: validExercises.map(ex => ({
                         ...ex,
                         vtt: calculateVTT(ex.sets, ex.reps, ex.load)
@@ -223,6 +233,13 @@ const TrainingLog = () => {
                 }
 
                 normalizedLoad = (parseFloat(durationMinutes) || 0) * (parseFloat(sessionRpe) || 0);
+
+                const existingWorkoutCardio = isEditing ? getWorkoutById(id) : null;
+                const resolvedStudentIdCardio =
+                    selectedStudentId ||
+                    existingWorkoutCardio?.studentId ||
+                    existingWorkoutCardio?.student_id ||
+                    (role === 'aluno' ? session?.user?.id : null);
 
                 const workoutData = {
                     id: isEditing ? id : undefined,
@@ -243,7 +260,7 @@ const TrainingLog = () => {
                     elevation_gain: parseInt(elevation) || 0,
 
                     meta: { mesocycle, week },
-                    studentId: selectedStudentId ? selectedStudentId : null,
+                    studentId: resolvedStudentIdCardio,
                     exercises: []
                 };
 
