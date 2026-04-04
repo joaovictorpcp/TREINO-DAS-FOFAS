@@ -228,12 +228,9 @@ export const WorkoutProvider = ({ children }) => {
     return Math.round(estimatedDuration * estimatedRpe);
   };
 
-  // PMC Algorithm: ATL (7d), CTL (42d), TSB (CTL - ATL)
-  // We need to process workouts chronologically.
   const getPMCData = (studentId) => {
     if (!studentId) return [];
 
-    // 1. Filter & Sort Workouts for Student
     // 1. Filter & Sort Workouts for Student
     const studentWorkouts = workouts
       .filter(w => {
@@ -243,66 +240,67 @@ export const WorkoutProvider = ({ children }) => {
       })
       .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-
-
     // 2. Aggregate Daily Load
-    // We need a continuous timeline. If no workout, load is 0.
-    // Let's find start and end date.
     if (studentWorkouts.length === 0) return [];
-
-    const startDate = new Date(studentWorkouts[0].date);
-    const today = new Date();
-    const timeline = [];
 
     // Create map of date -> normalized load
     const loadMap = {};
     studentWorkouts.forEach(w => {
-      // FIX FUSO HORÁRIO: Usa a data do treino sem sofrer shift de UTC
-      // Considerando que w.date vem como ISO string ou data normal do banco
-      const d = new Date(w.date);
-      // Extrair 'YYYY-MM-DD' direto dos anos/meses locais, prevenindo que 21:00 UTC-3 vire o dia anterior
-      const dKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      // FIX FUSO HORÁRIO E DATAS:
+      // Pega "YYYY-MM-DD" da string para evitar que 2024-04-05T00:00:00Z vire 2024-04-04 no Brasil
+      let dKey;
+      if (w.date && w.date.includes('T')) {
+        dKey = w.date.split('T')[0];
+      } else {
+        const d = new Date(w.date);
+        dKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      }
 
       const load = calculateNormalizedLoad(w);
-
-      // Sum load if multiple workouts in one day
       loadMap[dKey] = (loadMap[dKey] || 0) + load;
     });
 
-    // 3. Calculate EMA (Exponential Moving Average)
-    // Formula: EMA_today = (Load_today * k) + (EMA_yesterday * (1-k))
-    // k = 2 / (N + 1)
-    const k_atl = 2 / (7 + 1);
-    const k_ctl = 2 / (42 + 1);
+    // Encontra data de início e fim. Usa 12:00:00 (meio dia) local para evitar pulos de Horário de Verão (DST)
+    const firstDateParts = Object.keys(loadMap).sort()[0].split('-');
+    const startDate = new Date(firstDateParts[0], firstDateParts[1] - 1, firstDateParts[2], 12, 0, 0);
+
+    const today = new Date();
+    const endDateToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12, 0, 0);
+
+    const lastWorkoutStr = studentWorkouts[studentWorkouts.length - 1].date;
+    const lastDateParts = (lastWorkoutStr.includes('T') ? lastWorkoutStr.split('T')[0] : lastWorkoutStr).split('-');
+    const lastDate = new Date(lastDateParts[0], lastDateParts[1] - 1, lastDateParts[2], 12, 0, 0);
+    
+    // Até o dia atual, ou até o fim do planejamento gravado como concluído (o que for maior)
+    const finalEndDate = new Date(Math.max(endDateToday.getTime(), lastDate.getTime()));
+
+    // 3. Calculate True EWMA (Exponential Weighted Moving Average) - Padrão TrainingPeaks
+    // Formula exata: CTL_today = CTL_yesterday * exp(-1/42) + Load_today * (1 - exp(-1/42))
+    const decayATL = Math.exp(-1 / 7);
+    const decayCTL = Math.exp(-1 / 42);
 
     let currentATL = 0;
     let currentCTL = 0;
 
-    // Determine strict range
-    const lastWorkoutDate = new Date(studentWorkouts[studentWorkouts.length - 1].date);
-    const endDate = new Date(Math.max(today.getTime(), lastWorkoutDate.getTime()));
-
-    // Iterate day by day from first workout to end of range (future included)
+    const timeline = [];
     const iterDate = new Date(startDate);
-
-    // Safety break
     let limit = 0;
-    while (iterDate <= endDate && limit < 10000) {
-      // Extrair YYYY-MM-DD local
+
+    while (iterDate <= finalEndDate && limit < 10000) {
       const dKey = `${iterDate.getFullYear()}-${String(iterDate.getMonth() + 1).padStart(2, '0')}-${String(iterDate.getDate()).padStart(2, '0')}`;
       const dailyLoad = loadMap[dKey] || 0;
 
-      // Handle initialization to avoid slow ramp up?
-      if (limit === 0 && dailyLoad > 0) {
-        // Inicialização suave (não joga 100% da carga como Fitness)
-        currentATL = dailyLoad * k_atl;
-        currentCTL = dailyLoad * k_ctl;
+      if (limit === 0) {
+        // Inicialização do primeiro dia validamente com matemática pura do EWMA
+        currentATL = dailyLoad * (1 - decayATL);
+        currentCTL = dailyLoad * (1 - decayCTL);
       } else {
-        currentATL = (dailyLoad * k_atl) + (currentATL * (1 - k_atl));
-        currentCTL = (dailyLoad * k_ctl) + (currentCTL * (1 - k_ctl));
+        currentATL = (currentATL * decayATL) + (dailyLoad * (1 - decayATL));
+        currentCTL = (currentCTL * decayCTL) + (dailyLoad * (1 - decayCTL));
       }
 
-      const tsb = currentCTL - currentATL; // Form
+      // TSB (Training Stress Balance) é a diferença = Fitness (CTL) - Fadiga (ATL)
+      const tsb = currentCTL - currentATL; 
 
       timeline.push({
         date: dKey,
@@ -312,7 +310,7 @@ export const WorkoutProvider = ({ children }) => {
         form: Math.round(tsb)            // TSB
       });
 
-      // Next Day (Fix timezone increment issue)
+      // Avança de 1 em 1 dia no "Meio Dia" para não ter susto com o Fuso.
       iterDate.setDate(iterDate.getDate() + 1);
       limit++;
     }
