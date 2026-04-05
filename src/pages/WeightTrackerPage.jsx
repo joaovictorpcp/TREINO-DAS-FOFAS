@@ -39,6 +39,8 @@ const WeightTrackerPage = () => {
         calfLeft: ''
     });
 
+    const [isSaving, setIsSaving] = useState(false);
+
     const [editingId, setEditingId] = useState(null);
 
     const [activeChart, setActiveChart] = useState('weight'); // 'weight', 'bodyFat', 'perimetry'
@@ -117,10 +119,11 @@ const WeightTrackerPage = () => {
         return `${day}/${month}/${year}`;
     };
 
-    const handleAddWeight = (e) => {
+    const handleAddWeight = async (e) => {
         e.preventDefault();
         if (!weightInput || !selectedStudentId) return;
 
+        setIsSaving(true);
         // Auto Calculate Body Fat if skinfolds are present
         const hasSkinfolds = Object.values(skinfolds).some(v => v !== '');
         let calculatedFat = null;
@@ -134,18 +137,25 @@ const WeightTrackerPage = () => {
             }
         }
 
+        let success = false;
         if (editingId) {
-            updateBodyMetric(editingId, weightInput, dateInput, skinfolds, calculatedFat, circumferences);
-            setEditingId(null);
+            success = await updateBodyMetric(editingId, weightInput, dateInput, skinfolds, calculatedFat, circumferences);
         } else {
-            addBodyMetric(selectedStudentId, weightInput, dateInput, skinfolds, calculatedFat, circumferences);
+            success = await addBodyMetric(selectedStudentId, weightInput, dateInput, skinfolds, calculatedFat, circumferences);
         }
 
-        // Reset Form
-        setWeightInput('');
-        setDateInput(new Date().toISOString().split('T')[0]);
-        setSkinfolds({ chest: '', axilla: '', triceps: '', subscapular: '', abdomen: '', suprailiac: '', thigh: '' });
-        setCircumferences({ neck: '', shoulder: '', chest: '', armRight: '', armLeft: '', forearmRight: '', forearmLeft: '', waist: '', abdomen: '', hips: '', thighRight: '', thighLeft: '', calfRight: '', calfLeft: '' });
+        setIsSaving(false);
+
+        if (success) {
+            // Reset Form
+            setEditingId(null);
+            setWeightInput('');
+            setDateInput(new Date().toISOString().split('T')[0]);
+            setSkinfolds({ chest: '', axilla: '', triceps: '', subscapular: '', abdomen: '', suprailiac: '', thigh: '' });
+            setCircumferences({ neck: '', shoulder: '', chest: '', armRight: '', armLeft: '', forearmRight: '', forearmLeft: '', waist: '', abdomen: '', hips: '', thighRight: '', thighLeft: '', calfRight: '', calfLeft: '' });
+        } else {
+            alert('Não foi possível salvar os registros. Verifique a conexão ou fale com o suporte.');
+        }
     };
 
     const startEdit = (metric) => {
@@ -474,9 +484,15 @@ const WeightTrackerPage = () => {
                             </div>
                         </div>
 
-                        <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                            {editingId ? <Edit2 size={20} /> : <PlusCircle size={20} />}
-                            {editingId ? 'Atualizar Dados' : 'Salvar Registro'}
+                        <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={isSaving}>
+                            {isSaving ? (
+                                'Salvando...'
+                            ) : (
+                                <>
+                                    {editingId ? <Edit2 size={20} /> : <PlusCircle size={20} />}
+                                    {editingId ? 'Atualizar Dados' : 'Salvar Registro'}
+                                </>
+                            )}
                         </button>
                     </form>
                 </div>

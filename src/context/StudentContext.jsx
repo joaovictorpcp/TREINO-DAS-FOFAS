@@ -92,7 +92,7 @@ export const StudentProvider = ({ children }) => {
 
     const updateStudent = async (id, updatedData) => {
         const student = students.find(s => s.id === id);
-        if (!student) return;
+        if (!student) return false;
 
         const { name, goal, ...profileUpdates } = updatedData;
         const updates = {};
@@ -117,8 +117,10 @@ export const StudentProvider = ({ children }) => {
 
             const savedStudent = { ...data, ...(data.profile_data || {}) };
             setStudents(prev => prev.map(s => s.id === id ? savedStudent : s));
+            return true;
         } catch (error) {
             console.error('Error updating student:', error);
+            return false;
         }
     };
 
@@ -131,7 +133,7 @@ export const StudentProvider = ({ children }) => {
 
     const addBodyMetric = async (studentId, weight, date, skinfolds = null, bodyFat = null, circumferences = null) => {
         const student = students.find(s => s.id === studentId);
-        if (!student) return;
+        if (!student) return false;
 
         const currentMetrics = student.profile_data?.metrics || [];
         const newMetric = {
@@ -146,7 +148,7 @@ export const StudentProvider = ({ children }) => {
         };
 
         const updatedMetrics = [...currentMetrics, newMetric];
-        await updateStudent(studentId, { metrics: updatedMetrics });
+        return await updateStudent(studentId, { metrics: updatedMetrics });
     };
 
     const deleteBodyMetric = async (id) => {
@@ -154,8 +156,9 @@ export const StudentProvider = ({ children }) => {
         if (targetStudent) {
             const currentMetrics = targetStudent.profile_data.metrics || [];
             const updatedMetrics = currentMetrics.filter(m => m.id !== id);
-            await updateStudent(targetStudent.id, { metrics: updatedMetrics });
+            return await updateStudent(targetStudent.id, { metrics: updatedMetrics });
         }
+        return false;
     };
 
     const updateBodyMetric = async (id, weight, date, skinfolds = null, bodyFat = null, circumferences = null) => {
@@ -175,8 +178,9 @@ export const StudentProvider = ({ children }) => {
                 }
                 return m;
             });
-            await updateStudent(targetStudent.id, { metrics: updatedMetrics });
+            return await updateStudent(targetStudent.id, { metrics: updatedMetrics });
         }
+        return false;
     };
 
     const bodyMetrics = React.useMemo(() => {
