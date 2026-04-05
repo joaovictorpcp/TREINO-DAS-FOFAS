@@ -13,14 +13,28 @@ const Dashboard = () => {
     const workouts = useMemo(() => Array.isArray(context.workouts) ? context.workouts : [], [context.workouts]);
     const { selectedStudentId, students } = useStudent();
 
-    // Determine the active ID based on role
-    // If student, their own ID is the target. If professor, it is the selected one.
-    const activeId = role === 'aluno' ? session?.user?.id : selectedStudentId;
+    // Get student data from context if available, otherwise fall back to metadata (for login sync)
+    const studentData = useMemo(() => students.find(s => s.id === activeId), [students, activeId]);
 
-    // If no student selected, user should stick to "Select Student" or "Loading"
-    const currentStudent = role === 'aluno'
-        ? { name: session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.name || 'Aluno' }
-        : students.find(s => s.id === activeId);
+    const currentStudent = useMemo(() => {
+        if (studentData) return studentData;
+        if (role === 'aluno' && session?.user) {
+            return {
+                name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || 'Aluno'
+            };
+        }
+        return null;
+    }, [studentData, role, session]);
+
+    // Format name to show only first two names (João Victor)
+    const displayName = useMemo(() => {
+        const rawName = currentStudent?.name || currentStudent?.full_name;
+        if (!rawName || rawName === 'null' || rawName === 'undefined') return 'Aluno';
+
+        const parts = rawName.trim().split(/\s+/);
+        if (parts.length <= 2) return rawName;
+        return `${parts[0]} ${parts[1]}`;
+    }, [currentStudent]);
 
     // --- MISSED WORKOUTS LOGIC ---
     const missedStats = useMemo(() => {
@@ -295,7 +309,7 @@ const Dashboard = () => {
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <h1 className={styles.title} style={{ color: 'var(--text-primary)' }}>
-                                {currentStudent ? `Olá, ${currentStudent.name}` : 'Bem-vindo'}
+                                {`Olá, ${displayName}`}
                             </h1>
                             {rankingData && (
                                 <div style={{

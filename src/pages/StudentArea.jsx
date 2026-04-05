@@ -14,7 +14,27 @@ const StudentArea = () => {
     const workouts = useMemo(() => Array.isArray(context.workouts) ? context.workouts : [], [context.workouts]);
 
     const activeId = session?.user?.id;
-    const currentStudent = { name: session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.name || 'Aluno' };
+    const studentData = useMemo(() => students.find(s => s.id === activeId), [students, activeId]);
+
+    const currentStudent = useMemo(() => {
+        if (studentData) return studentData;
+        if (session?.user) {
+            return {
+                name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || 'Aluno'
+            };
+        }
+        return null;
+    }, [studentData, session]);
+
+    // Format name to show only first two names (João Victor)
+    const displayName = useMemo(() => {
+        const rawName = currentStudent?.name || currentStudent?.full_name;
+        if (!rawName || rawName === 'null' || rawName === 'undefined') return 'Aluno';
+
+        const parts = rawName.trim().split(/\s+/);
+        if (parts.length <= 2) return rawName;
+        return `${parts[0]} ${parts[1]}`;
+    }, [currentStudent]);
 
     const handleLogout = async () => {
         await signOut();
@@ -277,7 +297,7 @@ const StudentArea = () => {
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <h1 className={styles.title} style={{ color: 'var(--text-primary)' }}>
-                                {currentStudent ? `Olá, ${currentStudent.name}` : 'Bem-vindo'}
+                                {`Olá, ${displayName}`}
                             </h1>
                             {rankingData && (
                                 <div style={{
