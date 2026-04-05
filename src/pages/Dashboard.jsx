@@ -13,6 +13,9 @@ const Dashboard = () => {
     const workouts = useMemo(() => Array.isArray(context.workouts) ? context.workouts : [], [context.workouts]);
     const { selectedStudentId, students } = useStudent();
 
+    // Determine the active ID based on role
+    const activeId = role === 'aluno' ? session?.user?.id : selectedStudentId;
+
     // Get student data from context if available, otherwise fall back to metadata (for login sync)
     const studentData = useMemo(() => students.find(s => s.id === activeId), [students, activeId]);
 
