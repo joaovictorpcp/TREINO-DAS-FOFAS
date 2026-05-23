@@ -177,7 +177,7 @@ const TrainingLog = () => {
                 }
 
                 if (!isNaN(dur) && !isNaN(rpe)) {
-                    normalizedLoad = dur * rpe;
+                    normalizedLoad = Math.round(dur * rpe);
                 } else {
                     // Fallback Estimation
                     const totalSets = validExercises.reduce((acc, ex) => acc + (parseInt(ex.sets) || 0), 0);
@@ -212,10 +212,10 @@ const TrainingLog = () => {
                     status: 'completed',
                     category,
                     observations,
-                    session_rpe: sessionRpe,
-                    duration_minutes: durationMinutes,
-                    normalized_load: normalizedLoad,
-                    volume_load_kg: validExercises.reduce((acc, ex) => acc + (calculateVTT(ex.sets, ex.reps, ex.load)), 0),
+                    session_rpe: sessionRpe ? parseFloat(sessionRpe) : null,
+                    duration_minutes: durationMinutes ? parseInt(durationMinutes) : null,
+                    normalized_load: Math.round(normalizedLoad),
+                    volume_load_kg: parseFloat(validExercises.reduce((acc, ex) => acc + (calculateVTT(ex.sets, ex.reps, ex.load)), 0).toFixed(2)),
                     meta: { mesocycle, week },
                     studentId: resolvedStudentId,
                     exercises: validExercises.map(ex => ({
@@ -232,7 +232,7 @@ const TrainingLog = () => {
                     return;
                 }
 
-                normalizedLoad = (parseFloat(durationMinutes) || 0) * (parseFloat(sessionRpe) || 0);
+                normalizedLoad = Math.round((parseFloat(durationMinutes) || 0) * (parseFloat(sessionRpe) || 0));
 
                 const existingWorkoutCardio = isEditing ? getWorkoutById(id) : null;
                 const resolvedStudentIdCardio =
@@ -248,9 +248,9 @@ const TrainingLog = () => {
                     status: 'completed',
                     category: category || activityType.charAt(0).toUpperCase() + activityType.slice(1),
                     observations,
-                    session_rpe: sessionRpe,
-                    duration_minutes: durationMinutes,
-                    normalized_load: normalizedLoad,
+                    session_rpe: sessionRpe ? parseFloat(sessionRpe) : null,
+                    duration_minutes: durationMinutes ? parseInt(durationMinutes) : null,
+                    normalized_load: Math.round(normalizedLoad),
 
                     // Cardio Specifics
                     distance_km: parseFloat(distance) || 0,

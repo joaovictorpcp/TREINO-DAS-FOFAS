@@ -108,12 +108,12 @@ export const WorkoutProvider = ({ children }) => {
 
       ...workout, // catch-all
 
-      // Overwrite/Sanitize numerics
-      duration_minutes: workout.duration_minutes === "" ? null : workout.duration_minutes,
-      distance_km: workout.distance_km === "" ? null : workout.distance_km,
-      session_rpe: workout.session_rpe === "" ? null : workout.session_rpe,
-      volume_load_kg: workout.volume_load_kg === "" ? null : workout.volume_load_kg,
-      normalized_load: workout.normalized_load === "" ? null : workout.normalized_load,
+      // Overwrite/Sanitize numerics — ensure correct types for DB columns
+      duration_minutes: workout.duration_minutes === "" || workout.duration_minutes == null ? null : parseInt(workout.duration_minutes),
+      distance_km: workout.distance_km === "" || workout.distance_km == null ? null : parseFloat(workout.distance_km),
+      session_rpe: workout.session_rpe === "" || workout.session_rpe == null ? null : parseFloat(workout.session_rpe),
+      volume_load_kg: workout.volume_load_kg === "" || workout.volume_load_kg == null ? null : parseFloat(workout.volume_load_kg),
+      normalized_load: workout.normalized_load === "" || workout.normalized_load == null ? null : Math.round(Number(workout.normalized_load)),
     };
 
     // Remove client-side only fields that might conflict or aren't columns
@@ -354,10 +354,20 @@ export const WorkoutProvider = ({ children }) => {
       // Map studentId to student_id if present
       const dbData = { ...updatedData };
 
-      // Sanitize standard numeric fields (convert "" to null)
+      // Sanitize standard numeric fields (convert "" to null, cast to proper types)
       ['duration_minutes', 'distance_km', 'session_rpe', 'volume_load_kg', 'normalized_load'].forEach(field => {
         if (dbData[field] === "") dbData[field] = null;
       });
+
+      // Cast to proper DB types (integer columns vs numeric columns)
+      if (dbData.duration_minutes != null) dbData.duration_minutes = parseInt(dbData.duration_minutes);
+      if (dbData.normalized_load != null) dbData.normalized_load = Math.round(Number(dbData.normalized_load));
+      if (dbData.session_rpe != null) dbData.session_rpe = parseFloat(dbData.session_rpe);
+      if (dbData.volume_load_kg != null) dbData.volume_load_kg = parseFloat(dbData.volume_load_kg);
+      if (dbData.distance_km != null) dbData.distance_km = parseFloat(dbData.distance_km);
+      if (dbData.average_heart_rate != null) dbData.average_heart_rate = parseInt(dbData.average_heart_rate);
+      if (dbData.average_watts != null) dbData.average_watts = parseInt(dbData.average_watts);
+      if (dbData.elevation_gain != null) dbData.elevation_gain = parseInt(dbData.elevation_gain);
 
       if ('studentId' in dbData) {
         if (dbData.studentId) {
@@ -799,9 +809,9 @@ export const WorkoutProvider = ({ children }) => {
             status: 'planned',
 
             activity_type: programData.activityType || 'weightlifting',
-            duration_minutes: base.duration_minutes === "" ? null : base.duration_minutes,
-            distance_km: base.distance_km === "" ? null : base.distance_km,
-            session_rpe: base.session_rpe === "" ? null : base.session_rpe,
+            duration_minutes: base.duration_minutes === "" || base.duration_minutes == null ? null : parseInt(base.duration_minutes),
+            distance_km: base.distance_km === "" || base.distance_km == null ? null : parseFloat(base.distance_km),
+            session_rpe: base.session_rpe === "" || base.session_rpe == null ? null : parseFloat(base.session_rpe),
             drills_description: base.drills_description,
             main_set_description: base.main_set_description,
 
@@ -1065,7 +1075,6 @@ export const WorkoutProvider = ({ children }) => {
       createMesocycle,
       getExerciseHistory,
       getRecentAverageVolume,
-      getPMCData,
       getPMCData,
       importMesocycle,
       duplicateMesocycleToNext,
