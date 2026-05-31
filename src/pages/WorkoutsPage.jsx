@@ -344,11 +344,11 @@ const WorkoutsPage = () => {
                                     value={importSourceStudentId}
                                     onChange={e => setImportSourceStudentId(e.target.value)}
                                     className="input"
-                                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
                                 >
-                                    <option value="">Selecione...</option>
+                                    <option value="" style={{ backgroundColor: '#0A0A0A', color: '#FAFAFA' }}>Selecione...</option>
                                     {students.filter(s => s.id !== selectedStudentId).map(s => (
-                                        <option key={s.id} value={s.id}>{s.name}</option>
+                                        <option key={s.id} value={s.id} style={{ backgroundColor: '#0A0A0A', color: '#FAFAFA' }}>{s.name}</option>
                                     ))}
                                 </select>
                             </div>
@@ -362,12 +362,12 @@ const WorkoutsPage = () => {
                                         value={importSourceMeso}
                                         onChange={e => setImportSourceMeso(e.target.value)}
                                         className="input"
-                                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
+                                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
                                     >
-                                        <option value="">Selecione...</option>
-                                        {sourceMesocycles.length === 0 && <option disabled>Nenhum treino encontrado</option>}
+                                        <option value="" style={{ backgroundColor: '#0A0A0A', color: '#FAFAFA' }}>Selecione...</option>
+                                        {sourceMesocycles.length === 0 && <option disabled style={{ backgroundColor: '#0A0A0A', color: '#FAFAFA' }}>Nenhum treino encontrado</option>}
                                         {sourceMesocycles.map(m => (
-                                            <option key={m} value={m}>Mesociclo #{m}</option>
+                                            <option key={m} value={m} style={{ backgroundColor: '#0A0A0A', color: '#FAFAFA' }}>Mesociclo #{m}</option>
                                         ))}
                                     </select>
                                 </div>
