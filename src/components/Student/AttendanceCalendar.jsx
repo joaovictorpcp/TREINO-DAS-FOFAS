@@ -38,9 +38,8 @@ const AttendanceCalendar = ({ onDayClick, fullPageMode = false }) => {
 
         const sortedTargets = [...targets].sort((a, b) => new Date(a.date) - new Date(b.date));
         const earliestDate = new Date(sortedTargets[0].date);
-        const newStartDate = new Date(duplicateTargetDate);
-        // Set newStartDate to Noon to avoid TZ issues
-        newStartDate.setHours(12, 0, 0, 0);
+        const [y, m, d] = duplicateTargetDate.split('-').map(Number);
+        const newStartDate = new Date(y, m - 1, d, 12, 0, 0);
 
         const timeDiff = newStartDate.getTime() - earliestDate.getTime();
 
