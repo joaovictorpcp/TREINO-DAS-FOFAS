@@ -348,7 +348,9 @@ const WorkoutsPage = () => {
                                 >
                                     <option value="" style={{ backgroundColor: '#0A0A0A', color: '#FAFAFA' }}>Selecione...</option>
                                     {students.filter(s => s.id !== selectedStudentId).map(s => (
-                                        <option key={s.id} value={s.id} style={{ backgroundColor: '#0A0A0A', color: '#FAFAFA' }}>{s.name}</option>
+                                        <option key={s.id} value={s.id} style={{ backgroundColor: '#0A0A0A', color: '#FAFAFA' }}>
+                                            {s.name || s.full_name || s.email || 'Aluno(a)'}
+                                        </option>
                                     ))}
                                 </select>
                             </div>
