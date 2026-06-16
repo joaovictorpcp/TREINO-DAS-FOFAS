@@ -175,137 +175,11 @@
     }
 }
 
-/* Mobile Responsiveness - Compact Grid Refactor */
-@media (max-width: 900px) {
-    .header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-    }
-
-    .tableContainer {
-        padding: 0;
-        background: transparent;
-        border: none;
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
-        box-shadow: none;
-    }
-
-    .desktopHeader {
-        display: none !important;
-    }
-
-    .rowsContainer {
-        gap: 0.75rem;
-    }
-
-    .gridRow {
-        display: grid;
-        /* Name (Full) | Sets (1) Reps (1) Load (1) | RPE (1) RIR (1) Trash/Plus (1) */
-        grid-template-columns: 1fr 1fr 1fr;
-        background: var(--bg-card);
-        border-radius: var(--radius-lg);
-        padding: 1rem;
-        box-shadow: var(--shadow-sm);
-        border: 1px solid var(--border-subtle);
-        gap: 0.75rem;
-        backdrop-filter: blur(12px);
-    }
-
-    /* 1. Name: Full Width Top */
-    .colName {
-        grid-column: span 3;
-        width: 100%;
-        margin-bottom: 4px;
-        display: block;
-    }
-
-    .colName input {
-        text-align: left;
-        font-size: 1rem;
-        padding: 8px 0;
-        border: none;
-        border-bottom: 1px dashed var(--border-subtle);
-        border-radius: 0;
-        background: transparent;
-    }
-
-    /* 2. Numeric Rows: Compact Grid */
-    .colNum {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        align-items: center;
-        justify-content: flex-start;
-    }
-
-    .colVtt {
-        display: none;
-        /* Auto-calculated, maybe hide on mobile to save space or move to bottom? */
-    }
-
-    /* Mobile Labels */
-    .mobileLabel {
-        display: block;
-        font-size: 0.65rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--text-secondary);
-        font-weight: 700;
-        text-align: center;
-        min-width: auto;
-    }
-
-    .gridRow input:not(.colName input) {
-        width: 100%;
-        text-align: center;
-        padding: 8px 4px;
-        font-size: 1rem;
-        background: var(--bg-secondary);
-        border-radius: 8px;
-    }
-
-    /* 3. Actions: Bottom Right or merged in grid */
-    .colAction {
-        grid-column: span 3;
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        gap: 12px;
-        padding-top: 8px;
-        border-top: 1px solid var(--border-subtle);
-        margin-top: 4px;
-    }
-
-    /* Specific field placement if we want 2 rows of numbers */
-    /* Row 1: Sets, Reps, Load */
-    /* Row 2: RPE, RIR, VTT? */
-    /* Let's try 3 columns layout logic naturally from DOM order */
-    /* DOM Order: Name, Sets, Reps, Load, RPE, RIR, VTT, Action */
-
-    /* Force specific grid placement if order matters */
-    /* Name is first child */
-
-    /* Hide VTT on mobile to declutter? Or span it? */
-    .colVtt {
-        display: none;
-    }
-
-    /* Hide Add Exercise Button in Edit Mode on Mobile */
-    :global(.page-container).editingMode .footerActions {
-        display: none;
-    }
-}
-
+/* ============================================
+   MOBILE LABEL — hidden on desktop
+   ============================================ */
 .mobileLabel {
     display: none;
-}
-
-@media (max-width: 900px) {
-    .mobileLabel {
-        display: block;
-    }
 }
 
 /* Header Controls Alignment */
@@ -376,25 +250,319 @@
 
 /* C */
 
+/* ============================================
+   SUGGESTED LOAD INDICATOR
+   ============================================ */
+.suggestedLoad {
+    border-color: var(--accent-primary) !important;
+    background: rgba(204, 255, 0, 0.05) !important;
+}
+
+/* ============================================
+   COLLAPSIBLE DETAILS TOGGLE (RPE/RIR on mobile)
+   ============================================ */
+.detailsToggle {
+    display: none;
+}
+
+/* ============================================
+   PAGE ACTIONS (Save button area)
+   ============================================ */
+.pageActions {
+    display: flex;
+    justify-content: center;
+    padding: 2rem 0;
+}
+
+/* ============================================
+   HIGH STRESS ROW
+   ============================================ */
+.highStressRow {
+    border-left: 3px solid var(--accent-danger) !important;
+}
+
+
+/* ============================================================
+   MOBILE RESPONSIVE — COMPLETE OVERHAUL
+   ============================================================ */
+@media (max-width: 900px) {
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+        margin-bottom: var(--space-md);
+    }
+
+    /* ---- TABLE CONTAINER: transparent on mobile ---- */
+    .tableContainer {
+        padding: 0;
+        background: transparent;
+        border: none;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        box-shadow: none;
+    }
+
+    /* ---- HIDE DESKTOP HEADER ---- */
+    .desktopHeader {
+        display: none !important;
+    }
+
+    /* ---- ROWS CONTAINER: tighter gap ---- */
+    .rowsContainer {
+        gap: 0.75rem;
+    }
+
+    /* ---- GRID ROW: CARD LAYOUT ---- */
+    .gridRow {
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-card);
+        border-radius: 16px;
+        padding: 1rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--border-subtle);
+        gap: 0;
+        transition: border-color 0.2s;
+    }
+
+    .gridRow:focus-within {
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 1px var(--accent-glow), 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    /* ---- EXERCISE NAME: full width top ---- */
+    .colName {
+        width: 100%;
+        margin-bottom: 0.75rem;
+        display: block;
+    }
+
+    .colName input {
+        text-align: left;
+        font-size: 1rem;
+        font-weight: 700;
+        padding: 10px 0;
+        border: none;
+        border-bottom: 1px dashed var(--border-subtle);
+        border-radius: 0;
+        background: transparent;
+        width: 100%;
+    }
+
+    .colName input::placeholder {
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    /* ---- NUMERIC FIELDS CONTAINER ---- */
+    .mobileNumericRow {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    /* ---- EACH NUMERIC FIELD ---- */
+    .colNum {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        align-items: stretch;
+    }
+
+    .colNum input {
+        width: 100%;
+        text-align: center;
+        padding: 12px 8px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        color: var(--text-primary);
+        min-height: 48px;
+        transition: all 0.15s ease;
+    }
+
+    .colNum input:focus {
+        border-color: var(--accent-primary);
+        background: #18181b;
+        box-shadow: 0 0 0 2px var(--accent-glow);
+        transform: scale(1.02);
+    }
+
+    .colNum input::placeholder {
+        color: var(--text-muted);
+        font-weight: 400;
+        font-size: 0.9rem;
+    }
+
+    /* ---- MOBILE LABELS: visible ---- */
+    .mobileLabel {
+        display: block;
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+        font-weight: 700;
+        text-align: center;
+        min-width: auto;
+        margin-bottom: 2px;
+    }
+
+    /* ---- VTT: hide on mobile ---- */
+    .colVtt {
+        display: none;
+    }
+
+    /* ---- DETAILS TOGGLE: visible on mobile ---- */
+    .detailsToggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        width: 100%;
+        padding: 8px;
+        margin-top: 0.5rem;
+        background: transparent;
+        border: 1px dashed var(--border-subtle);
+        border-radius: 10px;
+        color: var(--text-muted);
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .detailsToggle:active {
+        background: rgba(255, 255, 255, 0.03);
+        border-color: var(--accent-primary);
+        color: var(--accent-primary);
+    }
+
+    /* ---- COLLAPSIBLE DETAILS AREA ---- */
+    .detailsArea {
+        overflow: hidden;
+        max-height: 0;
+        opacity: 0;
+        transition: max-height 0.3s ease, opacity 0.2s ease, margin 0.2s ease;
+        margin-top: 0;
+    }
+
+    .detailsAreaOpen {
+        max-height: 200px;
+        opacity: 1;
+        margin-top: 0.5rem;
+    }
+
+    /* ---- ACTIONS: inline at bottom ---- */
+    .colAction {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 8px;
+        padding-top: 8px;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        margin-top: 0.5rem;
+        width: 100%;
+    }
+
+    .colAction .iconBtn {
+        width: 40px;
+        height: 40px;
+    }
+
+    /* ---- SUPERSET GROUP ---- */
+    .supersetGroup {
+        padding: 0.5rem;
+        gap: 0.5rem;
+        border-radius: 16px;
+    }
+
+    .supersetGroup .gridRow {
+        margin-left: 0;
+        border-left: 3px solid var(--accent-primary);
+        border-radius: 12px;
+    }
+
+    /* ---- FOOTER ACTIONS ---- */
+    .footerActions {
+        margin-top: 1rem;
+    }
+
+    .footerActions button {
+        min-height: 52px;
+        font-size: 0.95rem;
+    }
+
+    /* ---- PAGE ACTIONS: STICKY SAVE BUTTON ---- */
+    .pageActions {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom));
+        background: linear-gradient(to top, rgba(5, 5, 5, 0.98) 70%, transparent);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        z-index: 50;
+        display: flex;
+        justify-content: center;
+    }
+
+    .pageActions button {
+        width: 100%;
+        max-width: 400px;
+        min-height: 54px;
+        font-size: 1rem;
+        border-radius: 16px;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+    }
+}
+
+/* ============================================================
+   SMALL MOBILE (<600px) — EXTRA COMPACT
+   ============================================================ */
 @media (max-width: 600px) {
     .headerControls {
         display: grid;
         grid-template-columns: 1fr 1fr;
         width: 100%;
-        gap: 1rem;
+        gap: 0.75rem;
     }
 
     .controlGroup input,
     .controlGroup select {
         width: 100% !important;
+        min-height: 48px;
     }
 
-    .controlGroup:nth-child(2) {
+    /* Date field spans full width */
+    .controlGroup:first-child {
         grid-column: span 2;
     }
 
     .typeSelector {
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
+        height: auto;
+    }
+
+    .typeBtn {
+        padding: 10px 8px;
+        font-size: 0.85rem;
+        min-height: 44px;
+    }
+
+    .title {
+        font-size: 1.3rem;
+    }
+
+    .subtitle {
+        font-size: 0.85rem;
     }
 }

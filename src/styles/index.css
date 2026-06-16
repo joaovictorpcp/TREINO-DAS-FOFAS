@@ -63,6 +63,11 @@
 }
 
 /* Reset & Base */
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
 *,
 *::before,
 *::after {
@@ -83,6 +88,7 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
   overflow-x: hidden;
   /* Prevent horizontal scroll */
+  -webkit-overflow-scrolling: touch;
 }
 
 h1,
@@ -133,8 +139,11 @@ h3 {
   border-radius: var(--radius-md);
   width: 100%;
   font-family: var(--font-main);
-  font-size: 0.95rem;
+  font-size: 1rem;
   transition: all 0.2s;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
 }
 
 .input:focus {
@@ -142,6 +151,17 @@ h3 {
   border-color: var(--accent-primary);
   box-shadow: 0 0 0 2px var(--accent-glow);
   background: #18181b;
+}
+
+/* Remove number input spinners globally */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
 }
 
 /* Standard Pill Button Configuration */
@@ -184,7 +204,6 @@ h3 {
   /* Slightly wider for dashboard feeling */
   margin: 0 auto;
   padding: 6rem var(--space-md) 6rem;
-  /* Top 6rem, Sides 1rem, Bottom 6rem */
   /* Top 6rem, Sides 1rem, Bottom 6rem */
   min-height: 100vh;
   display: flex;
@@ -274,13 +293,30 @@ h3 {
     height: 300px;
   }
 
+  /* Mobile: Force 16px minimum on ALL form elements to prevent iOS zoom */
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+
   /* Mobile Touch Targets & Safe Areas */
   button,
   a,
   input,
-  select {
+  select,
+  textarea {
     min-height: 44px;
     /* Apple Human Interface Guidelines */
     touch-action: manipulation;
+  }
+
+  /* Reduce page padding on mobile for more space */
+  .page-container {
+    padding: 4.5rem var(--space-sm) 7rem;
+    gap: var(--space-lg);
   }
 }
