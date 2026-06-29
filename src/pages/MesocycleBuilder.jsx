@@ -47,12 +47,6 @@ const MesocycleBuilder = () => {
 
     const [activeTab, setActiveTab] = useState('A');
 
-    // ── Controle de bloco para auto-atribuição (A1, A2, B1...) ──
-    const [blockTrackers, setBlockTrackers] = useState({
-        // Rastreia por aba de treino: { 'A': { letter: 'A', number: 1 }, 'B': ... }
-        'A': { letter: 'A', number: 1 }
-    });
-
     // ── Estado do novo exercício (schema atualizado) ──
     const [newExercise, setNewExercise] = useState({
         name: '', sets: '3', reps: '8-12', rest: '60s', targetRpe: '7-8', block: ''
@@ -62,54 +56,53 @@ const MesocycleBuilder = () => {
         return <div className="p-8 text-center">Selecione um aluno primeiro.</div>;
     }
 
-    // ── Obtém o tracker de bloco atual para a aba ativa ──
+    // ── Obtém o tracker de bloco atual dinamicamente com base nos exercícios existentes ──
     const getCurrentTracker = () => {
-        return blockTrackers[activeTab] || { letter: 'A', number: 1 };
+        const activeWorkout = baseWorkouts.find(w => w.id === activeTab);
+        const exercises = activeWorkout ? activeWorkout.exercises : [];
+        if (!exercises || exercises.length === 0) {
+            return { letter: 'A', number: 1 };
+        }
+        
+        const lastExercise = exercises[exercises.length - 1];
+        const lastBlock = lastExercise.block || 'A1';
+        
+        const match = lastBlock.match(/^([A-Za-z]+)(\d+)$/);
+        if (match) {
+            const letter = match[1].toUpperCase();
+            const number = parseInt(match[2], 10);
+            return { letter, number };
+        }
+        
+        return { letter: 'A', number: 1 };
     };
 
-    // ── Avança para o próximo bloco (A→B→C...) ──
-    const handleNewBlock = () => {
-        setBlockTrackers(prev => {
-            const current = prev[activeTab] || { letter: 'A', number: 1 };
-            const nextLetter = String.fromCharCode(current.letter.charCodeAt(0) + 1);
-            return { ...prev, [activeTab]: { letter: nextLetter, number: 1 } };
-        });
-    };
-
-    // ── Adicionar aba de treino ──
-    const handleAddWorkoutTab = () => {
-        const nextLetter = String.fromCharCode(65 + baseWorkouts.length); // A, B, C...
-        const newTabId = nextLetter;
-        setBaseWorkouts([...baseWorkouts, {
-            id: newTabId,
-            name: `Treino ${nextLetter}`,
-            subtitle: '',
-            exercises: [],
-            duration: '',
-            distance: '',
-            rpe: '',
-            drills: '',
-            mainSet: '',
-            scheduledDays: []
-        }]);
-        // Inicializa o tracker de bloco para a nova aba
-        setBlockTrackers(prev => ({ ...prev, [newTabId]: { letter: 'A', number: 1 } }));
-        setActiveTab(newTabId);
-    };
-
-    // ── Alterar campo de treino base ──
-    const handleBaseWorkoutChange = (workoutId, field, value) => {
-        setBaseWorkouts(prev => prev.map(w => {
-            if (w.id === workoutId) {
-                return { ...w, [field]: value };
-            }
-            return w;
-        }));
-    };
-
-    // ── Adicionar exercício com auto-block ──
-    const handleAddExercise = () => {
+    // ── Obtém a sugestão de bloco para o próximo exercício ──
+    const getNextTracker = () => {
         const tracker = getCurrentTracker();
+        const activeWorkout = baseWorkouts.find(w => w.id === activeTab);
+        const exercises = activeWorkout ? activeWorkout.exercises : [];
+        if (!exercises || exercises.length === 0) {
+            return { letter: 'A', number: 1 };
+        }
+        return { letter: tracker.letter, number: tracker.number + 1 };
+    };
+
+    // ── Obtém o tracker do próximo bloco de letra (A→B→C...) ──
+    const getNextLetterTracker = () => {
+        const tracker = getCurrentTracker();
+        const activeWorkout = baseWorkouts.find(w => w.id === activeTab);
+        const exercises = activeWorkout ? activeWorkout.exercises : [];
+        if (!exercises || exercises.length === 0) {
+            return { letter: 'A', number: 1 };
+        }
+        const nextLetter = String.fromCharCode(tracker.letter.charCodeAt(0) + 1);
+        return { letter: nextLetter, number: 1 };
+    };
+
+    // ── Avança para o próximo bloco (Adiciona um exercício com a próxima letra) ──
+    const handleNewBlock = () => {
+        const tracker = getNextLetterTracker();
         const autoBlock = `${tracker.letter}${tracker.number}`;
 
         setBaseWorkouts(prev => prev.map(w => {
@@ -129,11 +122,58 @@ const MesocycleBuilder = () => {
             }
             return w;
         }));
+    };
 
-        // Incrementa o número do bloco
-        setBlockTrackers(prev => ({
-            ...prev,
-            [activeTab]: { ...tracker, number: tracker.number + 1 }
+    // ── Adicionar aba de treino ──
+    const handleAddWorkoutTab = () => {
+        const nextLetter = String.fromCharCode(65 + baseWorkouts.length); // A, B, C...
+        const newTabId = nextLetter;
+        setBaseWorkouts([...baseWorkouts, {
+            id: newTabId,
+            name: `Treino ${nextLetter}`,
+            subtitle: '',
+            exercises: [],
+            duration: '',
+            distance: '',
+            rpe: '',
+            drills: '',
+            mainSet: '',
+            scheduledDays: []
+        }]);
+        setActiveTab(newTabId);
+    };
+
+    // ── Alterar campo de treino base ──
+    const handleBaseWorkoutChange = (workoutId, field, value) => {
+        setBaseWorkouts(prev => prev.map(w => {
+            if (w.id === workoutId) {
+                return { ...w, [field]: value };
+            }
+            return w;
+        }));
+    };
+
+    // ── Adicionar exercício com auto-block sugerido ──
+    const handleAddExercise = () => {
+        const tracker = getNextTracker();
+        const autoBlock = `${tracker.letter}${tracker.number}`;
+
+        setBaseWorkouts(prev => prev.map(w => {
+            if (w.id === activeTab) {
+                return {
+                    ...w,
+                    exercises: [...w.exercises, {
+                        id: crypto.randomUUID(),
+                        block: autoBlock,
+                        name: '',
+                        sets: '3',
+                        reps: '8-12',
+                        rest: '60s',
+                        targetRpe: '7-8',
+                    }]
+                };
+            }
+            return w;
         }));
     };
 
@@ -580,16 +620,23 @@ const MesocycleBuilder = () => {
 
                                                         {/* Coluna: Bloco */}
                                                         <div>
-                                                            <span
+                                                            <input
+                                                                type="text"
+                                                                value={ex.block || ''}
+                                                                onChange={(e) => handleExerciseChange(activeTab, ex.id, 'block', e.target.value.toUpperCase())}
                                                                 className={styles.blockBadge}
                                                                 style={{
                                                                     color: blockColor,
                                                                     background: `${blockColor}15`,
-                                                                    border: `1px solid ${blockColor}40`
+                                                                    border: `1px solid ${blockColor}40`,
+                                                                    textAlign: 'center',
+                                                                    fontWeight: '800',
+                                                                    textTransform: 'uppercase',
+                                                                    cursor: 'text'
                                                                 }}
-                                                            >
-                                                                {ex.block || '—'}
-                                                            </span>
+                                                                maxLength={3}
+                                                                placeholder="A1"
+                                                            />
                                                         </div>
 
                                                         {/* Coluna: Nome do exercício */}
@@ -679,9 +726,7 @@ const MesocycleBuilder = () => {
                                             title="Iniciar novo bloco de exercícios"
                                         >
                                             <Plus size={14} />
-                                            Novo Bloco ({String.fromCharCode(
-                                                (getCurrentTracker().letter.charCodeAt(0)) + 1
-                                            )})
+                                            Novo Bloco ({getNextLetterTracker().letter})
                                         </button>
                                     </div>
 
@@ -690,7 +735,7 @@ const MesocycleBuilder = () => {
                                         className={styles.addRowBtn}
                                     >
                                         <Plus size={16} />
-                                        Adicionar Exercício ({getCurrentTracker().letter}{getCurrentTracker().number})
+                                        Adicionar Exercício ({getNextTracker().letter}{getNextTracker().number})
                                     </button>
                                 </>
                             ) : (
