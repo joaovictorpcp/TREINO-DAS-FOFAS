@@ -784,11 +784,15 @@ export const WorkoutProvider = ({ children }) => {
             sets: ex.sets,
             reps: ex.reps || '',
             load: ex.load || '',
-            rpe: '',  // Empty
-            rir: '',  // Empty
+            rpe: '',  // Empty — preenchido pelo aluno na execução
+            rir: '',  // Empty — preenchido pelo aluno na execução
             vtt: 0,
             suggestProgression: false,
-            supersetId: ex.supersetId // Preserve Superset Link
+            supersetId: ex.supersetId, // Preserve Superset Link
+            // Campos de prescrição (novos) — referência visual para o aluno
+            block: ex.block || '',        // Ex: 'A1', 'B2', 'C1'
+            rest: ex.rest || '',          // Ex: '60s', '90s', '120s'
+            targetRpe: ex.targetRpe || '' // Ex: 'PSE 8', 'PSE 7-8', 'Técnica'
           }));
 
           newWorkouts.push({

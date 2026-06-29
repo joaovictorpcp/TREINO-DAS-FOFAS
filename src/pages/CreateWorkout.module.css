@@ -37,11 +37,36 @@
 /* Header Row */
 .desktopHeader {
     display: grid;
-    grid-template-columns: 3fr 1fr 1fr 1fr 1fr 1fr 1.2fr 40px;
+    grid-template-columns: 60px 3fr 1fr 1fr 1fr 1fr 1fr 1fr 1.2fr 40px;
     gap: var(--space-md);
     padding: 0 var(--space-md) var(--space-md) var(--space-md);
     margin-bottom: var(--space-md);
     border-bottom: 2px solid var(--border-subtle);
+}
+
+.colBlock {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.blockInput {
+    text-align: center !important;
+    font-weight: 800 !important;
+    text-transform: uppercase;
+}
+
+.blockBadgeMobile {
+    display: none; /* hidden on desktop */
+}
+
+.targetRpeRef {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    text-align: center;
+    margin-top: 2px;
+    font-style: italic;
+    font-weight: 600;
 }
 
 .colName,
@@ -81,7 +106,7 @@
 
 .gridRow {
     display: grid;
-    grid-template-columns: 3fr 1fr 1fr 1fr 1fr 1fr 1.2fr 40px;
+    grid-template-columns: 60px 3fr 1fr 1fr 1fr 1fr 1fr 1fr 1.2fr 40px;
     gap: var(--space-md);
     align-items: center;
     padding: 0.5rem 0;
@@ -313,17 +338,18 @@
         gap: 0.75rem;
     }
 
-    /* ---- GRID ROW: CARD LAYOUT ---- */
+    /* ---- GRID ROW: CARD LAYOUT AS A 3-COLUMN GRID ---- */
     .gridRow {
-        display: flex;
-        flex-direction: column;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
         background: var(--bg-card);
         border-radius: 16px;
-        padding: 1rem;
+        padding: 1.25rem 1rem 1rem 1rem;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         border: 1px solid var(--border-subtle);
-        gap: 0;
+        gap: 0.75rem 0.5rem;
         transition: border-color 0.2s;
+        position: relative;
     }
 
     .gridRow:focus-within {
@@ -331,10 +357,41 @@
         box-shadow: 0 0 0 1px var(--accent-glow), 0 4px 16px rgba(0, 0, 0, 0.4);
     }
 
+    /* Absolute block badge placement at top-left */
+    .colBlock {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        z-index: 10;
+        width: auto;
+        height: auto;
+        display: block;
+    }
+
+    .blockInput {
+        display: none !important;
+    }
+
+    .blockBadgeMobile {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.65rem;
+        font-weight: 900;
+        padding: 3px 6px;
+        border-radius: 4px;
+        letter-spacing: 0.05em;
+        min-width: 26px;
+        height: 20px;
+        text-transform: uppercase;
+    }
+
     /* ---- EXERCISE NAME: full width top ---- */
     .colName {
+        grid-column: span 3;
         width: 100%;
-        margin-bottom: 0.75rem;
+        margin-bottom: 0.25rem;
+        margin-top: 0.5rem; /* Space for block badge */
         display: block;
     }
 
@@ -355,33 +412,26 @@
         font-weight: 500;
     }
 
-    /* ---- NUMERIC FIELDS CONTAINER ---- */
-    .mobileNumericRow {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.5rem;
-        width: 100%;
-    }
-
-    /* ---- EACH NUMERIC FIELD ---- */
+    /* ---- EACH NUMERIC FIELD (Spans 1 column by default, forming 3 columns) ---- */
     .colNum {
         display: flex;
         flex-direction: column;
         gap: 4px;
         align-items: stretch;
+        grid-column: span 1;
     }
 
     .colNum input {
         width: 100%;
         text-align: center;
-        padding: 12px 8px;
-        font-size: 1.1rem;
+        padding: 10px 4px;
+        font-size: 1.05rem;
         font-weight: 600;
         background: var(--bg-secondary);
         border: 1px solid var(--border-subtle);
         border-radius: 12px;
         color: var(--text-primary);
-        min-height: 48px;
+        min-height: 44px;
         transition: all 0.15s ease;
     }
 
@@ -395,13 +445,13 @@
     .colNum input::placeholder {
         color: var(--text-muted);
         font-weight: 400;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
     }
 
     /* ---- MOBILE LABELS: visible ---- */
     .mobileLabel {
         display: block;
-        font-size: 0.65rem;
+        font-size: 0.6rem;
         text-transform: uppercase;
         letter-spacing: 0.08em;
         color: var(--text-muted);
@@ -416,57 +466,16 @@
         display: none;
     }
 
-    /* ---- DETAILS TOGGLE: visible on mobile ---- */
-    .detailsToggle {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        width: 100%;
-        padding: 8px;
-        margin-top: 0.5rem;
-        background: transparent;
-        border: 1px dashed var(--border-subtle);
-        border-radius: 10px;
-        color: var(--text-muted);
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .detailsToggle:active {
-        background: rgba(255, 255, 255, 0.03);
-        border-color: var(--accent-primary);
-        color: var(--accent-primary);
-    }
-
-    /* ---- COLLAPSIBLE DETAILS AREA ---- */
-    .detailsArea {
-        overflow: hidden;
-        max-height: 0;
-        opacity: 0;
-        transition: max-height 0.3s ease, opacity 0.2s ease, margin 0.2s ease;
-        margin-top: 0;
-    }
-
-    .detailsAreaOpen {
-        max-height: 200px;
-        opacity: 1;
-        margin-top: 0.5rem;
-    }
-
     /* ---- ACTIONS: inline at bottom ---- */
     .colAction {
+        grid-column: span 3;
         display: flex;
         justify-content: flex-end;
         align-items: center;
         gap: 8px;
         padding-top: 8px;
         border-top: 1px solid rgba(255, 255, 255, 0.05);
-        margin-top: 0.5rem;
+        margin-top: 0.25rem;
         width: 100%;
     }
 

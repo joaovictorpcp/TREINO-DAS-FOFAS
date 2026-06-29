@@ -2,8 +2,28 @@ import React, { useState } from 'react';
 import { useWorkout } from '../context/WorkoutContext';
 import { useStudent } from '../context/StudentContext';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2, Save, ArrowRight, ArrowLeft, Dumbbell, Footprints, Bike, Waves, Clock, Activity, MapPin, AlignLeft } from 'lucide-react';
+import { Plus, Trash2, Save, ArrowRight, ArrowLeft, Dumbbell, Footprints, Bike, Waves, Clock, Activity, MapPin, AlignLeft, Link } from 'lucide-react';
 import styles from './MesocycleBuilder.module.css';
+
+// ── Cores por letra de bloco (A, B, C, D...) ──
+const BLOCK_COLORS = {
+    A: '#CCFF00', // accent-primary (verde neon)
+    B: '#00B0FF', // azul elétrico
+    C: '#FFC400', // amarelo
+    D: '#FF3D00', // vermelho neon
+    E: '#E040FB', // roxo
+    F: '#00E5FF', // ciano
+};
+
+/**
+ * Retorna a cor correspondente à letra do bloco.
+ * Se a letra não estiver mapeada, retorna accent-primary por padrão.
+ */
+const getBlockColor = (blockLabel) => {
+    if (!blockLabel) return BLOCK_COLORS.A;
+    const letter = blockLabel.charAt(0).toUpperCase();
+    return BLOCK_COLORS[letter] || BLOCK_COLORS.A;
+};
 
 const MesocycleBuilder = () => {
     const { createMesocycle } = useWorkout();
@@ -12,8 +32,7 @@ const MesocycleBuilder = () => {
 
     const [step, setStep] = useState(1); // 1: Config, 2: Base Week
 
-
-
+    // ── Configuração do mesociclo ──
     const [config, setConfig] = useState({
         name: '',
         weeks: 4,
@@ -21,26 +40,50 @@ const MesocycleBuilder = () => {
         activityType: 'weightlifting' // Default
     });
 
+    // ── Treinos base com campo subtitle ──
     const [baseWorkouts, setBaseWorkouts] = useState([
-        { id: 'A', name: 'Treino A', exercises: [], duration: '', distance: '', rpe: '', drills: '', mainSet: '', scheduledDays: [] }
+        { id: 'A', name: 'Treino A', subtitle: '', exercises: [], duration: '', distance: '', rpe: '', drills: '', mainSet: '', scheduledDays: [] }
     ]);
 
     const [activeTab, setActiveTab] = useState('A');
 
-    // Exercise Input State
-    const [newExercise, setNewExercise] = useState({ name: '', sets: '3', reps: '8-12' });
+    // ── Controle de bloco para auto-atribuição (A1, A2, B1...) ──
+    const [blockTrackers, setBlockTrackers] = useState({
+        // Rastreia por aba de treino: { 'A': { letter: 'A', number: 1 }, 'B': ... }
+        'A': { letter: 'A', number: 1 }
+    });
 
+    // ── Estado do novo exercício (schema atualizado) ──
+    const [newExercise, setNewExercise] = useState({
+        name: '', sets: '3', reps: '8-12', rest: '60s', targetRpe: '7-8', block: ''
+    });
 
     if (!selectedStudentId) {
         return <div className="p-8 text-center">Selecione um aluno primeiro.</div>;
     }
 
+    // ── Obtém o tracker de bloco atual para a aba ativa ──
+    const getCurrentTracker = () => {
+        return blockTrackers[activeTab] || { letter: 'A', number: 1 };
+    };
+
+    // ── Avança para o próximo bloco (A→B→C...) ──
+    const handleNewBlock = () => {
+        setBlockTrackers(prev => {
+            const current = prev[activeTab] || { letter: 'A', number: 1 };
+            const nextLetter = String.fromCharCode(current.letter.charCodeAt(0) + 1);
+            return { ...prev, [activeTab]: { letter: nextLetter, number: 1 } };
+        });
+    };
+
+    // ── Adicionar aba de treino ──
     const handleAddWorkoutTab = () => {
         const nextLetter = String.fromCharCode(65 + baseWorkouts.length); // A, B, C...
         const newTabId = nextLetter;
         setBaseWorkouts([...baseWorkouts, {
             id: newTabId,
             name: `Treino ${nextLetter}`,
+            subtitle: '',
             exercises: [],
             duration: '',
             distance: '',
@@ -49,9 +92,12 @@ const MesocycleBuilder = () => {
             mainSet: '',
             scheduledDays: []
         }]);
+        // Inicializa o tracker de bloco para a nova aba
+        setBlockTrackers(prev => ({ ...prev, [newTabId]: { letter: 'A', number: 1 } }));
         setActiveTab(newTabId);
     };
 
+    // ── Alterar campo de treino base ──
     const handleBaseWorkoutChange = (workoutId, field, value) => {
         setBaseWorkouts(prev => prev.map(w => {
             if (w.id === workoutId) {
@@ -61,17 +107,37 @@ const MesocycleBuilder = () => {
         }));
     };
 
+    // ── Adicionar exercício com auto-block ──
     const handleAddExercise = () => {
-        if (!newExercise.name) return;
+        const tracker = getCurrentTracker();
+        const autoBlock = `${tracker.letter}${tracker.number}`;
+
         setBaseWorkouts(prev => prev.map(w => {
             if (w.id === activeTab) {
-                return { ...w, exercises: [...w.exercises, { ...newExercise, id: crypto.randomUUID() }] };
+                return {
+                    ...w,
+                    exercises: [...w.exercises, {
+                        id: crypto.randomUUID(),
+                        block: autoBlock,
+                        name: '',
+                        sets: '3',
+                        reps: '8-12',
+                        rest: '60s',
+                        targetRpe: '7-8',
+                    }]
+                };
             }
             return w;
         }));
-        setNewExercise({ name: '', sets: '3', reps: '8-12' });
+
+        // Incrementa o número do bloco
+        setBlockTrackers(prev => ({
+            ...prev,
+            [activeTab]: { ...tracker, number: tracker.number + 1 }
+        }));
     };
 
+    // ── Remover exercício ──
     const handleRemoveExercise = (workoutId, exerciseId) => {
         setBaseWorkouts(prev => prev.map(w => {
             if (w.id === workoutId) {
@@ -81,11 +147,12 @@ const MesocycleBuilder = () => {
         }));
     };
 
+    // ── Gerar mesociclo (validação e envio) ──
     const handleGenerate = () => {
         console.log("handleGenerate: Started");
         console.log("Config:", config);
 
-        // Basic Validation
+        // Validação básica
         if (!config.name) {
             alert('Preencha o nome do programa.');
             return;
@@ -96,17 +163,14 @@ const MesocycleBuilder = () => {
             return;
         }
 
-        // Specific Validation
+        // Validação específica por modalidade
         if (config.activityType === 'weightlifting') {
             if (baseWorkouts.some(w => w.exercises.length === 0)) {
                 alert('Adicione exercícios em todos os treinos de musculação.');
                 return;
             }
         } else {
-            // For cardio, maybe warn if empty but allow? Or check duration?
-            // Let's at least check if duration is provided for all
             if (baseWorkouts.some(w => !w.duration && !w.distance)) {
-                // Converting to confirm since it might be intentional
                 if (!confirm('Alguns treinos estão sem Duração ou Distância. Continuar mesmo assim?')) return;
             }
         }
@@ -135,21 +199,25 @@ const MesocycleBuilder = () => {
         }
     };
 
+    // ── Adicionar exercício conjugado (superset/bi-set) ──
     const handleAddSupersetExercise = (workoutId, insertAtIndex) => {
         setBaseWorkouts(prev => prev.map(w => {
             if (w.id === workoutId) {
                 const parent = w.exercises[insertAtIndex];
                 const ssid = parent.supersetId || crypto.randomUUID();
 
-                // Update parent with ID
+                // Atualiza o pai com o supersetId
                 const updatedParent = { ...parent, supersetId: ssid };
 
-                // New empty exercise linked
+                // Novo exercício encadeado — herda o bloco do pai
                 const chainedExercise = {
                     id: crypto.randomUUID(),
-                    name: 'Novo Exercício',
+                    block: parent.block || '',
+                    name: '',
                     sets: parent.sets,
                     reps: parent.reps,
+                    rest: parent.rest || '0s',
+                    targetRpe: parent.targetRpe || '',
                     supersetId: ssid
                 };
 
@@ -163,6 +231,7 @@ const MesocycleBuilder = () => {
         }));
     };
 
+    // ── Alterar campo de exercício individual ──
     const handleExerciseChange = (workoutId, exerciseId, field, value) => {
         setBaseWorkouts(prev => prev.map(w => {
             if (w.id === workoutId) {
@@ -180,6 +249,7 @@ const MesocycleBuilder = () => {
         }));
     };
 
+    // Treino ativo no momento
     const currentWorkout = baseWorkouts.find(w => w.id === activeTab) || baseWorkouts[0];
 
     return (
@@ -188,7 +258,7 @@ const MesocycleBuilder = () => {
                 <h1 className={styles.title} style={{ color: 'var(--text-primary)' }}>Novo Programa</h1>
                 <p className={styles.subtitle} style={{ color: 'var(--text-secondary)' }}>Construtor de Mesociclo</p>
 
-                {/* Progress Steps */}
+                {/* Barras de progresso */}
                 <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}>
                     <div style={{
                         flex: 1, height: '4px', borderRadius: '2px',
@@ -202,13 +272,16 @@ const MesocycleBuilder = () => {
             </header>
 
             <div className="glass-panel" style={{ padding: '2rem' }}>
+                {/* ════════════════════════════════════════
+                    ETAPA 1: CONFIGURAÇÃO (SEM ALTERAÇÕES)
+                   ════════════════════════════════════════ */}
                 {step === 1 && (
                     <div className="animate-fade-in">
                         <h2 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Etapa 1: Criar</h2>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
-                            {/* ACTIVITY SELECTOR */}
+                            {/* SELETOR DE MODALIDADE */}
                             <div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
                                     <label style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Modalidade Principal</label>
@@ -300,8 +373,12 @@ const MesocycleBuilder = () => {
                     </div>
                 )}
 
+                {/* ════════════════════════════════════════
+                    ETAPA 2: PLANEJAR BASE SEMANAL (REESCRITA)
+                   ════════════════════════════════════════ */}
                 {step === 2 && (
                     <div className="animate-slide-in">
+                        {/* Cabeçalho da etapa */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                             <div className="flex items-center gap-4">
                                 <h2 style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-primary)' }}>Etapa 2: Planejar Base Semanal</h2>
@@ -312,7 +389,7 @@ const MesocycleBuilder = () => {
                             </button>
                         </div>
 
-                        {/* Tabs */}
+                        {/* ── Abas de Treino ── */}
                         <div style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '4px' }}>
                             {baseWorkouts.map(w => (
                                 <button
@@ -347,7 +424,7 @@ const MesocycleBuilder = () => {
                             </button>
                         </div>
 
-                        {/* Weekday Selector for Active Tab (Multi-Select) */}
+                        {/* ── Seletor de Dias da Semana ── */}
                         <div style={{ marginBottom: '1rem', background: 'var(--bg-secondary)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
                             <label style={{ display: 'block', marginBottom: '10px', fontWeight: 600, color: 'var(--text-primary)' }}>Dias de Treino:</label>
 
@@ -361,8 +438,8 @@ const MesocycleBuilder = () => {
                                     { id: 6, label: 'Sáb' },
                                     { id: 0, label: 'Dom' }
                                 ].map(day => {
-                                    const currentWorkout = baseWorkouts.find(w => w.id === activeTab);
-                                    const isSelected = currentWorkout?.scheduledDays?.includes(day.id);
+                                    const cw = baseWorkouts.find(w => w.id === activeTab);
+                                    const isSelected = cw?.scheduledDays?.includes(day.id);
 
                                     return (
                                         <button
@@ -401,13 +478,15 @@ const MesocycleBuilder = () => {
                             </span>
                         </div>
 
-                        {/* Active Tab Content */}
+                        {/* ── Conteúdo do Treino Ativo ── */}
                         <div style={{ background: 'rgba(20, 20, 20, 0.4)', borderRadius: '12px', padding: '1.5rem', marginBottom: '1.5rem', border: '1px solid var(--border-subtle)' }}>
-                            <div style={{ marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Nome do Treino (Opcional)</label>
+
+                            {/* Nome do treino */}
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Nome do Treino</label>
                                 <input
                                     type="text"
-                                    value={baseWorkouts.find(w => w.id === activeTab)?.name || ''}
+                                    value={currentWorkout?.name || ''}
                                     onChange={(e) => {
                                         setBaseWorkouts(prev => prev.map(w => {
                                             if (w.id === activeTab) {
@@ -426,162 +505,198 @@ const MesocycleBuilder = () => {
                                 />
                             </div>
 
-                            {/* CONDITIONAL CONTENT */}
+                            {/* Subtítulo do treino (NOVO) */}
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, color: 'var(--text-muted)', fontSize: '0.85rem' }}>Subtítulo (Opcional)</label>
+                                <input
+                                    type="text"
+                                    value={currentWorkout?.subtitle || ''}
+                                    onChange={(e) => handleBaseWorkoutChange(activeTab, 'subtitle', e.target.value)}
+                                    placeholder="Ex: Dominância de Quadril & Retração Escapular"
+                                    className={styles.subtitleInput}
+                                />
+                            </div>
+
+                            {/* ── Banner colorido do treino ── */}
+                            <div
+                                className={styles.trainingHeader}
+                                style={{ borderLeft: `4px solid ${getBlockColor(activeTab)}` }}
+                            >
+                                <span className={styles.trainingHeaderTitle}>
+                                    {currentWorkout?.name || `Treino ${activeTab}`}
+                                    {currentWorkout?.subtitle && (
+                                        <span className={styles.trainingHeaderSubtitle}>
+                                            {' — '}{currentWorkout.subtitle}
+                                        </span>
+                                    )}
+                                </span>
+                            </div>
+
+                            {/* ── CONTEÚDO CONDICIONAL POR MODALIDADE ── */}
                             {config.activityType === 'weightlifting' ? (
                                 <>
-                                    <h3 style={{ marginBottom: '1rem', color: 'var(--text-primary)' }}>Exercícios</h3>
+                                    {/* ════════════════════════════════════
+                                        TABELA PLANILHA — MUSCULAÇÃO
+                                       ════════════════════════════════════ */}
 
-                                    {/* Exercise List */}
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                                        {currentWorkout.exercises.length === 0 && (
-                                            <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Nenhum exercício adicionado ainda.</p>
-                                        )}
-                                        {currentWorkout.exercises.map((ex, index, arr) => {
-                                            // Superset Grouping Logic
-                                            const isSuperset = !!ex.supersetId;
-                                            const prevIsSame = index > 0 && arr[index - 1].supersetId === ex.supersetId;
-                                            const nextIsSame = index < arr.length - 1 && arr[index + 1].supersetId === ex.supersetId;
-                                            const isLinked = isSuperset && (prevIsSame || nextIsSame);
-                                            const isStart = isSuperset && !prevIsSame;
-                                            const isEnd = isSuperset && !nextIsSame;
-
-                                            return (
-                                                <div
-                                                    key={ex.id}
-                                                    style={{
-                                                        display: 'flex',
-                                                        justifyContent: 'space-between',
-                                                        alignItems: 'center',
-                                                        background: 'var(--bg-secondary)',
-                                                        padding: '10px',
-                                                        borderRadius: isLinked ? (isStart ? '8px 8px 0 0' : (isEnd ? '0 0 8px 8px' : '0')) : '8px',
-                                                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                                                        marginLeft: isLinked ? '12px' : '0',
-                                                        borderLeft: isLinked ? '4px solid var(--accent-primary)' : 'none',
-                                                        marginBottom: isLinked && !isEnd ? '0' : '8px'
-                                                    }}
-                                                >
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                        {/* Left-side Add Button for Superset */}
-                                                        <button
-                                                            onClick={() => handleAddSupersetExercise(activeTab, index)}
-                                                            title="Adicionar exercício conjugado (Bi-set/Tri-set)"
-                                                            style={{
-                                                                width: '24px', height: '24px',
-                                                                borderRadius: '4px', border: '1px dashed var(--accent-primary)',
-                                                                background: 'rgba(74, 222, 128, 0.1)', color: 'var(--accent-primary)',
-                                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                                cursor: 'pointer',
-                                                                flexShrink: 0
-                                                            }}
-                                                        >
-                                                            <Plus size={14} />
-                                                        </button>
-
-                                                        <div style={{ flex: 1 }}>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                                                <input
-                                                                    type="text"
-                                                                    value={ex.name}
-                                                                    onChange={(e) => handleExerciseChange(activeTab, ex.id, 'name', e.target.value)}
-                                                                    style={{
-                                                                        fontWeight: 600,
-                                                                        color: 'var(--text-primary)',
-                                                                        border: '1px solid transparent',
-                                                                        background: 'transparent',
-                                                                        padding: '4px',
-                                                                        borderRadius: '4px',
-                                                                        fontSize: '1rem',
-                                                                        width: '100%',
-                                                                        transition: 'all 0.2s'
-                                                                    }}
-                                                                    className="hover:border-zinc-700 focus:border-green-500 focus:bg-zinc-800"
-                                                                    placeholder="Nome do exercício"
-                                                                />
-                                                                {isLinked && <span style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', border: '1px solid var(--accent-primary)', padding: '0 4px', borderRadius: '4px', whiteSpace: 'nowrap' }}>Conjugado</span>}
-                                                            </div>
-                                                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Séries:</span>
-                                                                    <input
-                                                                        type="text"
-                                                                        value={ex.sets}
-                                                                        onChange={(e) => handleExerciseChange(activeTab, ex.id, 'sets', e.target.value)}
-                                                                        style={{ width: '40px', padding: '2px 4px', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: '0.85rem' }}
-                                                                    />
-                                                                </div>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Reps:</span>
-                                                                    <input
-                                                                        type="text"
-                                                                        value={ex.reps}
-                                                                        onChange={(e) => handleExerciseChange(activeTab, ex.id, 'reps', e.target.value)}
-                                                                        style={{ width: '60px', padding: '2px 4px', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'var(--bg-primary)', color: 'var(--text-primary)', fontSize: '0.85rem' }}
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <button
-                                                            onClick={() => handleRemoveExercise(activeTab, ex.id)}
-                                                            style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-
-                                    {/* Add Exercise Form */}
-                                    <div className={styles.addExerciseForm} style={{ opacity: 1, pointerEvents: 'auto' }}>
-                                        <div>
-                                            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Exercício</label>
-                                            <div style={{ position: 'relative' }}>
-                                                <input
-                                                    type="text"
-                                                    value={newExercise.name}
-                                                    onChange={e => {
-                                                        const val = e.target.value;
-                                                        setNewExercise({ ...newExercise, name: val });
-                                                    }}
-                                                    placeholder="Nome do exercício"
-                                                    className="input"
-                                                    style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-                                                />
+                                    {currentWorkout.exercises.length === 0 ? (
+                                        /* Estado vazio */
+                                        <div className={styles.spreadsheetTable}>
+                                            <div className={styles.emptyMessage}>
+                                                Nenhum exercício adicionado ainda. Clique em "+ Adicionar Exercício" abaixo.
                                             </div>
                                         </div>
-                                        <div>
-                                            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Séries</label>
-                                            <input
-                                                type="text"
-                                                value={newExercise.sets}
-                                                onChange={e => setNewExercise({ ...newExercise, sets: e.target.value })}
-                                                className="input"
-                                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-                                            />
+                                    ) : (
+                                        /* Tabela com exercícios */
+                                        <div className={styles.spreadsheetTable}>
+                                            {/* Cabeçalho da tabela (desktop only, escondido no mobile via CSS) */}
+                                            <div className={styles.spreadsheetHeader}>
+                                                <span>Bloco</span>
+                                                <span>Exercício</span>
+                                                <span>Séries</span>
+                                                <span>Repetições</span>
+                                                <span>Descanso</span>
+                                                <span>PSE Alvo</span>
+                                                <span style={{ textAlign: 'center' }}>Ações</span>
+                                            </div>
+
+                                            {/* Linhas de exercícios */}
+                                            {currentWorkout.exercises.map((ex, index, arr) => {
+                                                // ── Lógica de superset (conjugado) ──
+                                                const isSuperset = !!ex.supersetId;
+                                                const prevIsSame = index > 0 && arr[index - 1].supersetId === ex.supersetId;
+                                                const nextIsSame = index < arr.length - 1 && arr[index + 1].supersetId === ex.supersetId;
+                                                const isLinked = isSuperset && (prevIsSame || nextIsSame);
+
+                                                // Cor do bloco baseada na primeira letra
+                                                const blockColor = getBlockColor(ex.block);
+
+                                                return (
+                                                    <div
+                                                        key={ex.id}
+                                                        className={`${styles.spreadsheetRow} ${isLinked ? styles.spreadsheetRowSuperset : ''}`}
+                                                    >
+                                                        {/* ── LAYOUT DESKTOP (via CSS Grid) ── */}
+
+                                                        {/* Coluna: Bloco */}
+                                                        <div>
+                                                            <span
+                                                                className={styles.blockBadge}
+                                                                style={{
+                                                                    color: blockColor,
+                                                                    background: `${blockColor}15`,
+                                                                    border: `1px solid ${blockColor}40`
+                                                                }}
+                                                            >
+                                                                {ex.block || '—'}
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Coluna: Nome do exercício */}
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                            <input
+                                                                type="text"
+                                                                value={ex.name}
+                                                                onChange={(e) => handleExerciseChange(activeTab, ex.id, 'name', e.target.value)}
+                                                                className={styles.cellInputName}
+                                                                placeholder="Nome do exercício"
+                                                            />
+                                                            {isLinked && <span className={styles.supersetBadge}>Conj.</span>}
+                                                        </div>
+
+                                                        {/* Coluna: Séries */}
+                                                        <div>
+                                                            <input
+                                                                type="text"
+                                                                value={ex.sets}
+                                                                onChange={(e) => handleExerciseChange(activeTab, ex.id, 'sets', e.target.value)}
+                                                                className={styles.cellInputSmall}
+                                                                placeholder="3"
+                                                            />
+                                                        </div>
+
+                                                        {/* Coluna: Repetições */}
+                                                        <div>
+                                                            <input
+                                                                type="text"
+                                                                value={ex.reps}
+                                                                onChange={(e) => handleExerciseChange(activeTab, ex.id, 'reps', e.target.value)}
+                                                                className={styles.cellInputSmall}
+                                                                placeholder="8-12"
+                                                            />
+                                                        </div>
+
+                                                        {/* Coluna: Descanso */}
+                                                        <div>
+                                                            <input
+                                                                type="text"
+                                                                value={ex.rest || ''}
+                                                                onChange={(e) => handleExerciseChange(activeTab, ex.id, 'rest', e.target.value)}
+                                                                className={styles.cellInputSmall}
+                                                                placeholder="60s"
+                                                            />
+                                                        </div>
+
+                                                        {/* Coluna: PSE Alvo */}
+                                                        <div>
+                                                            <input
+                                                                type="text"
+                                                                value={ex.targetRpe || ''}
+                                                                onChange={(e) => handleExerciseChange(activeTab, ex.id, 'targetRpe', e.target.value)}
+                                                                className={styles.cellInputSmall}
+                                                                placeholder="7-8"
+                                                            />
+                                                        </div>
+
+                                                        {/* Coluna: Ações */}
+                                                        <div className={styles.actionCell}>
+                                                            <button
+                                                                onClick={() => handleAddSupersetExercise(activeTab, index)}
+                                                                title="Adicionar exercício conjugado (Bi-set/Tri-set)"
+                                                                className={styles.supersetBtn}
+                                                            >
+                                                                <Link size={14} />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleRemoveExercise(activeTab, ex.id)}
+                                                                title="Remover exercício"
+                                                                className={styles.actionBtn}
+                                                            >
+                                                                <Trash2 size={14} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
-                                        <div>
-                                            <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Reps</label>
-                                            <input
-                                                type="text"
-                                                value={newExercise.reps}
-                                                onChange={e => setNewExercise({ ...newExercise, reps: e.target.value })}
-                                                className="input"
-                                                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}
-                                            />
-                                        </div>
+                                    )}
+
+                                    {/* ── Barra de ações: Novo Bloco + Adicionar Exercício ── */}
+                                    <div className={styles.tableActions}>
                                         <button
-                                            onClick={handleAddExercise}
-                                            className="btn-primary"
-                                            style={{ display: 'flex', alignItems: 'center', gap: '8px', height: '100%', justifyContent: 'center', marginTop: 'auto' }}
+                                            onClick={handleNewBlock}
+                                            className={styles.newBlockBtn}
+                                            title="Iniciar novo bloco de exercícios"
                                         >
-                                            <Plus size={18} />
+                                            <Plus size={14} />
+                                            Novo Bloco ({String.fromCharCode(
+                                                (getCurrentTracker().letter.charCodeAt(0)) + 1
+                                            )})
                                         </button>
                                     </div>
+
+                                    <button
+                                        onClick={handleAddExercise}
+                                        className={styles.addRowBtn}
+                                    >
+                                        <Plus size={16} />
+                                        Adicionar Exercício ({getCurrentTracker().letter}{getCurrentTracker().number})
+                                    </button>
                                 </>
                             ) : (
-                                /* CARDIO FORM (Running, Cycling, Swimming) */
+                                /* ════════════════════════════════════
+                                   FORMULÁRIO CARDIO (Corrida, Ciclismo, Natação)
+                                   ════════════════════════════════════ */
                                 <div className="cardio-base-form animate-fade-in">
                                     <div style={{
                                         display: 'flex', alignItems: 'center', gap: '10px', padding: '10px',
@@ -678,6 +793,7 @@ const MesocycleBuilder = () => {
 
                         </div>
 
+                        {/* ── Botão Finalizar ── */}
                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2rem' }}>
                             <button
                                 type="button"

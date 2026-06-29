@@ -1,5 +1,12 @@
+/* =================================================================
+   MesocycleBuilder.module.css
+   Estilos para o construtor de mesociclo — layout planilha (Step 2)
+   e configuração (Step 1).
+   ================================================================= */
+
+/* ── Container & Header ── */
 .container {
-    max-width: 800px;
+    max-width: 900px;
 }
 
 .header {
@@ -9,76 +16,461 @@
 .title {
     font-size: 1.8rem;
     font-weight: 700;
-    color: #1e293b;
+    color: var(--text-primary);
 }
 
 .subtitle {
-    color: #64748B;
+    color: var(--text-secondary);
 }
 
-/* Glass Panel Reuse or re-implement */
-.glassPanel {
-    background: #fff;
-    border-radius: 24px;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
-    border: 1px solid rgba(0, 0, 0, 0.04);
-}
-
-/* CONFIG STEP GRIDS */
+/* ── Step 1: Config Grid ── */
 .configGrid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
 }
 
-/* ADD EXERCISE FORM GRID */
-.addExerciseForm {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr auto;
-    gap: 10px;
-    align-items: end;
+/* ── Cabeçalho colorido do treino ── */
+.trainingHeader {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    margin-bottom: 1.25rem;
+    border-radius: var(--radius-md);
+    background: rgba(20, 20, 20, 0.6);
+    border: 1px solid var(--border-subtle);
+    /* A borda esquerda colorida é aplicada inline via style */
 }
 
-/* MOBILE ADJUSTMENTS */
-@media (max-width: 600px) {
+.trainingHeaderTitle {
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+}
+
+.trainingHeaderSubtitle {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+    text-transform: none;
+    letter-spacing: normal;
+    font-family: var(--font-main);
+}
+
+/* ── Input de subtítulo ── */
+.subtitleInput {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-style: italic;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.subtitleInput:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    background: var(--bg-input);
+    color: var(--text-primary);
+}
+
+.subtitleInput::placeholder {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* ══════════════════════════════════════════
+   TABELA PLANILHA (DESKTOP)
+   ══════════════════════════════════════════ */
+
+.spreadsheetTable {
+    width: 100%;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-secondary);
+}
+
+/* Cabeçalho da tabela */
+.spreadsheetHeader {
+    display: grid;
+    grid-template-columns: 70px 3fr 80px 90px 90px 100px 80px;
+    gap: 0;
+    padding: 10px 12px;
+    background: rgba(39, 39, 42, 0.8);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.spreadsheetHeader span {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    padding: 0 4px;
+    user-select: none;
+}
+
+/* Linha de exercício */
+.spreadsheetRow {
+    display: grid;
+    grid-template-columns: 70px 3fr 80px 90px 90px 100px 80px;
+    gap: 0;
+    padding: 6px 12px;
+    align-items: center;
+    border-bottom: 1px solid rgba(39, 39, 42, 0.4);
+    transition: background 0.15s;
+    min-height: 48px;
+}
+
+.spreadsheetRow:last-child {
+    border-bottom: none;
+}
+
+.spreadsheetRow:hover {
+    background: rgba(204, 255, 0, 0.03);
+}
+
+/* Indicador de conjugado (superset) — borda esquerda colorida */
+.spreadsheetRowSuperset {
+    border-left: 3px solid var(--accent-primary);
+    padding-left: 9px; /* compensa a borda para manter o alinhamento */
+}
+
+.supersetBadge {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+    border: 1px solid var(--accent-primary);
+    padding: 1px 5px;
+    border-radius: 4px;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* ── Badge do bloco (A1, B2, etc.) ── */
+.blockBadge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 28px;
+    border-radius: 6px;
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    /* A cor é aplicada inline via style */
+    flex-shrink: 0;
+}
+
+/* ── Inputs dentro da planilha ── */
+.cellInput {
+    width: 100%;
+    padding: 6px 8px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    transition: all 0.15s;
+    min-height: 34px;
+}
+
+.cellInput:hover {
+    border-color: var(--border-subtle);
+    background: rgba(39, 39, 42, 0.3);
+}
+
+.cellInput:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    background: var(--bg-input);
+    box-shadow: 0 0 0 2px rgba(204, 255, 0, 0.1);
+}
+
+.cellInput::placeholder {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+/* Input do nome do exercício — fonte maior e mais destaque */
+.cellInputName {
+    composes: cellInput;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+/* Inputs numéricos na planilha — centralizados */
+.cellInputSmall {
+    composes: cellInput;
+    text-align: center;
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── Coluna de ações ── */
+.actionCell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.actionBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.actionBtn:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+.supersetBtn {
+    composes: actionBtn;
+}
+
+.supersetBtn:hover {
+    background: rgba(204, 255, 0, 0.1);
+    color: var(--accent-primary);
+}
+
+/* ── Botão de adicionar exercício ── */
+.addRowBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px;
+    margin-top: 0;
+    border: 1px dashed var(--border-subtle);
+    border-top: none;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    background: rgba(20, 20, 20, 0.3);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-height: 44px; /* Touch target mínimo */
+}
+
+.addRowBtn:hover {
+    background: rgba(204, 255, 0, 0.05);
+    color: var(--accent-primary);
+    border-color: var(--accent-primary);
+}
+
+/* ── Botão de novo bloco ── */
+.newBlockBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-height: 44px; /* Touch target mínimo */
+}
+
+.newBlockBtn:hover {
+    border-color: var(--accent-secondary);
+    color: var(--accent-secondary);
+    background: rgba(0, 176, 255, 0.08);
+}
+
+/* ── Barra de ações inferior (novo bloco + adicionar) ── */
+.tableActions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+/* ── Mensagem de tabela vazia ── */
+.emptyMessage {
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 0.9rem;
+}
 
 
+/* ══════════════════════════════════════════
+   MOBILE: CARDS EMPILHADOS (max-width: 768px)
+   ══════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+
+    .container {
+        max-width: 100%;
+    }
+
+    /* Esconde o header da tabela no mobile */
+    .spreadsheetHeader {
+        display: none;
+    }
+
+    /* Reseta o grid — cada linha vira um card */
+    .spreadsheetRow {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 14px;
+        margin: 8px 0;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-subtle);
+        background: var(--bg-secondary);
+        min-height: unset;
+    }
+
+    .spreadsheetRow:hover {
+        background: var(--bg-secondary);
+    }
+
+    /* Topo do card: badge + nome + delete */
+    .mobileCardTop {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+    }
+
+    .mobileCardTop .cellInputName {
+        flex: 1;
+        font-size: 1rem;
+        background: var(--bg-input);
+        border: 1px solid var(--border-subtle);
+        padding: 10px 12px;
+        border-radius: var(--radius-sm);
+        min-height: 44px;
+    }
+
+    /* Grid 2x2 para campos numéricos no mobile */
+    .mobileCardFields {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .mobileFieldGroup {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .mobileFieldLabel {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+        padding-left: 4px;
+    }
+
+    .mobileFieldGroup .cellInputSmall {
+        text-align: left;
+        background: var(--bg-input);
+        border: 1px solid var(--border-subtle);
+        padding: 10px 12px;
+        border-radius: var(--radius-sm);
+        min-height: 44px;
+    }
+
+    /* Ações ficam em linha no topo */
+    .actionCell {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+    }
+
+    /* Ajusta o spreadsheet container no mobile */
+    .spreadsheetTable {
+        background: transparent;
+        border: none;
+        border-radius: 0;
+    }
+
+    /* Config Grid no mobile */
     .configGrid {
         grid-template-columns: 1fr;
     }
 
-    .addExerciseForm {
-        grid-template-columns: 1fr 1fr;
-        /* Name full width, others split? No, let's do explicit areas */
-        grid-template-areas:
-            "name name"
-            "sets reps"
-            "btn btn";
+    /* Botão adicionar no mobile */
+    .addRowBtn {
+        border: 1px dashed var(--border-subtle);
+        border-radius: var(--radius-md);
+        margin-top: 8px;
     }
 
+    /* Training header no mobile */
+    .trainingHeader {
+        padding: 12px 14px;
+        margin-bottom: 1rem;
+    }
+
+    .trainingHeaderTitle {
+        font-size: 0.75rem;
+    }
+
+    /* Ações da tabela empilhadas no mobile */
+    .tableActions {
+        flex-direction: column;
+    }
+
+    .newBlockBtn {
+        width: 100%;
+        justify-content: center;
+    }
 }
 
-/* Helper classes to map to grid areas if needed, 
-   but simplistic approach: 
-   On mobile, let's just stack them differently using nth-child if we can, 
-   or just use flex wrap. 
-   Actually, grid-template-columns: 1fr 1fr is okay if we span the Name row.
-*/
+/* ══════════════════════════════════════════
+   ESTADO VAZIO & UTILIDADES
+   ══════════════════════════════════════════ */
 
-@media (max-width: 600px) {
-    .addExerciseForm {
-        grid-template-columns: 1fr 1fr;
-    }
+/* Efeito de foco global para inputs na planilha */
+.spreadsheetTable input:focus-visible {
+    outline: none;
+}
 
-    /* Target the inputs wrapper divs based on order */
-    .addExerciseForm>div:nth-child(1) {
-        /* Name */
-        grid-column: 1 / -1;
+/* Animação suave de entrada para novas linhas */
+@keyframes rowSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
     }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 
-    .addExerciseForm>button {
-        /* Add Button */
-        grid-column: 1 / -1;
-        width: 100% !important;
-    }
+.spreadsheetRow {
+    animation: rowSlideIn 0.2s ease-out;
 }

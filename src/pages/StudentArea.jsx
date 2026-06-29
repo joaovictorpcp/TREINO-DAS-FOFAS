@@ -204,7 +204,7 @@ const StudentArea = () => {
                 </div>
             </div>
 
-            {/* Compact Exercise List */}
+            {/* Compact Exercise List — Com blocos e prescrição */}
             {workout.exercises && workout.exercises.length > 0 && (
                 <div style={{
                     marginTop: '1.5rem',
@@ -212,35 +212,103 @@ const StudentArea = () => {
                     background: 'rgba(0,0,0,0.2)',
                     borderRadius: '12px',
                     padding: '12px',
-                    maxHeight: '220px',
+                    maxHeight: '320px',
                     overflowY: 'auto'
                 }}>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', fontWeight: 700 }}>
                         Resumo da Sessão
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                         {workout.exercises.map((ex, idx) => {
                             const isSuperset = !!ex.supersetId;
                             const prevIsSame = idx > 0 && workout.exercises[idx - 1].supersetId === ex.supersetId;
                             const nextIsSame = idx < workout.exercises.length - 1 && workout.exercises[idx + 1].supersetId === ex.supersetId;
 
+                            // Cor do bloco baseada na primeira letra
+                            const blockLetter = (ex.block || '').charAt(0).toUpperCase();
+                            const blockColors = { A: '#CCFF00', B: '#00B0FF', C: '#FFC400', D: '#FF3D00' };
+                            const blockColor = blockColors[blockLetter] || 'var(--border-subtle)';
+                            const hasBlock = !!ex.block;
+
+                            // Separador de bloco — mostra quando o bloco muda
+                            const prevBlock = idx > 0 ? (workout.exercises[idx - 1].block || '').charAt(0) : '';
+                            const currentBlock = blockLetter;
+                            const showBlockDivider = hasBlock && idx > 0 && currentBlock !== prevBlock && prevBlock !== '';
+
                             return (
-                                <div key={idx} style={{
-                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                    padding: '8px 12px',
-                                    background: 'var(--bg-secondary)',
-                                    borderRadius: '8px',
-                                    borderLeft: isSuperset ? '3px solid var(--accent-primary)' : '3px solid transparent',
-                                    marginLeft: isSuperset ? (prevIsSame ? '12px' : '0') : '0',
-                                    marginBottom: (isSuperset && nextIsSame) ? '-4px' : '0'
-                                }}>
-                                    <span style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 500, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                        {ex.name || 'Exercício sem nome'}
-                                    </span>
-                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600, marginLeft: '12px' }}>
-                                        {ex.sets}x{ex.reps}
-                                    </span>
-                                </div>
+                                <React.Fragment key={idx}>
+                                    {showBlockDivider && (
+                                        <div style={{ height: '1px', background: 'var(--border-subtle)', margin: '4px 0' }} />
+                                    )}
+                                    <div style={{
+                                        display: 'flex', alignItems: 'center', gap: '8px',
+                                        padding: '10px 12px',
+                                        background: 'var(--bg-secondary)',
+                                        borderRadius: '8px',
+                                        borderLeft: hasBlock
+                                            ? `3px solid ${blockColor}`
+                                            : (isSuperset ? '3px solid var(--accent-primary)' : '3px solid transparent'),
+                                        marginLeft: isSuperset ? (prevIsSame ? '12px' : '0') : '0',
+                                        marginBottom: (isSuperset && nextIsSame) ? '-2px' : '0'
+                                    }}>
+                                        {/* Badge de bloco */}
+                                        {hasBlock && (
+                                            <span style={{
+                                                fontSize: '0.65rem',
+                                                fontWeight: 800,
+                                                color: blockColor,
+                                                background: `${blockColor}15`,
+                                                padding: '2px 6px',
+                                                borderRadius: '4px',
+                                                letterSpacing: '0.05em',
+                                                flexShrink: 0,
+                                                minWidth: '28px',
+                                                textAlign: 'center'
+                                            }}>
+                                                {ex.block}
+                                            </span>
+                                        )}
+
+                                        {/* Nome do exercício */}
+                                        <span style={{
+                                            fontSize: '0.9rem', color: 'var(--text-primary)',
+                                            fontWeight: 500, flex: 1,
+                                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                                        }}>
+                                            {ex.name || 'Exercício sem nome'}
+                                        </span>
+
+                                        {/* Séries x Reps */}
+                                        <span style={{
+                                            fontSize: '0.8rem', color: 'var(--text-secondary)',
+                                            fontWeight: 600, flexShrink: 0
+                                        }}>
+                                            {ex.sets}x{ex.reps}
+                                        </span>
+
+                                        {/* Descanso */}
+                                        {ex.rest && (
+                                            <span style={{
+                                                fontSize: '0.7rem', color: 'var(--text-muted)',
+                                                background: 'var(--bg-primary)',
+                                                padding: '2px 6px', borderRadius: '4px',
+                                                flexShrink: 0
+                                            }}>
+                                                {ex.rest}
+                                            </span>
+                                        )}
+
+                                        {/* PSE Alvo */}
+                                        {ex.targetRpe && (
+                                            <span style={{
+                                                fontSize: '0.7rem', color: '#f59e0b',
+                                                fontWeight: 600, flexShrink: 0
+                                            }}>
+                                                {ex.targetRpe}
+                                            </span>
+                                        )}
+                                    </div>
+                                </React.Fragment>
                             );
                         })}
                     </div>

@@ -11,6 +11,22 @@ import styles from './CreateWorkout.module.css';
 import { useStudent } from '../context/StudentContext';
 
 /* ============================================================
+   BLOCK COLOR MAP — colored left border per block letter
+   ============================================================ */
+const BLOCK_COLORS = {
+    A: '#CCFF00',
+    B: '#00B0FF',
+    C: '#FFC400',
+    D: '#FF3D00',
+};
+
+const getBlockColor = (block) => {
+    if (!block) return null;
+    const letter = block.charAt(0).toUpperCase();
+    return BLOCK_COLORS[letter] || null;
+};
+
+/* ============================================================
    MEMOIZED EXERCISE ROW COMPONENT
    Prevents re-render of ALL exercises when editing a single one.
    ============================================================ */
@@ -45,7 +61,7 @@ const ExerciseRow = memo(({
     const handleKeyDown = useCallback((e, fieldOrder) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            const fields = ['name', 'sets', 'reps', 'load', 'rpe', 'rir'];
+            const fields = ['block', 'name', 'sets', 'reps', 'rest', 'load', 'rpe', 'rir'];
             const nextIdx = fields.indexOf(fieldOrder) + 1;
             if (nextIdx < fields.length) {
                 const nextRef = inputRefs.current[fields[nextIdx]];
@@ -58,6 +74,8 @@ const ExerciseRow = memo(({
         inputRefs.current[field] = el;
     }, []);
 
+    const blockColor = getBlockColor(ex.block);
+
     return (
         <div
             className={clsx(styles.gridRow, highStress && styles.highStressRow)}
@@ -65,7 +83,11 @@ const ExerciseRow = memo(({
                 animation: `fadeIn 0.3s ease forwards`,
                 animationDelay: `${index * 50}ms`,
                 marginLeft: isSuperset ? '12px' : '0',
-                borderLeft: isSuperset ? '4px solid var(--accent-primary)' : 'none',
+                borderLeft: isSuperset
+                    ? '4px solid var(--accent-primary)'
+                    : blockColor
+                        ? `4px solid ${blockColor}`
+                        : 'none',
                 borderRadius: isSuperset
                     ? (isStart ? '8px 8px 0 0' : (isEnd ? '0 0 8px 8px' : '0'))
                     : '8px',
@@ -74,6 +96,46 @@ const ExerciseRow = memo(({
                 borderBottom: (isSuperset && !isEnd) ? '1px solid var(--border-subtle)' : '1px solid var(--border-subtle)'
             }}
         >
+            {/* Block Badge */}
+            <div className={clsx(styles.colBlock)}>
+                {/* Mobile: block badge at top of card */}
+                {ex.block && (
+                    <span
+                        className={styles.blockBadgeMobile}
+                        style={{
+                            background: blockColor ? `${blockColor}22` : 'var(--bg-tertiary)',
+                            color: blockColor || 'var(--text-muted)',
+                            border: `1px solid ${blockColor || 'var(--border-subtle)'}`,
+                        }}
+                    >
+                        {ex.block}
+                    </span>
+                )}
+                <input
+                    ref={setRef('block')}
+                    type="text"
+                    className={clsx('input', styles.blockInput)}
+                    placeholder="-"
+                    value={ex.block}
+                    onChange={(e) => onUpdate(ex.id, 'block', e.target.value.toUpperCase())}
+                    onFocus={handleFocus}
+                    onKeyDown={(e) => handleKeyDown(e, 'block')}
+                    enterKeyHint="next"
+                    autoComplete="off"
+                    maxLength={3}
+                    style={{
+                        background: blockColor ? `${blockColor}11` : 'var(--bg-primary)',
+                        color: blockColor || 'var(--text-primary)',
+                        border: `1px solid ${blockColor || 'var(--border-subtle)'}`,
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        textAlign: 'center',
+                        fontSize: '0.8rem',
+                        padding: '4px 6px',
+                    }}
+                />
+            </div>
+
             {/* Exercise Name — Full Width */}
             <div className={styles.colName}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
@@ -138,6 +200,24 @@ const ExerciseRow = memo(({
                 />
             </div>
 
+            {/* Rest (Descanso) — between Reps and Carga */}
+            <div className={styles.colNum}>
+                <span className={styles.mobileLabel} style={{ color: 'var(--text-muted)' }}>Descanso</span>
+                <input
+                    ref={setRef('rest')}
+                    type="text"
+                    className="input"
+                    placeholder="60s"
+                    value={ex.rest}
+                    onChange={(e) => onUpdate(ex.id, 'rest', e.target.value)}
+                    onFocus={handleFocus}
+                    onKeyDown={(e) => handleKeyDown(e, 'rest')}
+                    enterKeyHint="next"
+                    autoComplete="off"
+                    style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' }}
+                />
+            </div>
+
             {/* Row 2: Carga + RPE (or collapsed) */}
             <div className={styles.colNum}>
                 <span className={styles.mobileLabel} style={{ color: 'var(--text-muted)' }}>Carga</span>
@@ -179,6 +259,9 @@ const ExerciseRow = memo(({
                         borderColor: ex.rpe > 9 ? '#fca5a5' : 'var(--border-subtle)'
                     }}
                 />
+                {ex.targetRpe && (
+                    <span className={styles.targetRpeRef}>ref: PSE {ex.targetRpe}</span>
+                )}
             </div>
 
             {/* RIR */}
@@ -247,7 +330,7 @@ const TrainingLog = () => {
     const [durationMinutes, setDurationMinutes] = useState('');
 
     const [exercises, setExercises] = useState([
-        { id: Date.now(), name: '', sets: '', reps: '', load: '', rpe: '', rir: '', suggestProgression: false }
+        { id: Date.now(), name: '', sets: '', reps: '', load: '', rpe: '', rir: '', block: '', rest: '', targetRpe: '', suggestProgression: false }
     ]);
 
     // Activity State
@@ -319,7 +402,7 @@ const TrainingLog = () => {
     const addRow = useCallback(() => {
         setExercises(prev => [
             ...prev,
-            { id: Date.now(), name: '', sets: '', reps: '', load: '', rpe: '', rir: '', suggestProgression: false }
+            { id: Date.now(), name: '', sets: '', reps: '', load: '', rpe: '', rir: '', block: '', rest: '', targetRpe: '', suggestProgression: false }
         ]);
     }, []);
 
@@ -339,7 +422,7 @@ const TrainingLog = () => {
             // Link Parent
             newArr[index] = { ...parent, supersetId: ssid };
 
-            // Create Child
+            // Create Child — copy block, rest, targetRpe from parent
             const child = {
                 id: Date.now() + Math.random(),
                 name: '',
@@ -348,6 +431,9 @@ const TrainingLog = () => {
                 load: '',
                 rpe: '',
                 rir: '',
+                block: parent.block || '',
+                rest: parent.rest || '',
+                targetRpe: parent.targetRpe || '',
                 suggestProgression: false,
                 supersetId: ssid
             };
@@ -360,7 +446,7 @@ const TrainingLog = () => {
     const handleActivityChange = useCallback((type) => {
         setActivityType(prev => {
             if (type !== 'weightlifting' && prev === 'weightlifting') {
-                setExercises([{ id: Date.now(), name: '', sets: '', reps: '', load: '', rpe: '', rir: '', suggestProgression: false }]);
+                setExercises([{ id: Date.now(), name: '', sets: '', reps: '', load: '', rpe: '', rir: '', block: '', rest: '', targetRpe: '', suggestProgression: false }]);
             }
             return type;
         });
@@ -728,9 +814,11 @@ const TrainingLog = () => {
                     <div className={`glass-panel ${styles.tableContainer}`} style={{ overflow: 'hidden' }}>
                         {/* ... Table Header ... */}
                         <div className={`${styles.gridRow} ${styles.desktopHeader}`} style={{ background: 'rgba(20, 20, 20, 0.8)', fontWeight: '600', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-subtle)' }}>
+                            <div className={styles.colBlock}>Bloco</div>
                             <div className={styles.colName} style={{ paddingLeft: '1rem' }}>Exercício</div>
                             <div className={styles.colNum}>Séries</div>
                             <div className={styles.colNum}>Reps</div>
+                            <div className={styles.colNum}>Descanso</div>
                             <div className={styles.colNum}>Carga (kg)</div>
                             <div className={styles.colNum}>RPE</div>
                             <div className={styles.colNum}>RIR</div>
