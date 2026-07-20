@@ -1,11 +1,12 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useWorkout } from '../context/WorkoutContext';
 import { useStudent } from '../context/StudentContext';
+import { useAuth } from '../context/AuthContext';
 import {
     ResponsiveContainer, ComposedChart, Line, Area, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart
 } from 'recharts';
-import { Activity, Battery, TrendingUp, Calendar } from 'lucide-react';
+import { Activity, Battery, TrendingUp, Calendar, FileText, Printer, Award, AlertCircle } from 'lucide-react';
 
 const StatCard = ({ title, value, label, color, icon: Icon }) => (
     <div style={{
@@ -27,6 +28,103 @@ const StatCard = ({ title, value, label, color, icon: Icon }) => (
 const PerformancePage = () => {
     const { getPMCData, workouts } = useWorkout(); // Access workouts directly
     const { selectedStudentId, currentStudent } = useStudent();
+    const { role } = useAuth();
+
+    const [reportPeriod, setReportPeriod] = useState('month'); // 'month', 'last30', 'prev_month', 'all'
+    const [notes, setNotes] = useState('');
+
+    const reportStats = useMemo(() => {
+        if (!selectedStudentId || !workouts) return null;
+
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+
+        const studentWorkouts = Array.isArray(workouts) ? workouts.filter(w => w.studentId === selectedStudentId) : [];
+
+        const filtered = studentWorkouts.filter(w => {
+            const d = new Date(w.date);
+            if (reportPeriod === 'month') {
+                return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+            } else if (reportPeriod === 'prev_month') {
+                const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+                const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+                return d.getMonth() === prevMonth && d.getFullYear() === prevYear;
+            } else if (reportPeriod === 'last30') {
+                const limit = new Date();
+                limit.setDate(limit.getDate() - 30);
+                return d >= limit;
+            }
+            return true; // 'all'
+        });
+
+        // 1. Dias Treinados (Completed workouts)
+        const trained = filtered.filter(w => {
+            const s = (w.status || '').toLowerCase();
+            return s === 'completed' || s === 'done' || s === 'finished' || w.isCompleted;
+        });
+        const diasTreinados = trained.length;
+
+        // 2. Treinos Faltosos (Planned in the past, but not completed)
+        const missed = filtered.filter(w => {
+            const d = new Date(w.date);
+            d.setHours(0, 0, 0, 0);
+            const s = (w.status || '').toLowerCase();
+            const isCompleted = s === 'completed' || s === 'done' || s === 'finished' || w.isCompleted;
+            return d < today && !isCompleted;
+        });
+        const treinosFaltosos = missed.length;
+
+        // 3. Total planejado no período
+        const totalPlanejado = filtered.length;
+
+        // 4. Adesão (%)
+        const taxaAdesao = totalPlanejado > 0 ? Math.round((diasTreinados / totalPlanejado) * 100) : 100;
+
+        // 5. Cargas mínima e máxima
+        let minLoad = Infinity;
+        let maxLoad = -Infinity;
+        let hasLoads = false;
+        const exerciseCounts = {};
+
+        trained.forEach(w => {
+            if (w.exercises && Array.isArray(w.exercises)) {
+                w.exercises.forEach(ex => {
+                    // Exercise count
+                    const name = (ex.name || 'Sem nome').trim();
+                    exerciseCounts[name] = (exerciseCounts[name] || 0) + 1;
+
+                    // Load
+                    const loadVal = parseFloat(ex.load);
+                    if (!isNaN(loadVal) && loadVal > 0) {
+                        if (loadVal < minLoad) minLoad = loadVal;
+                        if (loadVal > maxLoad) maxLoad = loadVal;
+                        hasLoads = true;
+                    }
+                });
+            }
+        });
+
+        // Top 5 Exercises
+        const topExercises = Object.entries(exerciseCounts)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+
+        return {
+            diasTreinados,
+            treinosFaltosos,
+            totalPlanejado,
+            taxaAdesao,
+            minCarga: hasLoads ? minLoad : 0,
+            maxCarga: hasLoads ? maxLoad : 0,
+            topExercises,
+            periodText: reportPeriod === 'month' ? 'Mês Atual' :
+                        reportPeriod === 'prev_month' ? 'Mês Anterior' :
+                        reportPeriod === 'last30' ? 'Últimos 30 Dias' : 'Todo o Período'
+        };
+    }, [workouts, selectedStudentId, reportPeriod]);
 
     const pmcData = useMemo(() => {
         if (!selectedStudentId) return [];
@@ -341,6 +439,311 @@ const PerformancePage = () => {
                     </div>
                 </div>
             </div>
+
+            {/* --- REPORT GENERATOR SECTION --- */}
+            {role === 'professor' && reportStats && (
+                <>
+                    {/* Estilos específicos de impressão e utilitários */}
+                    <style dangerouslySetInnerHTML={{ __html: `
+                        @media print {
+                            /* Oculta tudo na página exceto o container do relatório */
+                            body * {
+                                visibility: hidden;
+                            }
+                            #print-report-area, #print-report-area * {
+                                visibility: visible;
+                            }
+                            #print-report-area {
+                                position: absolute;
+                                left: 0;
+                                top: 0;
+                                width: 100%;
+                                background: #ffffff !important;
+                                color: #000000 !important;
+                                padding: 25px !important;
+                                border: none !important;
+                                box-shadow: none !important;
+                            }
+                            /* Força a cor do texto a ser preta para legibilidade e economia de tinta */
+                            h1, h2, h3, h4, h5, h6, p, span, div, strong, td, th, label {
+                                color: #000000 !important;
+                                text-shadow: none !important;
+                            }
+                            .no-print {
+                                display: none !important;
+                            }
+                            .print-badge {
+                                border: 1px solid #000 !important;
+                                color: #000 !important;
+                                background: transparent !important;
+                            }
+                            .print-grid {
+                                display: grid !important;
+                                grid-template-columns: repeat(3, 1fr) !important;
+                                gap: 15px !important;
+                                margin-bottom: 20px !important;
+                            }
+                            .print-card-stat {
+                                border: 1px solid #ccc !important;
+                                padding: 12px !important;
+                                border-radius: 6px !important;
+                                text-align: center !important;
+                            }
+                            .print-exercise-row {
+                                border-bottom: 1px solid #eee !important;
+                            }
+                            .print-notes-box {
+                                border: 1px solid #aaa !important;
+                                border-radius: 6px !important;
+                                padding: 15px !important;
+                                min-height: 120px !important;
+                                margin-top: 10px !important;
+                                font-style: italic !important;
+                            }
+                        }
+                    `}} />
+
+                    {/* Dashboard view of the Report Generator */}
+                    <div className="glass-panel no-print" style={{
+                        marginTop: '2rem',
+                        padding: '32px',
+                        border: '1px solid var(--border-subtle)',
+                        marginBottom: '4rem'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem', marginBottom: '2rem' }}>
+                            <div>
+                                <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <FileText size={24} className="text-accent-primary" /> Relatório do Aluno
+                                </h2>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '4px' }}>
+                                    Gere e imprima um resumo do desempenho de <strong>{currentStudent?.name || 'Aluno'}</strong>.
+                                </p>
+                            </div>
+                            
+                            {/* Period selector */}
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <select 
+                                    value={reportPeriod} 
+                                    onChange={(e) => setReportPeriod(e.target.value)}
+                                    className="input"
+                                    style={{
+                                        background: 'var(--bg-secondary)',
+                                        borderColor: 'var(--border-subtle)',
+                                        color: 'var(--text-primary)',
+                                        width: 'auto',
+                                        padding: '8px 16px',
+                                        fontSize: '0.9rem',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    <option value="month">Este Mês</option>
+                                    <option value="prev_month">Mês Anterior</option>
+                                    <option value="last30">Últimos 30 Dias</option>
+                                    <option value="all">Todo o Período</option>
+                                </select>
+
+                                <button
+                                    onClick={() => window.print()}
+                                    className="btn btn-primary"
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        padding: '10px 20px',
+                                        fontSize: '0.85rem'
+                                    }}
+                                >
+                                    <Printer size={16} /> Imprimir / PDF
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Interactive Preview for the Coach */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+                            {/* Days trained */}
+                            <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase' }}>Dias Treinados</div>
+                                <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent-primary)', marginTop: '8px' }}>{reportStats.diasTreinados}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>Realizados no período</div>
+                            </div>
+                            
+                            {/* Missed workouts */}
+                            <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase' }}>Treinos Faltosos</div>
+                                <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent-danger)', marginTop: '8px' }}>{reportStats.treinosFaltosos}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>Pendentes / Não concluídos</div>
+                            </div>
+
+                            {/* Compliance */}
+                            <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase' }}>Aderência</div>
+                                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#facc15', marginTop: '8px' }}>{reportStats.taxaAdesao}%</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>{reportStats.diasTreinados} de {reportStats.totalPlanejado} treinos</div>
+                            </div>
+
+                            {/* Carga Min / Max */}
+                            <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase' }}>Cargas</div>
+                                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '12px' }}>
+                                    Min: <span style={{ color: 'var(--accent-primary)' }}>{reportStats.minCarga} kg</span>
+                                </div>
+                                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '4px' }}>
+                                    Max: <span style={{ color: 'var(--accent-primary)' }}>{reportStats.maxCarga} kg</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Exercises list + Notes selection */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+                            <div>
+                                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <Award size={18} color="var(--accent-primary)" /> Exercícios Mais Feitos
+                                </h3>
+                                {reportStats.topExercises.length > 0 ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        {reportStats.topExercises.map((ex, idx) => (
+                                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                                                <span style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 500 }}>
+                                                    {idx + 1}. {ex.name}
+                                                </span>
+                                                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600, background: 'var(--bg-primary)', padding: '2px 8px', borderRadius: '12px' }}>
+                                                    {ex.count}x
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Nenhum exercício registrado no período.</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem' }}>
+                                    Anotações do Professor
+                                </h3>
+                                <textarea
+                                    value={notes}
+                                    onChange={(e) => setNotes(e.target.value)}
+                                    placeholder="Digite aqui observações sobre a evolução, execução ou ajustes de carga para constar no relatório impresso..."
+                                    className="input"
+                                    style={{
+                                        minHeight: '150px',
+                                        resize: 'vertical',
+                                        fontSize: '0.9rem',
+                                        background: 'var(--bg-secondary)',
+                                        borderColor: 'var(--border-subtle)',
+                                        color: 'var(--text-primary)'
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Hidden printable A4 report container (using ID targeted by printer css) */}
+                    <div id="print-report-area" style={{ display: 'none', fontFamily: 'sans-serif' }}>
+                        {/* Header block */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #000', paddingBottom: '15px', marginBottom: '20px' }}>
+                            <div>
+                                <h1 style={{ fontSize: '20px', fontWeight: 800, margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                    Relatório de Desempenho Físico
+                                </h1>
+                                <p style={{ fontSize: '12px', color: '#555', margin: '4px 0 0 0' }}>
+                                    JOÃO VICTOR PERSONAL TRAINER
+                                </p>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <p style={{ fontSize: '12px', margin: 0 }}><strong>Gerado em:</strong> {new Date().toLocaleDateString('pt-BR')}</p>
+                                <p style={{ fontSize: '12px', margin: '2px 0 0 0' }}><strong>Período:</strong> {reportStats.periodText}</p>
+                            </div>
+                        </div>
+
+                        {/* Student details */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px', padding: '12px', background: '#f5f5f5', borderRadius: '6px' }}>
+                            <div>
+                                <p style={{ margin: '4px 0', fontSize: '13px' }}><strong>Aluno(a):</strong> {currentStudent?.name || 'Não informado'}</p>
+                                <p style={{ margin: '4px 0', fontSize: '13px' }}><strong>Objetivo:</strong> {currentStudent?.goal || 'Não informado'}</p>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <p style={{ margin: '4px 0', fontSize: '13px' }}><strong>Aderência Geral no Período:</strong> {reportStats.taxaAdesao}%</p>
+                            </div>
+                        </div>
+
+                        {/* Stats block layout */}
+                        <h3 style={{ fontSize: '14px', borderBottom: '1px solid #ccc', paddingBottom: '6px', marginBottom: '12px', textTransform: 'uppercase' }}>
+                            Resumo Estatístico
+                        </h3>
+                        <div className="print-grid">
+                            <div className="print-card-stat">
+                                <span style={{ fontSize: '11px', textTransform: 'uppercase', color: '#666' }}>Dias Treinados</span>
+                                <div style={{ fontSize: '24px', fontWeight: 'bold', margin: '5px 0' }}>{reportStats.diasTreinados}</div>
+                            </div>
+                            <div className="print-card-stat">
+                                <span style={{ fontSize: '11px', textTransform: 'uppercase', color: '#666' }}>Treinos Faltosos</span>
+                                <div style={{ fontSize: '24px', fontWeight: 'bold', margin: '5px 0', color: '#d32f2f' }}>{reportStats.treinosFaltosos}</div>
+                            </div>
+                            <div className="print-card-stat">
+                                <span style={{ fontSize: '11px', textTransform: 'uppercase', color: '#666' }}>Carga Mín / Máx</span>
+                                <div style={{ fontSize: '16px', fontWeight: 'bold', margin: '8px 0' }}>
+                                    {reportStats.minCarga} kg / {reportStats.maxCarga} kg
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Detailed table list of exercises */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '20px', marginTop: '20px' }}>
+                            <div>
+                                <h3 style={{ fontSize: '14px', borderBottom: '1px solid #ccc', paddingBottom: '6px', marginBottom: '12px', textTransform: 'uppercase' }}>
+                                    Exercícios Mais Realizados
+                                </h3>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                                    <thead>
+                                        <tr style={{ borderBottom: '1px solid #000', textAlign: 'left' }}>
+                                            <th style={{ padding: '6px 0' }}>Exercício</th>
+                                            <th style={{ padding: '6px 0', textAlign: 'right' }}>Frequência</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {reportStats.topExercises.length > 0 ? (
+                                            reportStats.topExercises.map((ex, idx) => (
+                                                <tr key={idx} className="print-exercise-row" style={{ borderBottom: '1px solid #eee' }}>
+                                                    <td style={{ padding: '6px 0' }}>{idx + 1}. {ex.name}</td>
+                                                    <td style={{ padding: '6px 0', textAlign: 'right' }}>{ex.count} treinos</td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan="2" style={{ padding: '6px 0', color: '#666' }}>Nenhum treino concluído no período.</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Printable Notes */}
+                            <div>
+                                <h3 style={{ fontSize: '14px', borderBottom: '1px solid #ccc', paddingBottom: '6px', marginBottom: '12px', textTransform: 'uppercase' }}>
+                                    Avaliação do Treinador
+                                </h3>
+                                <div className="print-notes-box" style={{ fontSize: '12px', minHeight: '120px', border: '1px solid #ccc', padding: '10px', borderRadius: '4px' }}>
+                                    {notes || 'Nenhuma anotação adicional inserida pelo professor.'}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Signature area */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '80px', paddingTop: '20px' }}>
+                            <div style={{ width: '45%', textAlign: 'center' }}>
+                                <div style={{ borderTop: '1px solid #000', width: '100%', margin: '0 auto' }}></div>
+                                <p style={{ fontSize: '12px', margin: '8px 0 0 0' }}>João Victor (Personal Trainer)</p>
+                            </div>
+                            <div style={{ width: '45%', textAlign: 'center' }}>
+                                <div style={{ borderTop: '1px solid #000', width: '100%', margin: '0 auto' }}></div>
+                                <p style={{ fontSize: '12px', margin: '8px 0 0 0' }}>Assinatura do Aluno(a): {currentStudent?.name}</p>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
     );
 };

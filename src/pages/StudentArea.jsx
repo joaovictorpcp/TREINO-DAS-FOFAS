@@ -47,18 +47,27 @@ const StudentArea = () => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const studentWorkouts = workouts;
+        const currentMonth = today.getMonth();
+        const currentYear = today.getFullYear();
+
+        // Filter workouts to only include those belonging to the active student
+        const studentWorkouts = workouts.filter(w => w.studentId === activeId);
 
         const missed = studentWorkouts.filter(w => {
             const d = new Date(w.date);
             d.setHours(0, 0, 0, 0);
-            return d < today && (w.status || '').toLowerCase() !== 'completed';
+            return d < today && 
+                   d.getMonth() === currentMonth && 
+                   d.getFullYear() === currentYear && 
+                   (w.status || '').toLowerCase() !== 'completed';
         });
 
         const pastWorkouts = studentWorkouts.filter(w => {
             const d = new Date(w.date);
             d.setHours(0, 0, 0, 0);
-            return d < today;
+            return d < today && 
+                   d.getMonth() === currentMonth && 
+                   d.getFullYear() === currentYear;
         });
 
         const completedCount = pastWorkouts.filter(w => (w.status || '').toLowerCase() === 'completed').length;
