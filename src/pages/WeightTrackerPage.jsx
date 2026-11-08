@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useStudent } from '../context/StudentContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Scale, TrendingUp, TrendingDown, Minus, Calendar, PlusCircle, Trash2, Edit2, X, Activity, Ruler } from 'lucide-react';
+import BodyMetricsPDFExport from '../components/BodyMetrics/BodyMetricsPDFExport';
 
 import styles from './WeightTrackerPage.module.css';
 
@@ -226,9 +227,12 @@ const WeightTrackerPage = () => {
     return (
         <div className={`page-container animate-fade-in ${styles.container}`}>
             <header style={{ marginBottom: '2rem' }}>
-                <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Scale color="var(--accent-primary)" /> Medidas Corporais
-                </h1>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+                    <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <Scale color="var(--accent-primary)" /> Medidas Corporais
+                    </h1>
+                    <BodyMetricsPDFExport metrics={studentMetrics} student={currentStudent} />
+                </div>
                 <p style={{ color: 'var(--text-secondary)' }}>
                     Atleta: <strong>{currentStudent?.name}</strong> •
                     Idade: {getAge(currentStudent?.birthDate) ?? 'Não informada'} •
