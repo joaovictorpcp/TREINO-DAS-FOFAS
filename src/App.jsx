@@ -22,6 +22,7 @@ import AdminRoute from './components/Auth/AdminRoute';
 import NotFoundPage from './pages/NotFoundPage';
 import StudentArea from './pages/StudentArea';
 import StudentPlanningPage from './pages/StudentPlanningPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 function App() {
   return (
@@ -45,6 +46,7 @@ const MainContent = () => {
     <Layout>
       <Routes>
         <Route path="/" element={<LoginPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/gateway" element={<ProtectedRoute><StudentGateway /></ProtectedRoute>} />
         <Route path="/register" element={<RegisterPage />} />
 

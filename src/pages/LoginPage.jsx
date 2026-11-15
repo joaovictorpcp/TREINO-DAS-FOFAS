@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { LogIn, AlertCircle, Dumbbell, GraduationCap } from 'lucide-react';
+import { LogIn, AlertCircle, Dumbbell, GraduationCap, KeyRound, ArrowLeft, Mail, CheckCircle2 } from 'lucide-react';
+import { supabase } from '../services/supabase';
 
 const LoginPage = () => {
     const { signIn, session, role } = useAuth();
@@ -15,6 +16,13 @@ const LoginPage = () => {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+
+    // --- Esqueci minha senha ---
+    const [showForgotPassword, setShowForgotPassword] = useState(false);
+    const [forgotEmail, setForgotEmail] = useState('');
+    const [forgotLoading, setForgotLoading] = useState(false);
+    const [forgotError, setForgotError] = useState(null);
+    const [forgotSuccess, setForgotSuccess] = useState(false);
 
     // Redireciona quando sessão + role estiverem prontos
     useEffect(() => {
@@ -36,6 +44,32 @@ const LoginPage = () => {
             setError(err.message || 'Falha ao fazer login');
             setLoading(false);
         }
+    };
+
+    const handleForgotPassword = async (e) => {
+        e.preventDefault();
+        setForgotLoading(true);
+        setForgotError(null);
+
+        try {
+            const redirectTo = `${window.location.origin}/reset-password`;
+            const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail.trim(), {
+                redirectTo,
+            });
+            if (error) throw error;
+            setForgotSuccess(true);
+        } catch (err) {
+            setForgotError(err.message || 'Não foi possível enviar o email. Tente novamente.');
+        } finally {
+            setForgotLoading(false);
+        }
+    };
+
+    const handleCloseForgot = () => {
+        setShowForgotPassword(false);
+        setForgotEmail('');
+        setForgotError(null);
+        setForgotSuccess(false);
     };
 
     // Cores e textos dinâmicos por perfil
@@ -198,6 +232,29 @@ const LoginPage = () => {
                             required
                             style={{ width: '100%' }}
                         />
+                        {/* Link Esqueci minha senha */}
+                        <button
+                            type="button"
+                            onClick={() => { setShowForgotPassword(true); setForgotEmail(email); }}
+                            style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: accentColor,
+                                fontSize: '0.8rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                padding: '6px 0 0',
+                                display: 'block',
+                                textAlign: 'right',
+                                width: '100%',
+                                opacity: 0.85,
+                                transition: 'opacity 0.2s',
+                            }}
+                            onMouseOver={e => e.currentTarget.style.opacity = '1'}
+                            onMouseOut={e => e.currentTarget.style.opacity = '0.85'}
+                        >
+                            Esqueci minha senha
+                        </button>
                     </div>
 
                     <button
@@ -255,6 +312,157 @@ const LoginPage = () => {
                     </button>
                 </div>
             </div>
+
+            {/* ===== MODAL ESQUECI MINHA SENHA ===== */}
+            {showForgotPassword && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'rgba(0,0,0,0.65)',
+                        backdropFilter: 'blur(4px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 1000,
+                        padding: '1rem',
+                    }}
+                    onClick={(e) => { if (e.target === e.currentTarget) handleCloseForgot(); }}
+                >
+                    <div className="glass-panel animate-fade-in" style={{
+                        padding: '2rem',
+                        width: '100%',
+                        maxWidth: '380px',
+                        textAlign: 'center',
+                        border: `1px solid ${accentColor}33`,
+                    }}>
+                        {/* Ícone */}
+                        <div style={{
+                            width: '58px', height: '58px',
+                            background: accentBg,
+                            border: `1px solid ${accentColor}44`,
+                            borderRadius: '50%',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            margin: '0 auto 1.25rem',
+                            color: accentColor,
+                            boxShadow: `0 0 18px ${accentGlow}`,
+                        }}>
+                            {forgotSuccess ? <CheckCircle2 size={26} /> : <KeyRound size={26} />}
+                        </div>
+
+                        {forgotSuccess ? (
+                            /* --- Estado de Sucesso --- */
+                            <>
+                                <h3 style={{ color: 'var(--text-primary)', fontSize: '1.2rem', fontWeight: 800, marginBottom: '0.5rem' }}>
+                                    Email Enviado!
+                                </h3>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+                                    Enviamos um link de redefinição de senha para{' '}
+                                    <strong style={{ color: accentColor }}>{forgotEmail}</strong>.
+                                    <br /><br />
+                                    Verifique sua caixa de entrada (e a pasta de spam).
+                                </p>
+                                <button
+                                    type="button"
+                                    className="btn btn-primary"
+                                    onClick={handleCloseForgot}
+                                    style={{
+                                        width: '100%',
+                                        justifyContent: 'center',
+                                        background: accentColor,
+                                        color: 'var(--text-on-accent)',
+                                        boxShadow: `0 0 14px ${accentGlow}`,
+                                    }}
+                                >
+                                    Voltar ao Login
+                                </button>
+                            </>
+                        ) : (
+                            /* --- Formulário de Recuperação --- */
+                            <>
+                                <h3 style={{ color: 'var(--text-primary)', fontSize: '1.2rem', fontWeight: 800, marginBottom: '0.4rem' }}>
+                                    Recuperar Senha
+                                </h3>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: 1.5, marginBottom: '1.5rem' }}>
+                                    Informe seu email cadastrado e enviaremos um link para você criar uma nova senha.
+                                </p>
+
+                                {forgotError && (
+                                    <div style={{
+                                        background: 'rgba(248, 113, 113, 0.08)',
+                                        border: '1px solid var(--accent-danger)',
+                                        color: 'var(--accent-danger)',
+                                        padding: '10px 12px',
+                                        borderRadius: '10px',
+                                        marginBottom: '1rem',
+                                        fontSize: '0.85rem',
+                                        display: 'flex', alignItems: 'center', gap: '8px',
+                                        textAlign: 'left',
+                                    }}>
+                                        <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                                        {forgotError}
+                                    </div>
+                                )}
+
+                                <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+                                    <div style={{ textAlign: 'left' }}>
+                                        <label className="label" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                            <Mail size={13} /> Email cadastrado
+                                        </label>
+                                        <input
+                                            type="email"
+                                            className="input"
+                                            value={forgotEmail}
+                                            onChange={(e) => setForgotEmail(e.target.value)}
+                                            placeholder="seu@email.com"
+                                            required
+                                            autoFocus
+                                            style={{ width: '100%' }}
+                                        />
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        className="btn btn-primary"
+                                        disabled={forgotLoading}
+                                        style={{
+                                            width: '100%',
+                                            justifyContent: 'center',
+                                            gap: '8px',
+                                            background: accentColor,
+                                            color: 'var(--text-on-accent)',
+                                            boxShadow: `0 0 14px ${accentGlow}`,
+                                        }}
+                                    >
+                                        {forgotLoading ? 'Enviando...' : (
+                                            <><Mail size={16} /> Enviar Link de Recuperação</>
+                                        )}
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={handleCloseForgot}
+                                        style={{
+                                            background: 'transparent',
+                                            border: 'none',
+                                            color: 'var(--text-muted)',
+                                            fontSize: '0.85rem',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '5px',
+                                            padding: '4px',
+                                        }}
+                                    >
+                                        <ArrowLeft size={14} /> Voltar ao Login
+                                    </button>
+                                </form>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
