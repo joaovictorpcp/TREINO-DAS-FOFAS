@@ -190,10 +190,26 @@ const WeightTrackerPage = () => {
         if (!selectedStudentId) return;
         setIsSavingBio(true);
 
+        const newAge = getAge(editBirthDate);
+        const newGender = editGender;
+
+        // Recalcular o % de gordura de todas as avaliações que já possuem as 7 dobras
+        const currentMetrics = currentStudent?.profile_data?.metrics || [];
+        const updatedMetrics = currentMetrics.map(m => {
+            if (m.skinfolds && Object.values(m.skinfolds).some(v => v !== '')) {
+                const res = calculateBodyDensityAndFat(m.skinfolds, newAge, newGender);
+                if (res.isComplete && res.fat !== null) {
+                    return { ...m, bodyFat: res.fat };
+                }
+            }
+            return m;
+        });
+
         const ok = await updateStudent(selectedStudentId, {
-            gender: editGender,
+            gender: newGender,
             birthDate: editBirthDate,
-            birth_date: editBirthDate
+            birth_date: editBirthDate,
+            metrics: updatedMetrics
         });
 
         setIsSavingBio(false);

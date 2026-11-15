@@ -24,11 +24,38 @@ const StudentsPage = () => {
         if (!editingStudent) return;
         setIsSaving(true);
 
+        const newAge = getAge(editBirthDate);
+        const newGender = editGender;
+
+        // Recalcular métricas de dobras com a nova idade/gênero
+        const currentMetrics = editingStudent.profile_data?.metrics || [];
+        const requiredKeys = ['chest', 'axilla', 'triceps', 'subscapular', 'abdomen', 'suprailiac', 'thigh'];
+        const updatedMetrics = currentMetrics.map(m => {
+            if (m.skinfolds) {
+                const filledFolds = requiredKeys.filter(k => m.skinfolds[k] !== '' && !isNaN(parseFloat(m.skinfolds[k])));
+                if (filledFolds.length === 7) {
+                    const sum7 = requiredKeys.reduce((acc, k) => acc + (parseFloat(m.skinfolds[k]) || 0), 0);
+                    const validAge = (newAge !== null && newAge > 0) ? newAge : 25;
+                    let density = 0;
+                    if (newGender === 'female') {
+                        density = 1.0970 - (0.00046971 * sum7) + (0.00000056 * Math.pow(sum7, 2)) - (0.00012828 * validAge);
+                    } else {
+                        density = 1.1120 - (0.00043499 * sum7) + (0.00000055 * Math.pow(sum7, 2)) - (0.00028826 * validAge);
+                    }
+                    let fat = (495 / density) - 450;
+                    fat = Math.max(3, Math.min(65, fat));
+                    return { ...m, bodyFat: parseFloat(fat.toFixed(2)) };
+                }
+            }
+            return m;
+        });
+
         const ok = await updateStudent(editingStudent.id, {
             name: editName,
             gender: editGender,
             birthDate: editBirthDate,
-            birth_date: editBirthDate
+            birth_date: editBirthDate,
+            metrics: updatedMetrics
         });
 
         setIsSaving(false);

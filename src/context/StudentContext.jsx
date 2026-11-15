@@ -185,9 +185,9 @@ export const StudentProvider = ({ children }) => {
     };
 
     const updateBodyMetric = async (id, weight, date, skinfolds = null, bodyFat = null, circumferences = null) => {
-        let targetStudent = students.find(s => s.profile_data?.metrics?.some(m => m.id === id));
+        let targetStudent = students.find(s => s.profile_data?.metrics?.some(m => m.id === id) || s.id === selectedStudentId);
         if (targetStudent) {
-            const currentMetrics = targetStudent.profile_data.metrics || [];
+            const currentMetrics = targetStudent.profile_data?.metrics || [];
             const updatedMetrics = currentMetrics.map(m => {
                 if (m.id === id) {
                     return {
@@ -196,7 +196,7 @@ export const StudentProvider = ({ children }) => {
                         date,
                         skinfolds: skinfolds || m.skinfolds,
                         circumferences: circumferences || m.circumferences,
-                        bodyFat: bodyFat !== undefined ? parseFloat(bodyFat) : m.bodyFat
+                        bodyFat: bodyFat !== undefined && bodyFat !== null ? parseFloat(bodyFat) : (bodyFat === null ? null : m.bodyFat)
                     };
                 }
                 return m;
