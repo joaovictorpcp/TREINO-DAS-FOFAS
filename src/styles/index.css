@@ -1,39 +1,49 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
 
 :root {
-  /* --- Training OS Theme: Dark & Neon --- */
+  /* --- Elite Dark Theme: Zinc + Lime --- */
 
   /* Backgrounds */
-  --bg-primary: #050505;
-  /* Deep Black */
-  --bg-secondary: #0A0A0A;
-  /* Sidebar/Surface */
-  --bg-card: rgba(20, 20, 20, 0.7);
-  /* Translucent Card */
-  --bg-input: #121212;
+  --bg-primary: #09090b;
+  /* zinc-950 — fundo geral da app */
+  --bg-secondary: #121215;
+  /* fundo de cards e containers */
+  --bg-card: rgba(18, 18, 21, 0.85);
+  /* translucent surface */
+  --bg-input: #18181b;
+  /* zinc-900 */
+  --bg-surface-hover: #18181b;
+  /* hover sutil */
 
   /* Accents */
-  --accent-primary: #CCFF00;
-  /* Neon Lime */
-  --accent-secondary: #00B0FF;
-  /* Electric Blue */
-  --accent-glow: rgba(204, 255, 0, 0.4);
-  /* Green Glow */
+  --accent-primary: #a3e635;
+  /* lime-400 — ação principal */
+  --accent-secondary: #bef264;
+  /* lime-300 — variante mais clara */
+  --accent-glow: rgba(163, 230, 53, 0.35);
+  /* lime glow */
 
-  --accent-success: #CCFF00;
-  --accent-danger: #FF3D00;
-  /* Neon Red/Orange */
-  --accent-warning: #FFC400;
+  --accent-success: #a3e635;
+  --accent-danger: #f87171;
+  /* red-400 */
+  --accent-warning: #fbbf24;
+  /* amber-400 */
 
   /* Text */
-  --text-primary: #FAFAFA;
-  /* White-ish */
-  --text-secondary: #A1A1AA;
-  /* Light Gray */
-  --text-muted: #52525B;
-  /* Darker Gray */
-  --text-on-accent: #000000;
-  /* Black text on neon buttons */
+  --text-primary: #f4f4f5;
+  /* zinc-100 — títulos e dados */
+  --text-secondary: #a1a1aa;
+  /* zinc-400 — rótulos */
+  --text-muted: #71717a;
+  /* zinc-500 — info secundária */
+  --text-on-accent: #09090b;
+  /* texto escuro sobre lime */
+
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  /* linhas divisórias */
+  --border-active: rgba(163, 230, 53, 0.4);
+  /* destaque item ativo */
 
   /* Spacing */
   --space-xs: 0.25rem;
@@ -43,22 +53,19 @@
   --space-xl: 2rem;
   --space-2xl: 3rem;
 
-  /* Borders & Radius */
-  --border-subtle: #27272A;
-  /* Zinc 800 */
+  /* Radius */
   --radius-sm: 6px;
   --radius-md: 12px;
   --radius-lg: 20px;
   --radius-pill: 9999px;
 
-  /* Shadows (Neon & Deep) */
-  --shadow-card: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
-  --shadow-neon: 0 0 10px var(--accent-glow), 0 0 20px rgba(204, 255, 0, 0.2);
-  --shadow-float: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+  /* Shadows */
+  --shadow-card: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+  --shadow-neon: 0 0 12px var(--accent-glow), 0 0 24px rgba(163, 230, 53, 0.15);
+  --shadow-float: 0 10px 40px -10px rgba(0, 0, 0, 0.6);
 
   /* Typography */
   --font-main: 'Inter', sans-serif;
-  /* Cleaning up main font to match import */
   --font-display: 'Orbitron', sans-serif;
 }
 
