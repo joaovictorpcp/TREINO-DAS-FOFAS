@@ -162,14 +162,32 @@ const PerformancePage = () => {
         };
     }, [workouts, selectedStudentId]);
 
-    // Form Status Logic
-    let formStatus = "Neutro";
+    // Form Status Logic - Zonas Fisiológicas do TSB (Padrão Coggan / TrainingPeaks)
+    let formStatus = "Zona Neutra / Manutenção";
     let formColor = "#64748B";
-    if (latest.form > 20) { formStatus = "Transição/Recuperação"; formColor = "#10b981"; }
-    else if (latest.form > 5) { formStatus = "Fresco"; formColor = "#3b82f6"; }
-    else if (latest.form > -10) { formStatus = "Zona Ótima"; formColor = "#10b981"; }
-    else if (latest.form > -30) { formStatus = "Carga Alta"; formColor = "#f59e0b"; }
-    else { formStatus = "Risco de Lesão"; formColor = "#ef4444"; }
+    let formDescription = "Equilíbrio entre condicionamento e fadiga. Nível de prontidão estável.";
+
+    if (latest.form > 25) {
+        formStatus = "Transição / Perda de Condicionamento";
+        formColor = "#60a5fa";
+        formDescription = "Fadiga muito baixa por descanso prolongado. Pode haver destreinamento se mantido.";
+    } else if (latest.form >= 10) {
+        formStatus = "Fresco / Pico de Performance (Apto a Testes)";
+        formColor = "#10b981";
+        formDescription = "Atleta totalmente descansado(a) e com máximo rendimento para testes de carga e recordes pessoais.";
+    } else if (latest.form >= -10) {
+        formStatus = "Zona Neutra / Apto a Treinar";
+        formColor = "#22c55e";
+        formDescription = "Balanço equilibrado. O atleta está apto para treinar com boa intensidade e recuperação adequada.";
+    } else if (latest.form >= -30) {
+        formStatus = "Zona Ótima de Estímulo / Carga Alta";
+        formColor = "#f59e0b";
+        formDescription = "Zona ideal de sobrecarga progressiva onde ocorrem as maiores adaptações e hipertrofia. Monitorar recuperação.";
+    } else {
+        formStatus = "Fadiga Extrema / Risco de Lesão";
+        formColor = "#ef4444";
+        formDescription = "Sobrecarga aguda severa. Risco crítico de overtraining e lesões articulares/musculares. Recomenda-se deload ou descanso.";
+    }
 
     if (!selectedStudentId) return <div className="p-8">Selecione um aluno.</div>;
 
@@ -229,10 +247,13 @@ const PerformancePage = () => {
                         <Battery size={16} color={formColor} />
                         Forma (TSB)
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', flexWrap: 'wrap' }}>
                         <span style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{latest.form}</span>
                         <span style={{ fontSize: '0.9rem', color: formColor, fontWeight: 700 }}>{formStatus}</span>
                     </div>
+                    <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                        {formDescription}
+                    </p>
                 </div>
             </div>
 
@@ -323,18 +344,17 @@ const PerformancePage = () => {
                 padding: '24px',
                 background: 'var(--bg-card)',
                 borderRadius: '16px',
-                marginBottom: '4rem',
+                marginBottom: '2rem',
                 border: '1px solid var(--border-subtle)'
             }}>
-                {/* Changed minmax from 280px to 250px to fit smaller screens better, and gap adjustment */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
 
                     {/* Fitness */}
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                         <div style={{ minWidth: '12px', height: '12px', background: '#3b82f6', opacity: 0.2, border: '2px solid #3b82f6', marginTop: '4px', borderRadius: '4px' }}></div>
                         <div>
-                            <span style={{ color: 'var(--text-primary)', fontWeight: 700, display: 'block', marginBottom: '4px' }}>Fitness (CTL)</span>
-                            <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>Quanto você treinou nos últimos 42 dias. O objetivo é subir gradualmente para ganhar condicionamento.</span>
+                            <span style={{ color: 'var(--text-primary)', fontWeight: 700, display: 'block', marginBottom: '4px' }}>Fitness (CTL) — Carga Crônica</span>
+                            <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>Representa o condicionamento acumulado nos últimos 42 dias. Subidas graduais indicam evolução sólida sem sobrecarga desnecessária.</span>
                         </div>
                     </div>
 
@@ -342,8 +362,8 @@ const PerformancePage = () => {
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                         <div style={{ minWidth: '12px', height: '12px', background: '#f43f5e', marginTop: '4px', borderRadius: '50%' }}></div>
                         <div>
-                            <span style={{ color: 'var(--text-primary)', fontWeight: 700, display: 'block', marginBottom: '4px' }}>Fadiga (ATL)</span>
-                            <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>Cansaço atual (média de 7 dias). Sobe rápido após treinos intensos e cai com descanso.</span>
+                            <span style={{ color: 'var(--text-primary)', fontWeight: 700, display: 'block', marginBottom: '4px' }}>Fadiga (ATL) — Carga Aguda</span>
+                            <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>Cansaço gerado pelos treinos recentes (média dos últimos 7 dias). Sobe rapidamente com treinos intensos e cai nos descansos.</span>
                         </div>
                     </div>
 
@@ -351,11 +371,55 @@ const PerformancePage = () => {
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                         <div style={{ minWidth: '12px', height: '2px', background: '#10b981', borderTop: '2px dashed #10b981', marginTop: '10px' }}></div>
                         <div>
-                            <span style={{ color: 'var(--text-primary)', fontWeight: 700, display: 'block', marginBottom: '4px' }}>Forma (TSB)</span>
-                            <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>Equilíbrio (Fitness - Fadiga). Positiva indica frescor para competir; muito negativa (-30) indica risco de overtraining.</span>
+                            <span style={{ color: 'var(--text-primary)', fontWeight: 700, display: 'block', marginBottom: '4px' }}>Forma (TSB) — Prontidão Física</span>
+                            <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>Balanço do Estresse de Treino (CTL - ATL). Define se o atleta está descansado, na faixa ideal de estímulo ou em fadiga excessiva.</span>
                         </div>
                     </div>
 
+                </div>
+            </div>
+
+            {/* TABELA DE ZONAS DO TSB / RISCO DE LESÃO */}
+            <div className="glass-panel" style={{
+                padding: '24px',
+                borderRadius: '16px',
+                marginBottom: '4rem',
+                border: '1px solid var(--border-subtle)'
+            }}>
+                <h4 style={{ margin: '0 0 1rem 0', fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <AlertCircle size={18} color="var(--accent-primary)" />
+                    Zonas de Prontidão Física e Risco de Lesão (TSB)
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+                    <div style={{ padding: '14px', borderRadius: '12px', background: 'rgba(96, 165, 250, 0.08)', border: '1px solid rgba(96, 165, 250, 0.25)' }}>
+                        <div style={{ fontWeight: 700, color: '#60a5fa', fontSize: '0.9rem', marginBottom: '4px' }}>TSB &gt; +25</div>
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.85rem' }}>Transição / Destreino</div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '4px', lineHeight: 1.4 }}>Muito tempo sem estímulo adequado. Queda de condicionamento físico.</div>
+                    </div>
+
+                    <div style={{ padding: '14px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+                        <div style={{ fontWeight: 700, color: '#10b981', fontSize: '0.9rem', marginBottom: '4px' }}>TSB: +10 a +25</div>
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.85rem' }}>Fresco / Pico de Performance</div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '4px', lineHeight: 1.4 }}>Fadiga mínima e fitness preservado. Ideal para quebra de recordes pessoais (1RM).</div>
+                    </div>
+
+                    <div style={{ padding: '14px', borderRadius: '12px', background: 'rgba(34, 197, 94, 0.08)', border: '1px solid rgba(34, 197, 94, 0.25)' }}>
+                        <div style={{ fontWeight: 700, color: '#22c55e', fontSize: '0.9rem', marginBottom: '4px' }}>TSB: -10 a +10</div>
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.85rem' }}>Zona Neutra / Apto a Treinar</div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '4px', lineHeight: 1.4 }}>Recuperação balanceada. Prontidão plena para treinar com intensidade programada.</div>
+                    </div>
+
+                    <div style={{ padding: '14px', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.25)' }}>
+                        <div style={{ fontWeight: 700, color: '#f59e0b', fontSize: '0.9rem', marginBottom: '4px' }}>TSB: -30 a -10</div>
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.85rem' }}>Zona Ótima de Estímulo</div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '4px', lineHeight: 1.4 }}>Sobrecarga progressiva produtiva. É onde ocorrem os ganhos de força e hipertrofia.</div>
+                    </div>
+
+                    <div style={{ padding: '14px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)' }}>
+                        <div style={{ fontWeight: 700, color: '#ef4444', fontSize: '0.9rem', marginBottom: '4px' }}>TSB &lt; -30</div>
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.85rem' }}>Fadiga Extrema / Risco Lesivo</div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '4px', lineHeight: 1.4 }}>Sobrecarga aguda severa. Risco crítico de overtraining e lesões. Exige deload ou repouso.</div>
+                    </div>
                 </div>
             </div>
 

@@ -171,25 +171,33 @@ export const WorkoutProvider = ({ children }) => {
   };
 
   /**
-   * Foster Method Calculation (RPE * Duration)
-   * This is the TRUTH for the PMC Chart.
+   * Foster Method Normalized Load (sRPE * Duration) scaled to TSS equivalency.
+   * Em endurance, 1 hora de treino em limiar = 100 TSS.
+   * No método de Foster na musculação, 60 min a RPE 10 = 600 UA.
+   * Dividindo por 5 ou calibrando para escala de TSS padrão (0-100 por sessão típica),
+   * permitimos que CTL, ATL e TSB operem nas faixas clínicas de TrainingPeaks:
+   * CTL 0-100, ATL 0-120, TSB de -40 a +25.
    */
   const calculateNormalizedLoad = (workout) => {
     // Scenario A: Explicit Data
-    if (workout.normalized_load) return workout.normalized_load;
+    if (workout.normalized_load) {
+      // Se for dado bruto > 150, normaliza dividindo por 5 para escala TSS
+      return workout.normalized_load > 150 ? Math.round(workout.normalized_load / 5) : workout.normalized_load;
+    }
 
     // Check if we have fields to calc it on the fly
     const rpe = parseFloat(workout.session_rpe);
     const duration = parseFloat(workout.duration_minutes);
 
     if (!isNaN(rpe) && !isNaN(duration) && rpe > 0 && duration > 0) {
-      return rpe * duration;
+      // Foster scaled: (duration * rpe) / 5
+      // Ex: 60 min @ RPE 7 = 420 / 5 = 84 TSS
+      return Math.round((duration * rpe) / 5);
     }
 
     // Scenario B: Fallback / Estimation for Weightlifting without clear RPE
     if (!workout.exercises || workout.exercises.length === 0) {
-      // Se não tem exercícios e não tem duração definida, checa se tem RPE e estima duração
-      if (!isNaN(rpe) && rpe > 0) return rpe * 45; // Assuma 45 min se tiver apenas RPE
+      if (!isNaN(rpe) && rpe > 0) return Math.round((45 * rpe) / 5);
       return 0;
     }
 
@@ -209,9 +217,8 @@ export const WorkoutProvider = ({ children }) => {
         rpeCount++;
       }
 
-      // Fallback RPE estimation via reps/load if RPE is not filled in exercises
       if (parseInt(ex.sets) > 0 && parseFloat(ex.load) > 0) {
-        fallbackVolumeStress += 1; // Increment based on filled lifting actions
+        fallbackVolumeStress += 1;
       }
     });
 
@@ -219,13 +226,13 @@ export const WorkoutProvider = ({ children }) => {
     if (rpeCount > 0) {
       estimatedRpe = rpeSum / rpeCount;
     } else if (!isNaN(rpe) && rpe > 0) {
-      estimatedRpe = rpe; // Uso RPE global caso os exercícios venham sem RPE
+      estimatedRpe = rpe;
     } else {
-      // Se aluno apenas preencheu (kg) e séries, estima RPE entre 6-8 dependendo da robustez do preenchimento
       estimatedRpe = fallbackVolumeStress > 3 ? 7.5 : 6;
     }
 
-    return Math.round(estimatedDuration * estimatedRpe);
+    // Retorna carga convertida na escala TSS
+    return Math.round((estimatedDuration * estimatedRpe) / 5);
   };
 
   const getPMCData = (studentId) => {
