@@ -7,7 +7,7 @@ import BodyMetricsPDFExport from '../components/BodyMetrics/BodyMetricsPDFExport
 import styles from './WeightTrackerPage.module.css';
 
 const WeightTrackerPage = () => {
-    const { selectedStudentId, students, bodyMetrics, addBodyMetric, deleteBodyMetric, updateBodyMetric } = useStudent();
+    const { selectedStudentId, students, bodyMetrics, addBodyMetric, deleteBodyMetric, updateBodyMetric, updateStudent } = useStudent();
     const [weightInput, setWeightInput] = useState('');
     const [dateInput, setDateInput] = useState(new Date().toISOString().split('T')[0]);
 
