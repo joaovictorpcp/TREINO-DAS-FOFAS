@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useStudent } from '../context/StudentContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Scale, TrendingUp, TrendingDown, Minus, Calendar, PlusCircle, Trash2, Edit2, X, Activity, Ruler } from 'lucide-react';
+import { Scale, TrendingUp, TrendingDown, Minus, Calendar, PlusCircle, Trash2, Edit2, X, Activity, Ruler, UserCheck, AlertCircle } from 'lucide-react';
 import BodyMetricsPDFExport from '../components/BodyMetrics/BodyMetricsPDFExport';
 
 import styles from './WeightTrackerPage.module.css';
@@ -47,6 +47,12 @@ const WeightTrackerPage = () => {
     const [activeChart, setActiveChart] = useState('weight'); // 'weight', 'bodyFat', 'perimetry'
     const [selectedPerimetry, setSelectedPerimetry] = useState('waist'); // Default metric for perimetry chart
 
+    // Modal de Edição de Dados Biométricos do Atleta
+    const [isBioModalOpen, setIsBioModalOpen] = useState(false);
+    const [editGender, setEditGender] = useState('female');
+    const [editBirthDate, setEditBirthDate] = useState('');
+    const [isSavingBio, setIsSavingBio] = useState(false);
+
     const currentStudent = students.find(s => s.id === selectedStudentId);
 
     // Get stats for this student
@@ -65,50 +71,60 @@ const WeightTrackerPage = () => {
     //     ? (latestMetric.weight - startMetric.weight).toFixed(1)
     //     : '0.0';
 
-    // --- POLLOCK 7 CALCULATION ---
+    // --- POLLOCK 7 CALCULATION (Jackson & Pollock 7 Dobras + Siri) ---
     const calculateBodyDensityAndFat = (folds, age, gender) => {
-        // Sum of 7 folds
-        const sum7 =
-            (parseFloat(folds.chest) || 0) +
-            (parseFloat(folds.axilla) || 0) +
-            (parseFloat(folds.triceps) || 0) +
-            (parseFloat(folds.subscapular) || 0) +
-            (parseFloat(folds.abdomen) || 0) +
-            (parseFloat(folds.suprailiac) || 0) +
-            (parseFloat(folds.thigh) || 0);
+        const requiredKeys = ['chest', 'axilla', 'triceps', 'subscapular', 'abdomen', 'suprailiac', 'thigh'];
+        
+        // Verifica se todas as 7 dobras foram preenchidas com valores válidos (> 0)
+        const filledFolds = requiredKeys.filter(k => folds[k] !== '' && !isNaN(parseFloat(folds[k])));
+        if (filledFolds.length < 7) {
+            return {
+                density: 0,
+                fat: null,
+                sum7: 0,
+                isComplete: false,
+                missingCount: 7 - filledFolds.length
+            };
+        }
 
-        if (sum7 === 0) return { density: 0, fat: 0 };
+        const sum7 = requiredKeys.reduce((acc, k) => acc + (parseFloat(folds[k]) || 0), 0);
+        if (sum7 <= 0) return { density: 0, fat: null, sum7: 0, isComplete: false };
 
+        const validAge = (age !== null && age !== undefined && !isNaN(age) && age > 0) ? Number(age) : 25;
         let density = 0;
 
         if (gender === 'female') {
-            // Jackson & Pollock (Women)
-            density = 1.0970 - (0.00046971 * sum7) + (0.00000056 * (sum7 ** 2)) - (0.00012828 * age);
+            // Jackson, Pollock & Ward (1980) - Mulheres 7 Dobras
+            density = 1.0970 - (0.00046971 * sum7) + (0.00000056 * Math.pow(sum7, 2)) - (0.00012828 * validAge);
         } else {
-            // Jackson & Pollock (Men)
-            density = 1.11200000 - (0.00043499 * sum7) + (0.00000055 * (sum7 ** 2)) - (0.00028826 * age);
+            // Jackson & Pollock (1978) - Homens 7 Dobras
+            density = 1.1120 - (0.00043499 * sum7) + (0.00000055 * Math.pow(sum7, 2)) - (0.00028826 * validAge);
         }
 
-        // Siri Equation
-        const fatPercentage = (495 / density) - 450;
+        // Equação de Siri (1961) - Padrão Ouro Internacional
+        let fatPercentage = (495 / density) - 450;
+        fatPercentage = Math.max(3, Math.min(65, fatPercentage));
 
         return {
-            density: density,
-            fat: parseFloat(fatPercentage.toFixed(2))
+            density: parseFloat(density.toFixed(5)),
+            fat: parseFloat(fatPercentage.toFixed(2)),
+            sum7: parseFloat(sum7.toFixed(1)),
+            isComplete: true
         };
     };
 
     // Calculate age helper
     const getAge = (birthDateString) => {
-        if (!birthDateString) return null; // Default fallback to null
+        if (!birthDateString) return null;
         const today = new Date();
         const birthDate = new Date(birthDateString);
+        if (isNaN(birthDate.getTime())) return null;
         let age = today.getFullYear() - birthDate.getFullYear();
         const m = today.getMonth() - birthDate.getMonth();
         if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
             age--;
         }
-        return age;
+        return age >= 0 ? age : null;
     };
 
 
@@ -130,11 +146,12 @@ const WeightTrackerPage = () => {
         let calculatedFat = null;
 
         if (hasSkinfolds) {
-            const age = getAge(currentStudent?.birthDate);
-            const gender = currentStudent?.gender || 'male';
-            const { fat } = calculateBodyDensityAndFat(skinfolds, age, gender);
-            if (!isNaN(fat) && fat > 0 && fat < 100) {
-                calculatedFat = fat;
+            const studentBirthDate = currentStudent?.birthDate || currentStudent?.birth_date;
+            const age = getAge(studentBirthDate);
+            const gender = currentStudent?.gender || 'female';
+            const result = calculateBodyDensityAndFat(skinfolds, age, gender);
+            if (result.isComplete && result.fat !== null && !isNaN(result.fat) && result.fat > 0 && result.fat < 100) {
+                calculatedFat = result.fat;
             }
         }
 
@@ -158,6 +175,42 @@ const WeightTrackerPage = () => {
             alert('Não foi possível salvar os registros. Verifique a conexão ou fale com o suporte.');
         }
     };
+
+    // Abre o modal de edição de biometria do aluno selecionado
+    const handleOpenBioModal = () => {
+        if (!currentStudent) return;
+        setEditGender(currentStudent.gender || 'female');
+        setEditBirthDate(currentStudent.birthDate || currentStudent.birth_date || '');
+        setIsBioModalOpen(true);
+    };
+
+    // Salva as alterações de gênero e data de nascimento do atleta
+    const handleSaveBio = async (e) => {
+        e.preventDefault();
+        if (!selectedStudentId) return;
+        setIsSavingBio(true);
+
+        const ok = await updateStudent(selectedStudentId, {
+            gender: editGender,
+            birthDate: editBirthDate,
+            birth_date: editBirthDate
+        });
+
+        setIsSavingBio(false);
+        if (ok) {
+            setIsBioModalOpen(false);
+        } else {
+            alert('Erro ao atualizar perfil do aluno. Tente novamente.');
+        }
+    };
+
+    // Cálculo em tempo real para exibir na tela enquanto preenche as 7 dobras
+    const liveCalc = useMemo(() => {
+        const studentBirthDate = currentStudent?.birthDate || currentStudent?.birth_date;
+        const age = getAge(studentBirthDate);
+        const gender = currentStudent?.gender || 'female';
+        return calculateBodyDensityAndFat(skinfolds, age, gender);
+    }, [skinfolds, currentStudent]);
 
     const startEdit = (metric) => {
         setEditingId(metric.id);
@@ -233,11 +286,34 @@ const WeightTrackerPage = () => {
                     </h1>
                     <BodyMetricsPDFExport metrics={studentMetrics} student={currentStudent} />
                 </div>
-                <p style={{ color: 'var(--text-secondary)' }}>
-                    Atleta: <strong>{currentStudent?.name}</strong> •
-                    Idade: {getAge(currentStudent?.birthDate) ?? 'Não informada'} •
-                    Sexo: {currentStudent?.gender === 'female' ? 'Feminino' : currentStudent?.gender === 'male' ? 'Masculino' : 'Não informado'}
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '0.4rem', flexWrap: 'wrap' }}>
+                    <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
+                        Atleta: <strong>{currentStudent?.name}</strong> •
+                        Idade: {getAge(currentStudent?.birthDate || currentStudent?.birth_date) !== null ? `${getAge(currentStudent?.birthDate || currentStudent?.birth_date)} anos` : 'Não informada'} •
+                        Sexo: {currentStudent?.gender === 'female' ? 'Feminino' : currentStudent?.gender === 'male' ? 'Masculino' : 'Não informado'}
+                    </p>
+                    <button
+                        type="button"
+                        onClick={handleOpenBioModal}
+                        style={{
+                            background: 'rgba(74, 222, 128, 0.1)',
+                            border: '1px solid rgba(74, 222, 128, 0.3)',
+                            color: 'var(--accent-primary)',
+                            borderRadius: '8px',
+                            padding: '3px 10px',
+                            fontSize: '0.78rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            transition: 'all 0.2s ease'
+                        }}
+                        title="Alterar Sexo Biológico ou Idade do Atleta"
+                    >
+                        <UserCheck size={13} /> Editar Dados do Atleta
+                    </button>
+                </div>
             </header>
 
             {/* Stats Cards */}
@@ -461,6 +537,36 @@ const WeightTrackerPage = () => {
                                     </div>
                                 ))}
                             </div>
+
+                            {/* FEEDBACK DO CÁLCULO POLLOCK 7 EM TEMPO REAL */}
+                            {Object.values(skinfolds).some(v => v !== '') && (
+                                <div style={{
+                                    marginTop: '12px',
+                                    padding: '10px 12px',
+                                    borderRadius: '8px',
+                                    background: liveCalc.isComplete ? 'rgba(74, 222, 128, 0.08)' : 'rgba(234, 179, 8, 0.08)',
+                                    border: `1px solid ${liveCalc.isComplete ? 'rgba(74, 222, 128, 0.25)' : 'rgba(234, 179, 8, 0.25)'}`,
+                                    fontSize: '0.82rem'
+                                }}>
+                                    {liveCalc.isComplete ? (
+                                        <div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                                <span style={{ color: 'var(--text-secondary)' }}>Soma das 7 dobras:</span>
+                                                <strong style={{ color: 'var(--text-primary)' }}>{liveCalc.sum7} mm</strong>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <span style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>% Gordura Calculado (Pollock 7):</span>
+                                                <strong style={{ color: 'var(--accent-primary)', fontSize: '1rem' }}>{liveCalc.fat}%</strong>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div style={{ color: '#eab308', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <AlertCircle size={14} style={{ flexShrink: 0 }} />
+                                            <span>Preencha todas as 7 dobras para o cálculo automático (faltam {liveCalc.missingCount}).</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         {/* PERIMETRY SECTION - UNIFIED */}
@@ -502,6 +608,99 @@ const WeightTrackerPage = () => {
                 </div>
 
             </div>
+
+            {/* MODAL PARA O TREINADOR EDITAR GÊNERO E DATA DE NASCIMENTO DO ATLETA */}
+            {isBioModalOpen && (
+                <div style={{
+                    position: 'fixed',
+                    inset: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                    backdropFilter: 'blur(4px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000,
+                    padding: '1rem'
+                }}>
+                    <div className="glass-panel animate-fade-in" style={{
+                        maxWidth: '420px',
+                        width: '100%',
+                        padding: '1.75rem',
+                        border: '1px solid var(--border-subtle)'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                            <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <UserCheck size={20} color="var(--accent-primary)" />
+                                Dados do Atleta
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={() => setIsBioModalOpen(false)}
+                                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.25rem', lineHeight: 1.4 }}>
+                            Esses dados são essenciais para calcular a densidade e o % de gordura pelo protocolo Pollock 7 dobras com exatidão.
+                        </p>
+
+                        <form onSubmit={handleSaveBio} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <div style={{ textAlign: 'left' }}>
+                                <label className="label">Sexo Biológico</label>
+                                <select
+                                    className="input"
+                                    value={editGender}
+                                    onChange={(e) => setEditGender(e.target.value)}
+                                    style={{ width: '100%' }}
+                                    required
+                                >
+                                    <option value="female">Feminino</option>
+                                    <option value="male">Masculino</option>
+                                </select>
+                            </div>
+
+                            <div style={{ textAlign: 'left' }}>
+                                <label className="label">Data de Nascimento</label>
+                                <input
+                                    type="date"
+                                    className="input"
+                                    value={editBirthDate}
+                                    onChange={(e) => setEditBirthDate(e.target.value)}
+                                    style={{ width: '100%' }}
+                                    required
+                                />
+                                {editBirthDate && (
+                                    <span style={{ fontSize: '0.78rem', color: 'var(--accent-primary)', marginTop: '4px', display: 'block' }}>
+                                        Idade calculada: {getAge(editBirthDate)} anos
+                                    </span>
+                                )}
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '10px', marginTop: '0.75rem' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsBioModalOpen(false)}
+                                    className="btn btn-secondary"
+                                    style={{ flex: 1, justifyContent: 'center' }}
+                                    disabled={isSavingBio}
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary"
+                                    style={{ flex: 1, justifyContent: 'center' }}
+                                    disabled={isSavingBio}
+                                >
+                                    {isSavingBio ? 'Salvando...' : 'Salvar Dados'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

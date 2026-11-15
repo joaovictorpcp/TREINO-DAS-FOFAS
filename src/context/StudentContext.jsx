@@ -65,10 +65,17 @@ export const StudentProvider = ({ children }) => {
             if (error) throw error;
 
             // Unificando profile_data. As vezes os dados vêm dentro de profile_data ou root.
-            const mapped = (data || []).map(s => ({
-                ...s,
-                ...(s.profile_data || {})
-            }));
+            const mapped = (data || []).map(s => {
+                const pData = s.profile_data || {};
+                return {
+                    ...s,
+                    ...pData,
+                    // Garante consistência de campos chaves
+                    birthDate: s.birthDate || s.birth_date || pData.birthDate || pData.birth_date || '',
+                    gender: s.gender || pData.gender || '',
+                    height: s.height || pData.height || ''
+                };
+            });
 
             setStudents(mapped);
         } catch (error) {
@@ -94,16 +101,26 @@ export const StudentProvider = ({ children }) => {
         const student = students.find(s => s.id === id);
         if (!student) return false;
 
-        const { name, goal, ...profileUpdates } = updatedData;
+        const { name, goal, gender, birthDate, birth_date, height, ...profileUpdates } = updatedData;
         const updates = {};
-        if (name) updates.name = name;
-
-        if (Object.keys(profileUpdates).length > 0) {
-            updates.profile_data = {
-                ...student.profile_data,
-                ...profileUpdates
-            };
+        if (name !== undefined) updates.name = name;
+        if (gender !== undefined) updates.gender = gender;
+        if (birthDate !== undefined || birth_date !== undefined) {
+            updates.birth_date = birthDate || birth_date;
         }
+
+        const mergedProfileData = {
+            ...(student.profile_data || {}),
+            ...profileUpdates
+        };
+        if (gender !== undefined) mergedProfileData.gender = gender;
+        if (birthDate !== undefined || birth_date !== undefined) {
+            mergedProfileData.birthDate = birthDate || birth_date;
+            mergedProfileData.birth_date = birthDate || birth_date;
+        }
+        if (height !== undefined) mergedProfileData.height = height;
+
+        updates.profile_data = mergedProfileData;
 
         try {
             const { data, error } = await supabase
@@ -115,7 +132,13 @@ export const StudentProvider = ({ children }) => {
 
             if (error) throw error;
 
-            const savedStudent = { ...data, ...(data.profile_data || {}) };
+            const savedStudent = {
+                ...data,
+                ...(data.profile_data || {}),
+                birthDate: data.birth_date || data.profile_data?.birthDate || data.profile_data?.birth_date || '',
+                gender: data.gender || data.profile_data?.gender || '',
+                height: data.height || data.profile_data?.height || ''
+            };
             setStudents(prev => prev.map(s => s.id === id ? savedStudent : s));
             return true;
         } catch (error) {

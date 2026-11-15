@@ -149,12 +149,20 @@ export const AuthProvider = ({ children }) => {
         role,
         loading,
         signIn,
-        signUp: (email, password, name, role = 'aluno') => supabase.auth.signUp({
+        signUp: (email, password, name, role = 'aluno', extraData = {}) => supabase.auth.signUp({
             email,
             password,
             options: {
                 emailRedirectTo: window.location.origin,
-                data: { full_name: name, role: role }
+                data: {
+                    full_name: name,
+                    name: name,
+                    role: role,
+                    gender: extraData.gender || null,
+                    birth_date: extraData.birthDate || null,
+                    birthDate: extraData.birthDate || null,
+                    ...extraData
+                }
             }
         }),
         signOut,

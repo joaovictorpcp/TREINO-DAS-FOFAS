@@ -14,10 +14,11 @@ const getAge = (birthDateString) => {
     if (!birthDateString) return null;
     const today = new Date();
     const birth = new Date(birthDateString);
+    if (isNaN(birth.getTime())) return null;
     let age = today.getFullYear() - birth.getFullYear();
     const mo = today.getMonth() - birth.getMonth();
     if (mo < 0 || (mo === 0 && today.getDate() < birth.getDate())) age--;
-    return age;
+    return age >= 0 ? age : null;
 };
 
 const calcIMC = (weight, heightCm) => {
@@ -418,7 +419,7 @@ async function generatePDF(evalA, evalB, student, allMetrics) {
     const H = doc.internal.pageSize.getHeight();
     const isComparison = !!evalB;
     const gender = student?.gender || 'female';
-    const age = getAge(student?.birthDate);
+    const age = getAge(student?.birthDate || student?.birth_date);
     const heightCm = student?.height || student?.profile_data?.height || null;
     const studentName = student?.name || 'Atleta';
 

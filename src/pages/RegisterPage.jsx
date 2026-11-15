@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { UserPlus, Mail, Lock, User, AlertCircle, ArrowRight, GraduationCap, Dumbbell } from 'lucide-react';
+import { UserPlus, Mail, Lock, User, AlertCircle, ArrowRight, GraduationCap, Dumbbell, Calendar, Heart } from 'lucide-react';
 
 const RegisterPage = () => {
     const { signUp } = useAuth();
@@ -11,6 +11,8 @@ const RegisterPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [role, setRole] = useState('aluno');
+    const [gender, setGender] = useState('female');
+    const [birthDate, setBirthDate] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -20,8 +22,14 @@ const RegisterPage = () => {
         setError(null);
 
         try {
-            // 1. Create Auth User with role in metadata
-            const { data: authData, error: authError } = await signUp(email, password, name, role);
+            // 1. Create Auth User with role, gender and birthDate in metadata
+            const { data: authData, error: authError } = await signUp(
+                email,
+                password,
+                name,
+                role,
+                { gender, birthDate, birth_date: birthDate }
+            );
             if (authError) throw authError;
 
             if (authData?.user) {
@@ -148,6 +156,39 @@ const RegisterPage = () => {
                                 placeholder="Seu Nome"
                                 required
                                 style={{ width: '100%', paddingLeft: '40px' }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Sexo Biológico & Data de Nascimento */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        <div style={{ textAlign: 'left' }}>
+                            <label className="label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Heart size={14} /> Sexo Biológico
+                            </label>
+                            <select
+                                className="input"
+                                value={gender}
+                                onChange={(e) => setGender(e.target.value)}
+                                required
+                                style={{ width: '100%', height: '42px' }}
+                            >
+                                <option value="female">Feminino</option>
+                                <option value="male">Masculino</option>
+                            </select>
+                        </div>
+
+                        <div style={{ textAlign: 'left' }}>
+                            <label className="label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Calendar size={14} /> Data Nasc.
+                            </label>
+                            <input
+                                type="date"
+                                className="input"
+                                value={birthDate}
+                                onChange={(e) => setBirthDate(e.target.value)}
+                                required
+                                style={{ width: '100%', height: '42px' }}
                             />
                         </div>
                     </div>
